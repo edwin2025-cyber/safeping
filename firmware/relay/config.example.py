@@ -12,4 +12,4 @@ MQTT_PASSWORD = "your-mqtt-password"
 DEVICE_ID = "RELAY-01"  # up to 32 characters
 # The Relay republishes Fob packets unchanged and does not sign them.
 # Kept here in case the Relay needs its own key later.
-SECRET_KEY = "paste-the-key-if-one-is-needed"
+
