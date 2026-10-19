@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment files
+.env
+.env.*
+
+# Database. It holds each device's secret key, so it must never be committed.
+*.db
+*.db-wal
+*.db-shm
+
+# Fake Fob test state
+fake_fob_state.json
+
+# Secrets and keys
+secrets.*
+*.key
+*.pem
+
+# Real firmware settings (copy config.example.py to config.py and fill it in)
+firmware/**/config.py
+
+# Editor settings
+.vscode/
+
+# OS junk
+Thumbs.db
+.DS_Store

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SafePing Staff Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>SafePing</h1>
+      <span class="sub">Staff dashboard</span>
+    </div>
+    <div class="pills">
+      <span id="pill-link" class="pill pill-ok">Connected</span>
+      <span id="pill-ref" class="pill pill-muted">Reference: no reading</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel list-panel" aria-label="Alerts">
+      <div class="list-head">
+        <h2>Alerts <span id="open-count" class="count">0 open</span></h2>
+        <label class="toggle">
+          <input type="checkbox" id="show-status">
+          Show status checks
+        </label>
+      </div>
+      <div id="alerts" class="alerts" aria-live="polite"></div>
+      <p id="empty" class="empty">No alerts yet. When a Fob sends one, it shows up here.</p>
+    </section>
+
+    <section class="panel map-panel" aria-label="Map">
+      <div id="map"></div>
+      <p id="map-note" class="map-note"></p>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
