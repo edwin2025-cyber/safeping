@@ -13,6 +13,10 @@ safeping/
   message-format.md        The one format every device and the server share. Read this first.
   firmware/
     fob/                   Fob firmware (MicroPython)
+      main.py              The whole Fob program
+      config.example.py    Copy to config.py and fill in (config.py is not committed)
+      sim_test.py          Laptop test: runs main.py against the real server code
+      README.md            Press patterns and how to run it in Wokwi
     relay/                 Relay: LoRa to WiFi/MQTT
     reference/             Reference: ground-floor pressure baseline
   docs/                    Test results, wiring diagram, meeting notes
@@ -27,12 +31,13 @@ safeping/
     config.py              Settings (environment variables)
     add_device.py          Register a Fob or the Reference and get its secret key
     fake_fob.py            Pretend Fob, for testing without hardware
+    replay_serial.py       Feed Fob console output (from Wokwi) to the server checks
     test_attacks.py        DT-04 test: forged, replayed and unknown-ID messages
     mosquitto.conf         Broker settings
     static/                The dashboard (index.html, dashboard.js, style.css)
 ```
 
-Still to write: the Fob, Relay and Reference firmware (MicroPython).
+Still to write: Relay and Reference firmware. The Fob firmware runs in simulation; its GPS, BME280, battery and LoRa parts are stubs until the hardware arrives.
 
 ## Run it on your laptop
 
@@ -61,6 +66,8 @@ Still to write: the Fob, Relay and Reference firmware (MicroPython).
 
    Add `--direct` to skip the broker and hand the message straight to the server code.
 
+   Fob console output from Wokwi can be fed to the server with `python replay_serial.py serial.txt`.
+
 6. Run the security test: `python test_attacks.py`
 
 ## Settings
@@ -81,7 +88,8 @@ Set these as environment variables. All are optional.
 
 - The security test passes (16 of 16 checks) and the dashboard works in a browser on desktop and phone sizes.
 - A full run worked end to end with a test MQTT broker (amqtt) and paho-mqtt 2.x: messages published over MQTT reached the database, the dry-run text and the API.
-- Not yet tested: a real Mosquitto broker, real Twilio texts, the Leaflet map with internet access, and any firmware.
+- The Fob firmware passes its simulation test (firmware/fob/sim_test.py, 48 checks against the real server code). It has not run on real hardware or in Wokwi yet.
+- Not yet tested: a real Mosquitto broker, real Twilio texts, the Leaflet map with internet access, and any firmware on real hardware.
 
 ## Choices made that you can change
 
