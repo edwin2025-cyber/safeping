@@ -1,0 +1,43 @@
+# label pulldown  fob COM15  relay COM14
+2026-11-07 22:08:46.628 INFO  FOB connected on COM15
+2026-11-07 22:08:46.629 INFO  RELAY connected on COM14
+2026-11-07 22:09:00.517 FOB   no GPS fix, sending without a location
+2026-11-07 22:09:00.519 FOB   SAFEPING_MSG {"ctr": 123, "t": 2099, "id": "FOB-001", "v": 1, "bat": 100, "p": 99586, "type": "STATUS", "sig": "deedcad507aa9b061298635df78b3f51e20f1fc171c733bab948b7a97086d780"}
+2026-11-07 22:09:00.519 FOB   send attempt 1 failed: no WiFi
+2026-11-07 22:09:01.046 RELAY SAFEPING_MSG {"ctr": 123, "t": 2099, "id": "FOB-001", "v": 1, "bat": 100, "p": 99586, "type": "STATUS", "sig": "deedcad507aa9b061298635df78b3f51e20f1fc171c733bab948b7a97086d780"}
+2026-11-07 22:09:01.048 RELAY from FOB-001 type STATUS ctr 123 signal -42 dBm, snr 9.75
+2026-11-07 22:09:01.050 FOB   ACK received (try 1)
+2026-11-07 22:09:01.051 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 22:09:01.053 FOB   >>> [VIBRATE: short]
+2026-11-07 22:09:11.307 FOB   no GPS fix, sending without a location
+2026-11-07 22:09:11.307 FOB   SAFEPING_MSG {"ctr": 124, "t": 2101, "id": "FOB-001", "v": 1, "bat": 100, "p": 99582, "type": "MEDICAL", "sig": "fc2080e5d7fbc867f9b84b89de5c5ff794ea34f92a954fa0e4d11beef0015e47"}
+2026-11-07 22:09:11.308 FOB   send attempt 1 failed: no WiFi
+2026-11-07 22:09:11.698 RELAY SAFEPING_MSG {"ctr": 124, "t": 2101, "id": "FOB-001", "v": 1, "bat": 100, "p": 99582, "type": "MEDICAL", "sig": "fc2080e5d7fbc867f9b84b89de5c5ff794ea34f92a954fa0e4d11beef0015e47"}
+2026-11-07 22:09:11.700 RELAY from FOB-001 type MEDICAL ctr 124 signal -41 dBm, snr 10.0
+2026-11-07 22:09:11.700 FOB   ACK received (try 1)
+2026-11-07 22:09:11.701 FOB   sent over LoRa MEDICAL confirmed by the Relay
+2026-11-07 22:09:11.702 FOB   >>> [VIBRATE: ok]
+2026-11-07 22:09:27.406 FOB   no GPS fix, sending without a location
+2026-11-07 22:09:27.407 FOB   SAFEPING_MSG {"ctr": 125, "t": 2104, "id": "FOB-001", "v": 1, "bat": 100, "p": 99587, "type": "MEDICAL", "sig": "d6ae1408a1849c965610d6256a43f03bdaac4e08aee1502b6576935f9ec9e05e"}
+2026-11-07 22:09:27.407 FOB   send attempt 1 failed: no WiFi
+2026-11-07 22:09:27.798 RELAY SAFEPING_MSG {"ctr": 125, "t": 2104, "id": "FOB-001", "v": 1, "bat": 100, "p": 99587, "type": "MEDICAL", "sig": "d6ae1408a1849c965610d6256a43f03bdaac4e08aee1502b6576935f9ec9e05e"}
+2026-11-07 22:09:27.799 RELAY from FOB-001 type MEDICAL ctr 125 signal -49 dBm, snr 9.5
+2026-11-07 22:09:27.800 FOB   ACK received (try 1)
+2026-11-07 22:09:27.800 FOB   sent over LoRa MEDICAL confirmed by the Relay
+2026-11-07 22:09:27.801 FOB   >>> [VIBRATE: ok]
+2026-11-07 22:10:05.767 FOB   no GPS fix, sending without a location
+2026-11-07 22:10:05.768 FOB   SAFEPING_MSG {"ctr": 126, "t": 2109, "id": "FOB-001", "v": 1, "bat": 100, "p": 99584, "type": "STATUS", "sig": "3d5f2d876be1c8a430e982984f025438f8870322b7c6efc78405f274df523855"}
+2026-11-07 22:10:05.769 FOB   send attempt 1 failed: no WiFi
+2026-11-07 22:10:06.160 RELAY SAFEPING_MSG {"ctr": 126, "t": 2109, "id": "FOB-001", "v": 1, "bat": 100, "p": 99584, "type": "STATUS", "sig": "3d5f2d876be1c8a430e982984f025438f8870322b7c6efc78405f274df523855"}
+2026-11-07 22:10:06.161 FOB   ACK received (try 1)
+2026-11-07 22:10:06.161 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 22:10:06.161 RELAY from FOB-001 type STATUS ctr 126 signal -56 dBm, snr 9.5
+2026-11-07 22:10:06.164 FOB   >>> [VIBRATE: short]
+2026-11-07 22:10:12.706 FOB   no GPS fix, sending without a location
+2026-11-07 22:10:12.707 FOB   SAFEPING_MSG {"ctr": 127, "t": 2109, "id": "FOB-001", "v": 1, "bat": 100, "p": 99585, "type": "MEDICAL", "sig": "eef44d345df6670084ce404607bf1fcadbf4946fe5121c0b1212653418d894ab"}
+2026-11-07 22:10:12.707 FOB   send attempt 1 failed: no WiFi
+2026-11-07 22:10:13.100 RELAY SAFEPING_MSG {"ctr": 127, "t": 2109, "id": "FOB-001", "v": 1, "bat": 100, "p": 99585, "type": "MEDICAL", "sig": "eef44d345df6670084ce404607bf1fcadbf4946fe5121c0b1212653418d894ab"}
+2026-11-07 22:10:13.101 FOB   ACK received (try 1)
+2026-11-07 22:10:13.101 RELAY from FOB-001 type MEDICAL ctr 127 signal -51 dBm, snr 9.75
+2026-11-07 22:10:13.102 FOB   sent over LoRa MEDICAL confirmed by the Relay
+2026-11-07 22:10:13.103 FOB   >>> [VIBRATE: ok]

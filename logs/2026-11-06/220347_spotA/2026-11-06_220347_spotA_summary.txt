@@ -1,0 +1,21 @@
+SafePing field test summary
+label: spotA
+start: 2026-11-06 22:03:47.699
+end:   2026-11-06 22:07:41.094
+length: 233 s
+
+Fob alerts printed:          8
+  sent over LoRa:            0
+  not sent (Fob said so):    8  (ctr 25, 26, 27, 28, 29, 30, 31, 32)
+  cancelled taps:            0
+  with a GPS position:       8
+Relay received (of LoRa):    0 of 0
+LOST (sent, never heard):    0
+Relay only (not in Fob log): 0
+Changed on the way:          0
+Not-SafePing packets heard:  0
+
+Signal (dBm):  none
+SNR (dB):      none
+Fob print to Relay print (s): none
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)

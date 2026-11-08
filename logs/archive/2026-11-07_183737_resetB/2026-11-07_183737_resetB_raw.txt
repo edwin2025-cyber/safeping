@@ -1,0 +1,15 @@
+# label resetB  fob COM15  relay COM14
+2026-11-07 18:37:37.133 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:37.135 INFO  RELAY connected on COM14
+2026-11-07 18:37:39.133 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:41.134 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:43.135 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:45.136 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:47.137 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:49.138 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:51.139 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:53.140 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:55.140 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:57.141 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:37:59.142 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-07 18:38:01.143 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s

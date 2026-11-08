@@ -1,0 +1,30 @@
+# label resettest  fob COM15  relay COM14
+2026-11-06 22:27:59.942 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:27:59.944 INFO  RELAY connected on COM14
+2026-11-06 22:28:01.943 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:03.943 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:05.945 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:07.946 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:09.947 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:11.947 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:13.948 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:15.949 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:17.950 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:19.951 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:21.951 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:23.953 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:25.954 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:27.956 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:29.957 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:31.958 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:33.959 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:35.960 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:37.961 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:39.962 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:41.962 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:43.052 RELAY ignored a packet that is not a SafePing alert
+2026-11-06 22:28:43.963 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:45.964 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:47.965 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:49.967 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s
+2026-11-06 22:28:51.968 INFO  FOB problem on COM15: could not open port 'COM15': PermissionError(13, 'Access is denied.', None, 5). Retrying in 2 s

@@ -1,0 +1,8 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry
+42,STATUS,2026-11-07 19:18:00.128,LoRa,2026-11-07 19:18:00.492,yes,0.36,,,,,,-32,10.0,yes,
+43,STATUS,2026-11-07 19:18:13.038,LoRa,2026-11-07 19:18:13.266,yes,0.23,,,,,,-40,10.0,yes,
+44,SUSPICIOUS,2026-11-07 19:18:24.258,LoRa,2026-11-07 19:18:24.489,yes,0.23,,,,,,-42,10.0,yes,
+45,MEDICAL,2026-11-07 19:18:36.449,NOT SENT,,no,,,,,,,,,,yes
+46,MEDICAL,2026-11-07 19:19:02.758,NOT SENT,,no,,,,,,,,,,yes
+47,SILENT,2026-11-07 19:19:21.749,LoRa,2026-11-07 19:19:21.999,yes,0.25,,,,,,-36,10.25,yes,
+48,MEDICAL,2026-11-07 19:19:33.498,NOT SENT,,no,,,,,,,,,,yes

@@ -1,0 +1,36 @@
+# label spotA2  fob COM15  relay COM14
+2026-11-06 22:13:43.025 INFO  FOB connected on COM15
+2026-11-06 22:13:43.025 INFO  RELAY connected on COM14
+2026-11-06 22:13:59.258 FOB   location sent, accuracy about 3 m
+2026-11-06 22:13:59.259 FOB   SAFEPING_MSG {"ctr": 33, "lon": -86655571, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "STATUS", "acc": 3, "sig": "cb0021dc45f8b29039fba693dba190ef856f69ea7c603bae611c5ddc7e63e88d"}
+2026-11-06 22:13:59.260 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:13:59.679 FOB   sent over LoRa STATUS
+2026-11-06 22:13:59.681 RELAY SAFEPING_MSG {"ctr": 33, "lon": -86655571, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "STATUS", "acc": 3, "sig": "cb0021dc45f8b29039fba693dba190ef856f69ea7c603bae611c5ddc7e63e88d"}
+2026-11-06 22:13:59.681 FOB   >>> [VIBRATE: short]
+2026-11-06 22:13:59.683 RELAY from FOB-001 type STATUS ctr 33 signal -24 dBm, snr 10.0
+2026-11-06 22:15:20.406 FOB   >>> [VIBRATE: one]
+2026-11-06 22:15:22.426 FOB   location sent, accuracy about 3 m
+2026-11-06 22:15:22.427 FOB   SAFEPING_MSG {"ctr": 34, "lon": -86655570, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "SUSPICIOUS", "acc": 3, "sig": "062975dd87a147456101ff381d6c633172b1f303dbf0c87f5a05b7da48b5258a"}
+2026-11-06 22:15:22.428 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:15:22.722 FOB   sent over LoRa SUSPICIOUS
+2026-11-06 22:15:22.723 FOB   >>> [VIBRATE: ok]
+2026-11-06 22:15:22.726 RELAY SAFEPING_MSG {"ctr": 34, "lon": -86655570, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "SUSPICIOUS", "acc": 3, "sig": "062975dd87a147456101ff381d6c633172b1f303dbf0c87f5a05b7da48b5258a"}
+2026-11-06 22:15:22.727 RELAY from FOB-001 type SUSPICIOUS ctr 34 signal -25 dBm, snr 9.75
+2026-11-06 22:15:39.500 FOB   >>> [VIBRATE: one]
+2026-11-06 22:15:39.706 FOB   CANCELLED SUSPICIOUS
+2026-11-06 22:15:39.707 FOB   >>> [VIBRATE: short]
+2026-11-06 22:15:50.378 FOB   location sent, accuracy about 3 m
+2026-11-06 22:15:50.378 FOB   SAFEPING_MSG {"ctr": 35, "lon": -86655570, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "MEDICAL", "acc": 3, "sig": "45855055cd6672248fac350e9c3aadf667a4820598715b67735f30b55ee4a6e2"}
+2026-11-06 22:15:50.379 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:15:50.667 FOB   sent over LoRa MEDICAL
+2026-11-06 22:15:50.668 FOB   >>> [VIBRATE: ok]
+2026-11-06 22:15:50.671 RELAY SAFEPING_MSG {"ctr": 35, "lon": -86655570, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "MEDICAL", "acc": 3, "sig": "45855055cd6672248fac350e9c3aadf667a4820598715b67735f30b55ee4a6e2"}
+2026-11-06 22:15:50.672 RELAY from FOB-001 type MEDICAL ctr 35 signal -25 dBm, snr 9.75
+2026-11-06 22:16:00.217 FOB   >>> [VIBRATE: short]
+2026-11-06 22:16:00.388 FOB   location sent, accuracy about 6 m
+2026-11-06 22:16:00.389 FOB   SAFEPING_MSG {"ctr": 36, "lon": -86655570, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "SILENT", "acc": 6, "sig": "6410c0e04f0565a69438b2c14ad64792c146109d2e114a4661cacde428afd927"}
+2026-11-06 22:16:00.389 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:16:00.677 FOB   sent over LoRa SILENT
+2026-11-06 22:16:00.678 FOB   >>> [VIBRATE: ok]
+2026-11-06 22:16:00.685 RELAY SAFEPING_MSG {"ctr": 36, "lon": -86655570, "id": "FOB-001", "v": 1, "lat": 34725560, "type": "SILENT", "acc": 6, "sig": "6410c0e04f0565a69438b2c14ad64792c146109d2e114a4661cacde428afd927"}
+2026-11-06 22:16:00.686 RELAY from FOB-001 type SILENT ctr 36 signal -24 dBm, snr 9.75

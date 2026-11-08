@@ -1,13 +1,26 @@
-# Relay firmware (MicroPython)
+# Relay
 
-The Relay passes Fob alerts from LoRa on to the server. This folder holds its MicroPython code.
+Sits by a third floor window (USB power), listens for Fob alerts over LoRa, saves each one, and answers with a signed ack.
 
-What it will do (see [message-format.md](../../message-format.md)):
+## Files on the board
 
-- Listen for LoRa packets from Fobs.
-- Connect to WiFi and the MQTT broker.
-- Publish each packet to `safeping/alerts` exactly as received. It does not edit or re-sign anything, so the server cannot tell which path a message took.
+- `main.py` = `firmware/relay/main.py` (it started as `tests/relay_alert_listen.py` in the bench repo)
+- `sx127x.py` and `ackcheck.py` from `firmware/lib/`
+- `config.py` with `ACK_KEYS` (see `config.example.py`). Never in git.
 
-## Setup
+## What it does now
 
-Copy `config.example.py` to `config.py` and fill in the real values. `config.py` is ignored by git.
+1. Listens continuously (60 s receive windows, so a packet is never cut off).
+2. A new SafePing alert is stored in `queue.txt` on the board, then acked: `ACK <id> <ctr> <mac>`.
+3. Prints the alert as `SAFEPING_MSG <json>` over USB. `server/serial_bridge.py` reads those lines into the server.
+4. A resent alert (same id and ctr) is acked again but printed only as `duplicate of ...`.
+5. If the radio resets or stops answering, it sets the radio up again and keeps listening.
+
+## Not done yet
+
+- Forwarding `queue.txt` to the MQTT broker over WiFi (needs a network the boards can use).
+- Emptying `queue.txt` once the server has an alert.
+
+## Tested
+
+See `logs/README.md`: ack, ackfake, ackfixed and floorwalk runs (2026-11-07), and the first end-to-end alert through the serial bridge (2026-11-08).

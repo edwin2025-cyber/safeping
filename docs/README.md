@@ -6,4 +6,8 @@ This folder is for project documents that are not code:
 - The wiring diagram for the Fob, Relay and Reference.
 - Meeting notes.
 
+Already here:
+
+- [hardware-connections.md](hardware-connections.md): the wiring guide for all three devices (Fob, Relay and Reference).
+
 The message format that every device and the server share is in [message-format.md](../message-format.md), at the top level.

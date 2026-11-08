@@ -1,0 +1,24 @@
+# label lidtest  fob COM15  relay COM14
+2026-11-06 22:20:26.990 INFO  RELAY connected on COM14
+2026-11-06 22:20:26.990 INFO  FOB connected on COM15
+2026-11-06 22:20:42.732 FOB   no GPS fix, sending without a location
+2026-11-06 22:20:42.732 FOB   SAFEPING_MSG {"ctr": 37, "v": 1, "sig": "53104ea83ee117c7d8f7ae80b67844182469172ef1db8ed752703285175ffae1", "id": "FOB-001", "type": "STATUS"}
+2026-11-06 22:20:42.733 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:20:43.086 FOB   sent over LoRa STATUS
+2026-11-06 22:20:43.089 FOB   >>> [VIBRATE: short]
+2026-11-06 22:20:43.091 RELAY SAFEPING_MSG {"ctr": 37, "v": 1, "sig": "53104ea83ee117c7d8f7ae80b67844182469172ef1db8ed752703285175ffae1", "id": "FOB-001", "type": "STATUS"}
+2026-11-06 22:20:43.093 RELAY from FOB-001 type STATUS ctr 37 signal -26 dBm, snr 9.75
+2026-11-06 22:21:41.281 FOB   no GPS fix, sending without a location
+2026-11-06 22:21:41.282 FOB   SAFEPING_MSG {"ctr": 38, "v": 1, "sig": "34d278a8a3dd27517a4f8fa0a64c61e227f6f6761d4591dc0af49491b4e05a1b", "id": "FOB-001", "type": "STATUS"}
+2026-11-06 22:21:41.282 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:21:41.504 FOB   sent over LoRa STATUS
+2026-11-06 22:21:41.505 RELAY SAFEPING_MSG {"ctr": 38, "v": 1, "sig": "34d278a8a3dd27517a4f8fa0a64c61e227f6f6761d4591dc0af49491b4e05a1b", "id": "FOB-001", "type": "STATUS"}
+2026-11-06 22:21:41.506 FOB   >>> [VIBRATE: short]
+2026-11-06 22:21:41.507 RELAY from FOB-001 type STATUS ctr 38 signal -29 dBm, snr 10.5
+2026-11-06 22:22:07.641 FOB   no GPS fix, sending without a location
+2026-11-06 22:22:07.642 FOB   SAFEPING_MSG {"ctr": 39, "v": 1, "sig": "2a7d619b2c24fd68ef9d26556147b30940cec57305b7ae1834868605897aeee1", "id": "FOB-001", "type": "STATUS"}
+2026-11-06 22:22:07.642 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:22:07.863 FOB   sent over LoRa STATUS
+2026-11-06 22:22:07.865 FOB   >>> [VIBRATE: short]
+2026-11-06 22:22:07.867 RELAY SAFEPING_MSG {"ctr": 39, "v": 1, "sig": "2a7d619b2c24fd68ef9d26556147b30940cec57305b7ae1834868605897aeee1", "id": "FOB-001", "type": "STATUS"}
+2026-11-06 22:22:07.868 RELAY from FOB-001 type STATUS ctr 39 signal -28 dBm, snr 10.0

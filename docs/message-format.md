@@ -9,9 +9,14 @@ Every device (Fob, Relay, Reference) and the server follow this one format. If y
 | Alerts | `safeping/alerts` | Fob (WiFi), or Relay on behalf of a Fob (LoRa) | MQTT |
 | Reference readings | `safeping/reference` | Reference | MQTT |
 
-The Relay republishes a LoRa packet to `safeping/alerts` exactly as received. It does not edit or re-sign anything. The server cannot tell which path a message took.
+The Relay passes a LoRa packet on exactly as received. It does not edit or re-sign anything. The server cannot tell which path a message took.
 
-Payload is one JSON object, UTF-8, under 512 bytes.
+Two ways the Relay can pass alerts on:
+
+- **MQTT** (planned): the Relay republishes to `safeping/alerts`.
+- **USB serial bridge** (works now): the Relay is plugged into the server computer and prints each new alert as `SAFEPING_MSG <json>`. `server/serial_bridge.py` reads those lines and hands them to the same `processor.process()` the MQTT listener uses.
+
+Size limits: an MQTT payload must be under 512 bytes. A LoRa packet holds at most **255 bytes**, and that is the real limit. The largest realistic alert (GPS, pressure, temperature, battery) is about 241 bytes, so keep device IDs short and do not add fields without checking.
 
 ## Fields
 
@@ -23,10 +28,10 @@ All numbers are **integers**. This is on purpose. The ESP32 uses single-precisio
 | `id` | Device ID | yes | text, up to 32 characters, such as `FOB-001` |
 | `type` | Message type | yes | `STATUS`, `SUSPICIOUS`, `MEDICAL`, `SILENT` (Fob) or `REF` (Reference) |
 | `ctr` | Counter, goes up by at least 1 every message | yes | whole number, 0 or more |
-| `ts` | Device clock | no | Unix seconds. May be wrong until NTP is added, so the server also stamps its own time |
+| `ts` | Device clock | no | Unix seconds. Set by NTP once WiFi works, so the server also stamps its own time |
 | `lat` | Latitude | no | microdegrees (34.730123 is `34730123`) |
 | `lon` | Longitude | no | microdegrees (-86.586104 is `-86586104`) |
-| `acc` | GPS accuracy | no | meters |
+| `acc` | GPS accuracy | no | meters (the Fob estimates HDOP x 5) |
 | `p` | Pressure | Reference: yes. Fob: no | pascals (101325) |
 | `t` | Temperature | no | hundredths of a degree C (2150 is 21.50 C) |
 | `bat` | Battery | no | percent, 0 to 100 |
@@ -52,7 +57,26 @@ Example (a Silent alert with a GPS fix):
 
 2. `sig = HMAC-SHA256(secret_key, signing string)`, written as lowercase hex.
 
-Each device has its own `secret_key`. The server keeps a copy so it can check the signature.
+Each device has its own `secret_key`, made by `server/add_device.py`. The server keeps a copy so it can check the signature.
+
+## LoRa acks (Fob and Relay)
+
+Over LoRa the Fob waits for the Relay to confirm it saved the alert.
+
+1. The Relay stores each NEW alert in `queue.txt` on its flash, then answers with one short packet:
+
+   `ACK <id> <ctr> <mac>`
+
+   `mac` = the first 16 hex characters of `HMAC-SHA256(ack_key, "ACK|<id>|<ctr>|<the alert's sig>")`
+
+   `ack_key` = `HMAC-SHA256(device secret_key, "safeping-ack-v1")`
+
+2. The Relay holds only ack keys (in its own `config.py`, never in git), never the device secret. A stolen Relay could fake acks but never alerts.
+3. The Fob listens up to 1 s for the exact ack. No valid ack: it sends the SAME message again (same `ctr`, same `sig`), up to 3 times. Still nothing: NOT CONFIRMED (orange light, long buzz).
+4. A forged ack is rejected (`bad signature`). An old ack replayed for a new alert is rejected (`not for this alert`).
+5. A resent alert is acked again by the Relay but stored and passed on only once.
+
+The ack proves the Relay saved the alert. It does not yet prove the server saved it. The server can make the same ack (it knows every secret), so moving the ack to the server later keeps this format.
 
 ## What the server checks, in this order
 
@@ -69,7 +93,7 @@ Every rejection is written to the `rejected` table with the reason. This is the 
 
 ## The Fob's counter
 
-The Fob must save its counter to flash after every send. If it restarts at 0, the server will reject everything until the counter passes the old value.
+The Fob saves its counter to flash BEFORE every send, so a crash or power loss can never reuse a number. A cancelled alert does not use a counter.
 
 ## Message types
 
@@ -78,12 +102,13 @@ The Fob must save its counter to flash after every send. If it restarts at 0, th
 | `STATUS` | 1 press, status check | no | hidden by default, logged |
 | `SUSPICIOUS` | 2 presses | yes | yes |
 | `MEDICAL` | 3 or more presses | yes | yes |
-| `SILENT` | hold 5 seconds | yes | yes |
+| `SILENT` | hold (2 s on the bench, `HOLD_MS`; the PDR said 5 s) | yes | yes |
 | `REF` | Reference pressure reading | no | status strip only |
 
 ## How location is decided
 
 1. If the message has `lat` and `lon`, use them (with `acc`).
 2. Otherwise, if it has `p` and the latest Reference reading is less than 120 seconds old, the floor is
-   `1 + round((reference p - fob p) / PA_PER_FLOOR)`. `PA_PER_FLOOR` starts at 42 Pa and must be calibrated by walking the building (DT-08).
+   `1 + round((reference p - fob p) / PA_PER_FLOOR)`. The Reference sits on the ground floor, which the server calls floor 1.
+   `PA_PER_FLOOR` defaults to 42 Pa. The floor walk on 2026-11-07 measured about 55 Pa per floor, with uneven floors (ground to 1st 68 Pa, then 54, then 42), so start the server with `PA_PER_FLOOR=55`. A per-floor table would be more accurate (planned).
 3. Otherwise the alert is stored with no location.

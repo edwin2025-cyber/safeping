@@ -1,0 +1,44 @@
+# label sensors  fob COM15  relay COM14
+2026-11-07 19:55:11.904 INFO  FOB connected on COM15
+2026-11-07 19:55:11.905 INFO  RELAY connected on COM14
+2026-11-07 19:55:22.974 FOB   no GPS fix, sending without a location
+2026-11-07 19:55:22.975 FOB   SAFEPING_MSG {"ctr": 57, "t": 2149, "id": "FOB-001", "v": 1, "bat": 100, "p": 99559, "type": "STATUS", "sig": "12673b0bdde2dc493504c8c26931a32af849d6151bdc2dd09189f56926dd67b3"}
+2026-11-07 19:55:22.975 FOB   send attempt 1 failed: no WiFi
+2026-11-07 19:55:28.612 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-07 19:55:28.613 FOB   LoRa check: version 0x12, mode 0x81
+2026-11-07 19:55:28.613 FOB   LoRa: setting the radio up again and trying once more
+2026-11-07 19:55:34.155 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-07 19:55:34.155 FOB   LoRa check: version 0x12, mode 0x81
+2026-11-07 19:55:34.156 FOB   NOT SENT STATUS
+2026-11-07 19:55:34.158 FOB   >>> [VIBRATE: fail]
+2026-11-07 19:55:45.444 FOB   no GPS fix, sending without a location
+2026-11-07 19:55:45.444 FOB   SAFEPING_MSG {"ctr": 58, "t": 2147, "id": "FOB-001", "v": 1, "bat": 100, "p": 99565, "type": "STATUS", "sig": "0fa9c8bc1826daf47f1f875d2b322bfa0f45a1e9bf9fc905531532ca2bbb6ff6"}
+2026-11-07 19:55:45.445 FOB   send attempt 1 failed: no WiFi
+2026-11-07 19:55:45.743 FOB   sent over LoRa STATUS
+2026-11-07 19:55:45.746 FOB   >>> [VIBRATE: short]
+2026-11-07 19:55:45.747 RELAY SAFEPING_MSG {"ctr": 58, "t": 2147, "id": "FOB-001", "v": 1, "bat": 100, "p": 99565, "type": "STATUS", "sig": "0fa9c8bc1826daf47f1f875d2b322bfa0f45a1e9bf9fc905531532ca2bbb6ff6"}
+2026-11-07 19:55:45.748 RELAY from FOB-001 type STATUS ctr 58 signal -32 dBm, snr 9.25
+2026-11-07 19:56:16.534 FOB   no GPS fix, sending without a location
+2026-11-07 19:56:16.535 FOB   SAFEPING_MSG {"ctr": 59, "t": 2123, "id": "FOB-001", "v": 1, "bat": 100, "p": 99562, "type": "STATUS", "sig": "6a6161a7edc04c401430dd468b6037d4942af4b631b6751f883b47055e4097f6"}
+2026-11-07 19:56:16.536 FOB   send attempt 1 failed: no WiFi
+2026-11-07 19:56:16.814 FOB   sent over LoRa STATUS
+2026-11-07 19:56:16.816 FOB   >>> [VIBRATE: short]
+2026-11-07 19:56:16.818 RELAY SAFEPING_MSG {"ctr": 59, "t": 2123, "id": "FOB-001", "v": 1, "bat": 100, "p": 99562, "type": "STATUS", "sig": "6a6161a7edc04c401430dd468b6037d4942af4b631b6751f883b47055e4097f6"}
+2026-11-07 19:56:16.819 RELAY from FOB-001 type STATUS ctr 59 signal -51 dBm, snr 10.0
+2026-11-07 19:56:37.094 FOB   no GPS fix, sending without a location
+2026-11-07 19:56:37.095 FOB   SAFEPING_MSG {"ctr": 60, "t": 2124, "id": "FOB-001", "v": 1, "bat": 100, "p": 99565, "type": "STATUS", "sig": "3d4b93a1fcedf9d3cb11ee594b4b540312f9f6afa1d19483fd0904a6cea76a98"}
+2026-11-07 19:56:37.095 FOB   send attempt 1 failed: no WiFi
+2026-11-07 19:56:42.583 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-07 19:56:42.583 FOB   LoRa check: version 0x12, mode 0x81
+2026-11-07 19:56:42.584 FOB   LoRa: setting the radio up again and trying once more
+2026-11-07 19:56:48.089 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-07 19:56:48.090 FOB   LoRa check: version 0x12, mode 0x81
+2026-11-07 19:56:48.090 FOB   NOT SENT STATUS
+2026-11-07 19:56:48.092 FOB   >>> [VIBRATE: fail]
+2026-11-07 19:57:05.504 FOB   no GPS fix, sending without a location
+2026-11-07 19:57:05.505 FOB   SAFEPING_MSG {"ctr": 61, "t": 2137, "id": "FOB-001", "v": 1, "bat": 100, "p": 99565, "type": "STATUS", "sig": "3382b212b22f2298e8caf775e025db2aaed882d2de2f60eb778ab9e6009525d2"}
+2026-11-07 19:57:05.505 FOB   send attempt 1 failed: no WiFi
+2026-11-07 19:57:05.803 FOB   sent over LoRa STATUS
+2026-11-07 19:57:05.806 FOB   >>> [VIBRATE: short]
+2026-11-07 19:57:05.806 RELAY SAFEPING_MSG {"ctr": 61, "t": 2137, "id": "FOB-001", "v": 1, "bat": 100, "p": 99565, "type": "STATUS", "sig": "3382b212b22f2298e8caf775e025db2aaed882d2de2f60eb778ab9e6009525d2"}
+2026-11-07 19:57:05.808 RELAY from FOB-001 type STATUS ctr 61 signal -37 dBm, snr 9.75

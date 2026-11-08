@@ -1,0 +1,53 @@
+# label spotA  fob COM15  relay COM14
+2026-11-06 22:03:47.701 INFO  FOB connected on COM15
+2026-11-06 22:03:47.701 INFO  RELAY connected on COM14
+2026-11-06 22:04:49.132 FOB   location sent, accuracy about 5 m
+2026-11-06 22:04:49.133 FOB   SAFEPING_MSG {"lat": 34725526, "type": "STATUS", "lon": -86655526, "acc": 5, "sig": "505f4fe0a70d27ddef7a456a11a6e995eda25e6244d43613f3e8da999284ebc3", "ctr": 25, "id": "FOB-001", "ts": 1794002688, "v": 1}
+2026-11-06 22:04:49.134 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:04:54.688 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:04:54.688 FOB   NOT SENT STATUS
+2026-11-06 22:04:54.691 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:05:05.442 FOB   location sent, accuracy about 6 m
+2026-11-06 22:05:05.443 FOB   SAFEPING_MSG {"lat": 34725526, "type": "STATUS", "lon": -86655525, "acc": 6, "sig": "16de2bf767652390bfcd59ecf5af9fc09452424a01e4150d8f2ac27eb7b80610", "ctr": 26, "id": "FOB-001", "ts": 1794002704, "v": 1}
+2026-11-06 22:05:05.444 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:05:11.003 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:05:11.003 FOB   NOT SENT STATUS
+2026-11-06 22:05:11.005 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:05:34.874 FOB   location sent, accuracy about 5 m
+2026-11-06 22:05:34.875 FOB   SAFEPING_MSG {"lat": 34725525, "type": "STATUS", "lon": -86655525, "acc": 5, "sig": "ea5a7a9a20d8a523c8c9173a57856a62054db44c61d0bf51b65530796a48c2e7", "ctr": 27, "id": "FOB-001", "ts": 1794002734, "v": 1}
+2026-11-06 22:05:34.876 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:05:40.431 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:05:40.431 FOB   NOT SENT STATUS
+2026-11-06 22:05:40.434 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:05:51.193 FOB   location sent, accuracy about 5 m
+2026-11-06 22:05:51.194 FOB   SAFEPING_MSG {"lat": 34725525, "type": "STATUS", "lon": -86655530, "acc": 5, "sig": "ac11aff026025b1b7359f308340c7884b8d819f9658c01a740b95d71cf2a83dd", "ctr": 28, "id": "FOB-001", "ts": 1794002750, "v": 1}
+2026-11-06 22:05:51.195 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:05:56.751 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:05:56.751 FOB   NOT SENT STATUS
+2026-11-06 22:05:56.753 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:06:04.827 FOB   >>> [VIBRATE: one]
+2026-11-06 22:06:06.853 FOB   location sent, accuracy about 5 m
+2026-11-06 22:06:06.854 FOB   SAFEPING_MSG {"lat": 34725525, "type": "SUSPICIOUS", "lon": -86655533, "acc": 5, "sig": "e2aa5d0bb0897d3ba74f40e8e5364e2fa6c7c4c7e945f3b030138ebf04146d23", "ctr": 29, "id": "FOB-001", "ts": 1794002766, "v": 1}
+2026-11-06 22:06:06.855 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:06:12.408 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:06:12.409 FOB   NOT SENT SUSPICIOUS
+2026-11-06 22:06:12.411 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:06:22.802 FOB   location sent, accuracy about 5 m
+2026-11-06 22:06:22.803 FOB   SAFEPING_MSG {"lat": 34725525, "type": "STATUS", "lon": -86655533, "acc": 5, "sig": "b320ae89ab88f72a0f84541c5a4e33ef53d8d97adbbd1d5bbf8b96abd57a8c83", "ctr": 30, "id": "FOB-001", "ts": 1794002782, "v": 1}
+2026-11-06 22:06:22.804 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:06:28.357 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:06:28.357 FOB   NOT SENT STATUS
+2026-11-06 22:06:28.360 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:06:36.153 FOB   >>> [VIBRATE: short]
+2026-11-06 22:06:36.326 FOB   location sent, accuracy about 5 m
+2026-11-06 22:06:36.327 FOB   SAFEPING_MSG {"lat": 34725525, "type": "SILENT", "lon": -86655533, "acc": 5, "sig": "5f316c60d49c750a88ade975ef07a793ad4c39690a7d5365515472eba77e9836", "ctr": 31, "id": "FOB-001", "ts": 1794002795, "v": 1}
+2026-11-06 22:06:36.327 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:06:41.880 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:06:41.881 FOB   NOT SENT SILENT
+2026-11-06 22:06:41.881 FOB   >>> [VIBRATE: fail]
+2026-11-06 22:06:59.263 FOB   location sent, accuracy about 4 m
+2026-11-06 22:06:59.264 FOB   SAFEPING_MSG {"lat": 34725536, "type": "STATUS", "lon": -86655556, "acc": 4, "sig": "c4f8ec88fa470b7a308b0ff35136a144f35cc8e6ff74ed7c7d9abbd57fe514b0", "ctr": 32, "id": "FOB-001", "ts": 1794002818, "v": 1}
+2026-11-06 22:06:59.265 FOB   send attempt 1 failed: no WiFi
+2026-11-06 22:07:04.823 FOB   LoRa failed: the radio never finished sending (5 s timeout)
+2026-11-06 22:07:04.824 FOB   NOT SENT STATUS
+2026-11-06 22:07:04.826 FOB   >>> [VIBRATE: fail]

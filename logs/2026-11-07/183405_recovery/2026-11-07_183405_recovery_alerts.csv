@@ -1,0 +1,3 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry
+40,STATUS,2026-11-07 18:34:18.241,LoRa,2026-11-07 18:34:18.585,yes,0.34,,,,,,-39,10.0,yes,
+41,SUSPICIOUS,2026-11-07 18:34:37.181,LoRa,2026-11-07 18:34:37.411,yes,0.23,,,,,,-32,9.0,yes,

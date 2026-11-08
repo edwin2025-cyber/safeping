@@ -1,0 +1,66 @@
+# label lipoonly  fob COM15  relay COM14
+2026-11-07 20:04:08.454 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:08.456 INFO  RELAY connected on COM14
+2026-11-07 20:04:10.455 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:12.456 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:14.457 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:16.457 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:18.458 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:20.459 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:22.460 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:24.461 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:26.462 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:26.876 RELAY SAFEPING_MSG {"ctr": 72, "t": 2147, "id": "FOB-001", "v": 1, "bat": 100, "p": 99581, "type": "STATUS", "sig": "cf395e2c9dfa995f2e3eeb8e8c9310a488bc364d5f88c2e3b359ee266bd81056"}
+2026-11-07 20:04:26.878 RELAY from FOB-001 type STATUS ctr 72 signal -42 dBm, snr 9.75
+2026-11-07 20:04:28.463 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:30.463 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:32.464 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:33.981 RELAY SAFEPING_MSG {"ctr": 73, "t": 2148, "id": "FOB-001", "v": 1, "bat": 100, "p": 99580, "type": "STATUS", "sig": "f4b58a938982169bdf3f174bd90d86cb2809e434d3c6eadc4484b321d25d2ab3"}
+2026-11-07 20:04:33.983 RELAY from FOB-001 type STATUS ctr 73 signal -32 dBm, snr 10.5
+2026-11-07 20:04:34.465 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:36.465 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:38.466 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:39.999 RELAY SAFEPING_MSG {"ctr": 74, "t": 2148, "id": "FOB-001", "v": 1, "bat": 100, "p": 99580, "type": "STATUS", "sig": "a49d10f188a3db620d8534f35ad4bd038e47cf9a88637fdf587d8bc403d04aed"}
+2026-11-07 20:04:40.001 RELAY from FOB-001 type STATUS ctr 74 signal -33 dBm, snr 9.75
+2026-11-07 20:04:40.467 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:42.468 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:44.468 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:46.469 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:46.701 RELAY SAFEPING_MSG {"ctr": 75, "t": 2148, "id": "FOB-001", "v": 1, "bat": 100, "p": 99580, "type": "STATUS", "sig": "a3d7840b70c2008bb1390ea7fd700370fc525f4d23b86ea3f5dfc54e8d46b722"}
+2026-11-07 20:04:46.702 RELAY from FOB-001 type STATUS ctr 75 signal -33 dBm, snr 10.5
+2026-11-07 20:04:48.470 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:50.470 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:52.471 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:53.919 RELAY SAFEPING_MSG {"ctr": 76, "t": 2148, "id": "FOB-001", "v": 1, "bat": 100, "p": 99579, "type": "STATUS", "sig": "8d4a63b09865d6c9a280e6378abf5b2b9743bb8c96f0e7d826d1030c4e652f54"}
+2026-11-07 20:04:53.921 RELAY from FOB-001 type STATUS ctr 76 signal -33 dBm, snr 9.75
+2026-11-07 20:04:54.471 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:56.472 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:57.105 RELAY ignored a packet that is not a SafePing alert
+2026-11-07 20:04:58.473 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:04:58.690 RELAY SAFEPING_MSG {"ctr": 77, "t": 2149, "id": "FOB-001", "v": 1, "bat": 100, "p": 99580, "type": "STATUS", "sig": "b6c6d469476c59cc1438fa964f4eff131f1b47dc0503dac1f0a69a6f01e39815"}
+2026-11-07 20:04:58.692 RELAY from FOB-001 type STATUS ctr 77 signal -32 dBm, snr 10.0
+2026-11-07 20:05:00.474 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:02.474 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:04.475 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:05.010 RELAY SAFEPING_MSG {"ctr": 78, "t": 2148, "id": "FOB-001", "v": 1, "bat": 100, "p": 99577, "type": "STATUS", "sig": "ccbeca27af7b1d9b2c8fd6019174f929d067c2216e506caa0e0730f011c74a5e"}
+2026-11-07 20:05:05.012 RELAY from FOB-001 type STATUS ctr 78 signal -33 dBm, snr 9.75
+2026-11-07 20:05:06.476 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:08.477 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:10.478 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:10.935 RELAY SAFEPING_MSG {"ctr": 79, "t": 2148, "id": "FOB-001", "v": 1, "bat": 100, "p": 99578, "type": "STATUS", "sig": "8a9636666e2f0d28ffe08a7720c1b06a3aa3ff3db915beca2c5acc32fcc440eb"}
+2026-11-07 20:05:10.937 RELAY from FOB-001 type STATUS ctr 79 signal -34 dBm, snr 9.5
+2026-11-07 20:05:12.479 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:14.480 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:16.459 RELAY SAFEPING_MSG {"ctr": 80, "t": 2147, "id": "FOB-001", "v": 1, "bat": 100, "p": 99580, "type": "STATUS", "sig": "208d349dc5838dd094eaf5cc061a1551b4b75768aafa9c9ad9bf4e7f75fa8cb9"}
+2026-11-07 20:05:16.461 RELAY from FOB-001 type STATUS ctr 80 signal -33 dBm, snr 9.5
+2026-11-07 20:05:16.480 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:18.481 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:20.482 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:22.378 RELAY SAFEPING_MSG {"ctr": 81, "t": 2147, "id": "FOB-001", "v": 1, "bat": 100, "p": 99579, "type": "STATUS", "sig": "232eef5a1c9eb013dc448bd3cf56b4afb1713a5cd31da4233edc099127441c72"}
+2026-11-07 20:05:22.380 RELAY from FOB-001 type STATUS ctr 81 signal -32 dBm, snr 10.0
+2026-11-07 20:05:22.483 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:24.484 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:26.485 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:28.486 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:30.487 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 20:05:32.488 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s

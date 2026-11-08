@@ -1,0 +1,11 @@
+# label ackfixed  fob COM15  relay COM14
+2026-11-07 21:55:21.866 INFO  FOB connected on COM15
+2026-11-07 21:55:21.866 INFO  RELAY connected on COM14
+2026-11-07 21:55:27.272 FOB   no GPS fix, sending without a location
+2026-11-07 21:55:27.272 FOB   SAFEPING_MSG {"type": "STATUS", "p": 99581, "bat": 100, "sig": "61c71c33ebccff839248ea2ac8c9b4298de75f1b0dc32700a1c7424d0be22d2f", "t": 2152, "ctr": 122, "ts": 1794088526, "v": 1, "id": "FOB-001"}
+2026-11-07 21:55:27.274 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:55:27.717 RELAY SAFEPING_MSG {"type": "STATUS", "p": 99581, "bat": 100, "sig": "61c71c33ebccff839248ea2ac8c9b4298de75f1b0dc32700a1c7424d0be22d2f", "t": 2152, "ctr": 122, "ts": 1794088526, "v": 1, "id": "FOB-001"}
+2026-11-07 21:55:27.718 FOB   ACK received (try 1)
+2026-11-07 21:55:27.718 RELAY from FOB-001 type STATUS ctr 122 signal -31 dBm, snr 10.25
+2026-11-07 21:55:27.719 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 21:55:27.721 FOB   >>> [VIBRATE: short]

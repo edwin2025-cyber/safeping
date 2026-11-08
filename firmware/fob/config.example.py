@@ -1,34 +1,33 @@
-# Copy this file to config.py and fill it in. config.py is ignored by git so the
-# secret key never goes to GitHub. In Wokwi, make a file called config.py in the project.
+# Fob settings. Copy this to the Fob as config.py (Thonny, Save as, MicroPython device)
+# and fill in the real values there. The real config.py never goes in git.
+# Anything left out uses the default in main.py.
 
-# --- who this Fob is (from: python add_device.py FOB-001 "Student Name") ---
 DEVICE_ID = "FOB-001"
-SECRET_KEY = "paste-the-key-from-add_device.py"
+SECRET_KEY = "paste-the-key-from-add_device.py"   # python server/add_device.py FOB-001 "Name"
 
-# --- WiFi ---
-WIFI_SSID = "Wokwi-GUEST"        # Wokwi's built-in network. Use the school network on the real Fob.
+# WiFi. "none" skips WiFi completely and sends over LoRa only (bench mode).
+WIFI_SSID = "none"
 WIFI_PASSWORD = ""
+WIFI_TIMEOUT_MS = 1500
+SEND_ATTEMPTS = 1
 
-# --- MQTT broker ---
-# On the real Fob this is the server's address.
-# In Wokwi it cannot reach your laptop, so use a public test broker and a topic
-# nobody else will pick (add random letters). Then check the output with
-# server/replay_serial.py.
-MQTT_HOST = "test.mosquitto.org"
+# MQTT broker (the server computer's address on the same network)
+MQTT_HOST = "localhost"
 MQTT_PORT = 1883
-MQTT_USER = None                 # set both when your own Mosquitto needs a login
+MQTT_USER = None
 MQTT_PASS = None
-MQTT_TOPIC = "safeping/alerts"   # Wokwi: "safeping-test-x7k2/alerts"
 
-# --- pins (these are for the ESP32 board in Wokwi, change them for the real board) ---
-# BUTTON_PIN = 0                 # button to GND
-# LED_TYPE = "rgb"               # "rgb" for the Wokwi RGB LED, "neopixel" for the real build
-# RGB_PINS = (2, 4, 5)           # red, green, blue
-# NEOPIXEL_PIN = 8
-# MOTOR_PIN = 18                 # to the PN2222 base. In Wokwi, an LED here stands in for the motor.
+# Pins on the bench Fob
+BUTTON_PIN = 1
+LED_TYPE = "neopixel"
+NEOPIXEL_PIN = 27
+MOTOR_PIN = 3
 
-# --- timing in milliseconds (the defaults match the design, change only to experiment) ---
-# MULTI_WINDOW_MS = 600
-# HOLD_MS = 5000
-# CANCEL_MS = 2000
-# COOLDOWN_MS = 3000
+# Timing
+HOLD_MS = 2000      # hold this long for SILENT (the PDR said 5000)
+CANCEL_MS = 2000    # cancel window for SUSPICIOUS and MEDICAL
+
+# Other settings you can add here (defaults in main.py):
+# LORA_CS = 26, LORA_RST = 6, I2C_SDA = 23, I2C_SCL = 24, BME280_ADDR = 0x77,
+# MOTOR_STRENGTH = 100, LORA_ACK = True, ACK_WAIT_MS = 1000, LORA_TRIES = 3,
+# GPS_MAX_AGE_S = 60, LOW_BATTERY_PCT = 20

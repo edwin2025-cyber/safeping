@@ -1,0 +1,6 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try
+123,STATUS,2026-11-07 22:09:00.519,LoRa,2026-11-07 22:09:01.046,yes,0.53,,,,,,-42,9.75,yes,,99586,20.99,100,yes,1
+124,MEDICAL,2026-11-07 22:09:11.307,LoRa,2026-11-07 22:09:11.698,yes,0.39,,,,,,-41,10.0,yes,,99582,21.01,100,yes,1
+125,MEDICAL,2026-11-07 22:09:27.407,LoRa,2026-11-07 22:09:27.798,yes,0.39,,,,,,-49,9.5,yes,,99587,21.04,100,yes,1
+126,STATUS,2026-11-07 22:10:05.768,LoRa,2026-11-07 22:10:06.160,yes,0.39,,,,,,-56,9.5,yes,,99584,21.09,100,yes,1
+127,MEDICAL,2026-11-07 22:10:12.707,LoRa,2026-11-07 22:10:13.100,yes,0.39,,,,,,-51,9.75,yes,,99585,21.09,100,yes,1

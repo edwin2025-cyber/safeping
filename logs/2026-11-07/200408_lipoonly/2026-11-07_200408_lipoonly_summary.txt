@@ -1,0 +1,22 @@
+SafePing field test summary
+label: lipoonly
+start: 2026-11-07 20:04:08.454
+end:   2026-11-07 20:05:33.552
+length: 85 s
+
+Fob alerts printed:          0
+  sent over LoRa:            0
+  not sent (Fob said so):    0
+  cancelled taps:            0
+  LoRa had a problem:        0
+  with a GPS position:       0
+Relay received (of LoRa):    0 of 0
+LOST (sent, never heard):    0
+Relay only (not in Fob log): 10  (ctr 72, 73, 74, 75, 76, 77, 78, 79, 80, 81)
+Changed on the way:          0
+Not-SafePing packets heard:  1
+
+Signal (dBm):  min -42  max -32  avg -34
+SNR (dB):      min 9.50  max 10.50  avg 9.90
+Fob print to Relay print (s): none
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)

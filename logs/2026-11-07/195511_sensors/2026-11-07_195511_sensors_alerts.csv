@@ -1,0 +1,6 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct
+57,STATUS,2026-11-07 19:55:22.975,NOT SENT,,no,,,,,,,,,,yes,99559,21.49,100
+58,STATUS,2026-11-07 19:55:45.444,LoRa,2026-11-07 19:55:45.747,yes,0.30,,,,,,-32,9.25,yes,,99565,21.47,100
+59,STATUS,2026-11-07 19:56:16.535,LoRa,2026-11-07 19:56:16.818,yes,0.28,,,,,,-51,10.0,yes,,99562,21.23,100
+60,STATUS,2026-11-07 19:56:37.095,NOT SENT,,no,,,,,,,,,,yes,99565,21.24,100
+61,STATUS,2026-11-07 19:57:05.505,LoRa,2026-11-07 19:57:05.806,yes,0.30,,,,,,-37,9.75,yes,,99565,21.37,100

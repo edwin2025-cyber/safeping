@@ -1,0 +1,10 @@
+# label resetB  fob COM15  relay COM14
+2026-11-07 18:35:51.639 INFO  FOB connected on COM15
+2026-11-07 18:35:51.639 INFO  RELAY connected on COM14
+2026-11-07 18:36:38.784 INFO  FOB problem on COM15: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-07 18:36:40.787 INFO  FOB connected on COM15
+2026-11-07 18:36:41.349 FOB   SafePing Fob FOB-001
+2026-11-07 18:36:41.350 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-07 18:36:41.350 FOB   WARNING: SECRET_KEY is the placeholder. The server will reject every message.
+2026-11-07 18:36:41.408 FOB   GPS on
+2026-11-07 18:36:41.701 FOB   WiFi not connected yet, will retry when an alert is sent

@@ -1,0 +1,26 @@
+# label floorwalk  fob COM15  relay COM14
+2026-11-07 22:12:40.145 INFO  FOB connected on COM15
+2026-11-07 22:12:40.145 INFO  RELAY connected on COM14
+2026-11-07 22:12:50.736 INFO  FOB problem on COM15: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-07 22:12:52.736 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:12:54.737 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:12:56.738 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:12:58.739 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:00.741 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:02.742 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:04.743 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:06.745 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:08.746 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:10.747 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:12.749 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:14.750 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:16.751 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:18.752 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:20.752 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:22.753 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:24.754 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:26.755 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:28.756 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:30.758 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:32.758 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 22:13:34.760 INFO  FOB problem on COM15: could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s

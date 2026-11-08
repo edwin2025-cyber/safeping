@@ -1,0 +1,18 @@
+# label recovery  fob COM15  relay COM14
+2026-11-07 18:34:05.367 INFO  RELAY connected on COM14
+2026-11-07 18:34:05.367 INFO  FOB connected on COM15
+2026-11-07 18:34:18.241 FOB   no GPS fix, sending without a location
+2026-11-07 18:34:18.241 FOB   SAFEPING_MSG {"ctr": 40, "v": 1, "sig": "dbc5ad170ad2c1d6dd1733eaa525d055c1a22b243709afd8d762f42af977f473", "id": "FOB-001", "type": "STATUS"}
+2026-11-07 18:34:18.242 FOB   send attempt 1 failed: no WiFi
+2026-11-07 18:34:18.582 FOB   sent over LoRa STATUS
+2026-11-07 18:34:18.584 FOB   >>> [VIBRATE: short]
+2026-11-07 18:34:18.585 RELAY SAFEPING_MSG {"ctr": 40, "v": 1, "sig": "dbc5ad170ad2c1d6dd1733eaa525d055c1a22b243709afd8d762f42af977f473", "id": "FOB-001", "type": "STATUS"}
+2026-11-07 18:34:18.587 RELAY from FOB-001 type STATUS ctr 40 signal -39 dBm, snr 10.0
+2026-11-07 18:34:35.159 FOB   >>> [VIBRATE: one]
+2026-11-07 18:34:37.181 FOB   no GPS fix, sending without a location
+2026-11-07 18:34:37.181 FOB   SAFEPING_MSG {"ctr": 41, "v": 1, "sig": "3462e5d59c624d27833995a6986cb81f433884daa150cfee4d8b8c6c5311854f", "id": "FOB-001", "type": "SUSPICIOUS"}
+2026-11-07 18:34:37.182 FOB   send attempt 1 failed: no WiFi
+2026-11-07 18:34:37.407 FOB   sent over LoRa SUSPICIOUS
+2026-11-07 18:34:37.408 FOB   >>> [VIBRATE: ok]
+2026-11-07 18:34:37.411 RELAY SAFEPING_MSG {"ctr": 41, "v": 1, "sig": "3462e5d59c624d27833995a6986cb81f433884daa150cfee4d8b8c6c5311854f", "id": "FOB-001", "type": "SUSPICIOUS"}
+2026-11-07 18:34:37.412 RELAY from FOB-001 type SUSPICIOUS ctr 41 signal -32 dBm, snr 9.0

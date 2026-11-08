@@ -1,0 +1,11 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct
+72,STATUS,,not in Fob log,2026-11-07 20:04:26.876,yes,,,,,,,-42,9.75,,,99581,21.47,100
+73,STATUS,,not in Fob log,2026-11-07 20:04:33.981,yes,,,,,,,-32,10.5,,,99580,21.48,100
+74,STATUS,,not in Fob log,2026-11-07 20:04:39.999,yes,,,,,,,-33,9.75,,,99580,21.48,100
+75,STATUS,,not in Fob log,2026-11-07 20:04:46.701,yes,,,,,,,-33,10.5,,,99580,21.48,100
+76,STATUS,,not in Fob log,2026-11-07 20:04:53.919,yes,,,,,,,-33,9.75,,,99579,21.48,100
+77,STATUS,,not in Fob log,2026-11-07 20:04:58.690,yes,,,,,,,-32,10.0,,,99580,21.49,100
+78,STATUS,,not in Fob log,2026-11-07 20:05:05.010,yes,,,,,,,-33,9.75,,,99577,21.48,100
+79,STATUS,,not in Fob log,2026-11-07 20:05:10.935,yes,,,,,,,-34,9.5,,,99578,21.48,100
+80,STATUS,,not in Fob log,2026-11-07 20:05:16.459,yes,,,,,,,-33,9.5,,,99580,21.47,100
+81,STATUS,,not in Fob log,2026-11-07 20:05:22.378,yes,,,,,,,-32,10.0,,,99579,21.47,100

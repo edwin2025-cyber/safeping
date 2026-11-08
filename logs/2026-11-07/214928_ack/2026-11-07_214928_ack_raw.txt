@@ -1,0 +1,58 @@
+# label ack  fob COM15  relay COM14
+2026-11-07 21:49:28.585 INFO  FOB connected on COM15
+2026-11-07 21:49:28.585 INFO  RELAY connected on COM14
+2026-11-07 21:49:40.430 FOB   no GPS fix, sending without a location
+2026-11-07 21:49:40.430 FOB   SAFEPING_MSG {"ctr": 116, "t": 2140, "id": "FOB-001", "v": 1, "bat": 100, "p": 99586, "type": "STATUS", "sig": "1da9e2db80099f5999984ad4eb26cc581347d747396f831d163f68c577b69e25"}
+2026-11-07 21:49:40.431 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:49:40.982 RELAY SAFEPING_MSG {"ctr": 116, "t": 2140, "id": "FOB-001", "v": 1, "bat": 100, "p": 99586, "type": "STATUS", "sig": "1da9e2db80099f5999984ad4eb26cc581347d747396f831d163f68c577b69e25"}
+2026-11-07 21:49:40.984 RELAY from FOB-001 type STATUS ctr 116 signal -33 dBm, snr 9.25
+2026-11-07 21:49:40.986 FOB   ACK received (try 1)
+2026-11-07 21:49:40.986 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 21:49:40.988 FOB   >>> [VIBRATE: short]
+2026-11-07 21:49:57.969 FOB   no GPS fix, sending without a location
+2026-11-07 21:49:57.970 FOB   SAFEPING_MSG {"ctr": 117, "t": 2141, "id": "FOB-001", "v": 1, "bat": 100, "p": 99588, "type": "STATUS", "sig": "9c0d4a25d1045857e0dfe8a2408380df9fbeb3b0710a8dc4cf5ac2af13c02b70"}
+2026-11-07 21:49:57.970 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:49:58.362 RELAY SAFEPING_MSG {"ctr": 117, "t": 2141, "id": "FOB-001", "v": 1, "bat": 100, "p": 99588, "type": "STATUS", "sig": "9c0d4a25d1045857e0dfe8a2408380df9fbeb3b0710a8dc4cf5ac2af13c02b70"}
+2026-11-07 21:49:58.364 RELAY from FOB-001 type STATUS ctr 117 signal -34 dBm, snr 9.75
+2026-11-07 21:49:58.364 FOB   ACK received (try 1)
+2026-11-07 21:49:58.365 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 21:49:58.367 FOB   >>> [VIBRATE: short]
+2026-11-07 21:50:03.579 FOB   no GPS fix, sending without a location
+2026-11-07 21:50:03.579 FOB   SAFEPING_MSG {"ctr": 118, "t": 2142, "id": "FOB-001", "v": 1, "bat": 100, "p": 99582, "type": "STATUS", "sig": "f8996682cdd28b9f1cc12c29b7334af9871036861361afc063b02bb4f89f5827"}
+2026-11-07 21:50:03.580 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:50:03.973 RELAY SAFEPING_MSG {"ctr": 118, "t": 2142, "id": "FOB-001", "v": 1, "bat": 100, "p": 99582, "type": "STATUS", "sig": "f8996682cdd28b9f1cc12c29b7334af9871036861361afc063b02bb4f89f5827"}
+2026-11-07 21:50:03.975 RELAY from FOB-001 type STATUS ctr 118 signal -34 dBm, snr 10.5
+2026-11-07 21:50:03.977 FOB   ACK received (try 1)
+2026-11-07 21:50:03.977 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 21:50:03.980 FOB   >>> [VIBRATE: short]
+2026-11-07 21:50:13.392 INFO  RELAY problem on COM14: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-07 21:50:15.394 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:17.394 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:18.979 FOB   no GPS fix, sending without a location
+2026-11-07 21:50:18.980 FOB   SAFEPING_MSG {"ctr": 119, "t": 2145, "id": "FOB-001", "v": 1, "bat": 100, "p": 99585, "type": "STATUS", "sig": "a46cd9e4d50e6dfca4bee7e16e2d71b62a43bde5a7ce0b9544c9f25250a2951e"}
+2026-11-07 21:50:18.981 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:50:19.395 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:20.391 FOB   ACK missing (try 1 of 3)
+2026-11-07 21:50:21.396 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:21.789 FOB   ACK missing (try 2 of 3)
+2026-11-07 21:50:23.183 FOB   ACK missing (try 3 of 3)
+2026-11-07 21:50:23.184 FOB   NOT CONFIRMED STATUS (no ack from the Relay)
+2026-11-07 21:50:23.186 FOB   >>> [VIBRATE: fail]
+2026-11-07 21:50:23.397 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:25.398 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:27.399 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:29.400 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:31.400 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:33.402 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:35.403 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-07 21:50:37.406 INFO  RELAY connected on COM14
+2026-11-07 21:50:38.665 RELAY Listening for SafePing alerts. Press Ctrl+C to stop.
+2026-11-07 21:50:38.665 RELAY Ack keys for: FOB-001
+2026-11-07 21:50:46.428 FOB   no GPS fix, sending without a location
+2026-11-07 21:50:46.429 FOB   SAFEPING_MSG {"ctr": 120, "t": 2150, "id": "FOB-001", "v": 1, "bat": 100, "p": 99588, "type": "STATUS", "sig": "f4d1df9e4519d419cb312b14e184d1a05cfc3065322cd4ef03893ecb7c09af60"}
+2026-11-07 21:50:46.430 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:50:46.846 RELAY SAFEPING_MSG {"ctr": 120, "t": 2150, "id": "FOB-001", "v": 1, "bat": 100, "p": 99588, "type": "STATUS", "sig": "f4d1df9e4519d419cb312b14e184d1a05cfc3065322cd4ef03893ecb7c09af60"}
+2026-11-07 21:50:46.848 RELAY from FOB-001 type STATUS ctr 120 signal -32 dBm, snr 9.75
+2026-11-07 21:50:46.849 FOB   ACK received (try 1)
+2026-11-07 21:50:46.849 FOB   sent over LoRa STATUS confirmed by the Relay
+2026-11-07 21:50:46.852 FOB   >>> [VIBRATE: short]

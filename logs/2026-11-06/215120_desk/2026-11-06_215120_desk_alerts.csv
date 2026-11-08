@@ -1,0 +1,5 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message
+21,STATUS,2026-11-06 21:51:46.883,LoRa,2026-11-06 21:51:47.252,yes,0.37,,,,,,-48,9.5,yes
+22,SUSPICIOUS,2026-11-06 21:52:01.134,LoRa,2026-11-06 21:52:01.390,yes,0.26,,,,,,-49,10.0,yes
+23,MEDICAL,2026-11-06 21:52:27.144,LoRa,2026-11-06 21:52:27.394,yes,0.25,,,,,,-48,9.25,yes
+24,SILENT,2026-11-06 21:52:40.555,LoRa,2026-11-06 21:52:40.805,yes,0.25,,,,,,-48,10.0,yes

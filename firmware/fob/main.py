@@ -5,12 +5,13 @@ Runs in Wokwi or on the real board. Follows message-format.md (version 1).
 Button patterns
   1 press         STATUS      white blink, sent right away, never texts anyone
   2 presses       SUSPICIOUS  yellow slow blink, 2 s cancel window, then sent
-  3 or more       MEDICAL     red fast blink + steady buzz, 2 s cancel window, then sent
-  hold 5 s        SILENT      no light at all, buzz only, sent right away
+  3 or more       MEDICAL     red fast blink + pulsed buzz, 2 s cancel window, then sent
+  hold            SILENT      no light at all, buzz only, sent right away
+                              (hold time is HOLD_MS, 2 s on the bench in config.py)
 
 Cancel window
   The alert is held for 2 s before it is sent. A quick tap cancels it and nothing
-  is sent (message-format.md has no cancel message). Holding 5 s during the window
+  is sent (message-format.md has no cancel message). Holding during the window
   turns it into a SILENT alert instead. For MEDICAL, extra presses in the first
   0.6 s count as part of the pattern and do not cancel.
 
@@ -39,6 +40,10 @@ try:
     import config
 except ImportError:
     config = None
+try:
+    import ackcheck                  # signed acks (ackcheck.py must be on the board)
+except ImportError:
+    ackcheck = None
 
 
 def _cfg(name, default):
@@ -64,6 +69,32 @@ RGB_PINS = _cfg("RGB_PINS", (2, 4, 5))        # red, green, blue
 RGB_COMMON_ANODE = _cfg("RGB_COMMON_ANODE", False)
 NEOPIXEL_PIN = _cfg("NEOPIXEL_PIN", 8)
 MOTOR_PIN = _cfg("MOTOR_PIN", 18)             # drives the PN2222 base (or a stand-in LED in Wokwi)
+MOTOR_STRENGTH = _cfg("MOTOR_STRENGTH", 100)  # percent. PWM duty while the motor is on
+MOTOR_FREQ = _cfg("MOTOR_FREQ", 200)          # PWM switching speed in Hz
+MOTOR_MAX_MS = _cfg("MOTOR_MAX_MS", 5000)     # safety cap: the motor never stays on longer
+MEDICAL_PULSE_ON_MS = _cfg("MEDICAL_PULSE_ON_MS", 200)    # MEDICAL cancel window buzz
+MEDICAL_PULSE_OFF_MS = _cfg("MEDICAL_PULSE_OFF_MS", 100)
+RESULT_GAP_MS = _cfg("RESULT_GAP_MS", 300)    # silence before the sent / not sent buzz
+
+# LoRa radio (the fallback when WiFi fails). These are the bench wiring.
+LORA_SCK = _cfg("LORA_SCK", 10)
+LORA_MOSI = _cfg("LORA_MOSI", 8)
+LORA_MISO = _cfg("LORA_MISO", 9)
+LORA_CS = _cfg("LORA_CS", 26)
+LORA_RST = _cfg("LORA_RST", 6)
+
+# GPS wing (UART). Wing TX goes to the board RX pin, wing RX to the board TX pin.
+GPS_UART = _cfg("GPS_UART", 1)
+GPS_TX = _cfg("GPS_TX", 11)
+GPS_RX = _cfg("GPS_RX", 12)
+GPS_MAX_AGE_S = _cfg("GPS_MAX_AGE_S", 60)         # a fix older than this is not sent
+
+# I2C bus: BME280 on the Qwiic port and the board's own MAX17048 battery gauge (0x36).
+# Bench scan 2026-11-07: I2C(0) is SDA 23, SCL 24 and shows 0x36 and 0x77.
+I2C_SDA = _cfg("I2C_SDA", 23)
+I2C_SCL = _cfg("I2C_SCL", 24)
+BME280_ADDR = _cfg("BME280_ADDR", 0x77)            # SparkFun default. 0x76 if the jumper is cut
+LOW_BATTERY_PCT = _cfg("LOW_BATTERY_PCT", 20)      # LED dims below this
 
 # Timing, in milliseconds
 DEBOUNCE_MS = _cfg("DEBOUNCE_MS", 30)
@@ -72,9 +103,14 @@ HOLD_MS = _cfg("HOLD_MS", 5000)                  # hold this long for SILENT
 CANCEL_MS = _cfg("CANCEL_MS", 2000)              # cancel window for SUSPICIOUS and MEDICAL
 COOLDOWN_MS = _cfg("COOLDOWN_MS", 3000)          # presses ignored this long after an alert
 CONFIRM_MS = _cfg("CONFIRM_MS", 3000)            # solid color shown after the alert is sent
-PRESS_TICK_MS = _cfg("PRESS_TICK_MS", 40)        # tiny buzz on each press (0 turns it off)
+PRESS_TICK_MS = _cfg("PRESS_TICK_MS", 0)         # buzz on each press. 0 = off (Edwin's choice
+                                                 # 2026-11-07: 40 ms was too short to feel)
 WIFI_TIMEOUT_MS = _cfg("WIFI_TIMEOUT_MS", 10000)
 SEND_ATTEMPTS = _cfg("SEND_ATTEMPTS", 3)
+LORA_ACK = _cfg("LORA_ACK", True)                # wait for the Relay to answer "ACK <id> <ctr>"
+ACK_WAIT_MS = _cfg("ACK_WAIT_MS", 1000)          # how long to listen for the ack after each send
+LORA_TRIES = _cfg("LORA_TRIES", 3)               # sends of the same message before giving up
+ACK_KEY = ackcheck.ack_key(SECRET_KEY.encode()) if ackcheck else None
 LOOP_MS = 10
 
 # Colors (red, green, blue 0-255)
@@ -86,12 +122,15 @@ ORANGE = (255, 90, 0)
 OFF = (0, 0, 0)
 
 # Buzz patterns: list of (motor on? 1/0, milliseconds)
+# Chosen on the bench 2026-11-07 with tests/motor_test.py. The motor needs about
+# 50 to 100 ms to spin up, so 100 ms pulses felt too weak. "ok" and "fail" must feel
+# different without looking, because SILENT has no light.
 PATTERNS = {
     "tick": [(1, PRESS_TICK_MS)],
     "short": [(1, 150)],
     "one": [(1, 300)],
-    "ok": [(1, 100), (0, 100), (1, 100)],
-    "fail": [(1, 100), (0, 100), (1, 100), (0, 100), (1, 100)],
+    "ok": [(1, 250), (0, 150), (1, 250)],      # sent: two medium buzzes
+    "fail": [(1, 1200)],                        # not sent: one long buzz
 }
 
 # States
@@ -156,19 +195,214 @@ def next_counter():
 
 
 # ---------- sensors (stubs until the hardware is on the bench) ----------
+_gps = None
+
+
+def gps_start():
+    """Start the GPS wing. Returns True if it started. The Fob works without it."""
+    global _gps
+    try:
+        import gps as gps_module
+        _gps = gps_module.GPS(uart_id=GPS_UART, tx=GPS_TX, rx=GPS_RX)
+        return True
+    except Exception as err:             # no gps.py on the board, or the pins are wrong
+        print("GPS off:", err)
+        _gps = None
+        return False
+
+
+def gps_poll():
+    """Read any new GPS data. Called many times a second so the buffer never fills."""
+    if _gps is not None:
+        try:
+            _gps.update()
+        except Exception as err:
+            print("GPS read error:", err)
+
+
 def read_gps():
-    """Return (lat_microdeg, lon_microdeg, accuracy_m) or None. Written when the GPS arrives."""
-    return None
+    """Return (lat_microdeg, lon_microdeg, accuracy_m) or None if there is no recent fix."""
+    if _gps is None or not _gps.has_fix or _gps.lat_e6 is None:
+        return None
+    age = _gps.age_s()
+    if age is None or age > GPS_MAX_AGE_S:
+        return None
+    try:
+        acc = int(float(_gps.hdop) * 5)  # rough: HDOP times about 5 m
+    except ValueError:
+        acc = 10
+    return _gps.lat_e6, _gps.lon_e6, max(acc, 1)
+
+
+_bme = None
+_gauge = None
+
+
+def sensors_start():
+    """Start the BME280 and the battery gauge. Returns a short status line.
+    The Fob still works if either one is missing."""
+    global _bme, _gauge
+    try:
+        from machine import I2C
+        i2c = I2C(0, scl=Pin(I2C_SCL), sda=Pin(I2C_SDA), freq=400000)
+    except Exception as err:
+        return "I2C off: {}".format(err)
+    parts = []
+    try:
+        import bme280
+        _bme = bme280.BME280(i2c, BME280_ADDR)
+        parts.append("pressure on")
+    except Exception as err:            # no bme280.py, not plugged in, or wrong address
+        _bme = None
+        parts.append("pressure off ({})".format(err))
+    try:
+        import max17048
+        _gauge = max17048.MAX17048(i2c)
+        parts.append("battery gauge on")
+    except Exception as err:
+        _gauge = None
+        parts.append("battery gauge off ({})".format(err))
+    return ", ".join(parts)
+
+
+def read_battery():
+    """Battery percent, or None if there is no gauge.
+    Note: with no LiPo plugged in, the gauge still answers but the number means nothing."""
+    if _gauge is None:
+        return None
+    try:
+        return _gauge.percent()
+    except Exception as err:
+        print("battery read error:", err)
+        return None
 
 
 def read_sensors():
-    """Return a dict that may hold p (pascals), t (hundredths of C), bat (percent)."""
-    return {}
+    """Return a dict that may hold p (pascals), t (hundredths of C), bat (percent).
+    A sensor that fails is left out, so the alert still goes out."""
+    out = {}
+    if _bme is not None:
+        try:
+            p, t = _bme.read()
+            if p is not None:
+                out["p"], out["t"] = p, t
+        except Exception as err:
+            print("pressure read error:", err)
+    bat = read_battery()
+    if bat is not None:
+        out["bat"] = bat
+    return out
+
+
+_radio = None
+
+
+def _lora_radio():
+    """Start the radio the first time it is needed, then keep using it."""
+    global _radio
+    if _radio is None:
+        from machine import SPI
+        import sx127x
+        spi = SPI(1, baudrate=1000000, polarity=0, phase=0,
+                  sck=Pin(LORA_SCK), mosi=Pin(LORA_MOSI), miso=Pin(LORA_MISO))
+        radio = sx127x.SX127x(spi, Pin(LORA_CS, Pin.OUT, value=1), Pin(LORA_RST, Pin.OUT, value=1))
+        radio.begin()                    # raises OSError if the radio does not answer
+        _radio = radio
+    return _radio
+
+
+def _lora_report(radio):
+    """Print what the radio says about itself, so a failure in the log shows its cause.
+    version 0x00 or 0xff = the board cannot talk to the radio (wire or power).
+    mode without 0x80 = the radio reset and lost its LoRa settings."""
+    if radio is None:
+        return
+    try:
+        print("LoRa check: version 0x{:02x}, mode 0x{:02x}".format(
+            radio.read_reg(0x42), radio.read_reg(0x01)))
+    except Exception as err:
+        print("LoRa check failed:", err)
 
 
 def lora_send(payload):
-    """Fallback when WiFi fails. Written when the LoRa radio arrives. Return True if sent."""
+    """Fallback when WiFi fails. Sends the signed message as one LoRa packet.
+    Returns True if the radio says the packet left the antenna.
+    If the first try fails, the radio is set up again from scratch and tried once more."""
+    global _radio
+    data = payload.encode()
+    if len(data) > 255:                  # retrying would not help, so stop here
+        print("LoRa failed: message is", len(data), "bytes, the limit is 255")
+        return False
+    for attempt in (1, 2):
+        try:
+            if _lora_radio().send(data):
+                if attempt == 2:
+                    print("LoRa worked after setting the radio up again")
+                return True
+            print("LoRa failed: the radio never finished sending (timeout)")
+        except Exception as err:         # no radio, bad wiring, or radio lost its settings
+            print("LoRa failed:", err)
+        _lora_report(_radio)
+        _radio = None                    # next _lora_radio() call runs begin() again
+        if attempt == 1:
+            print("LoRa: setting the radio up again and trying once more")
     return False
+
+
+def _wait_for_ack(expected, wait_ms):
+    """Listen up to wait_ms for the exact signed ack. Other packets (another Fob's
+    alert, noise) are ignored and listening continues until the time is up.
+    An ack for this Fob with a wrong signature is reported and ignored."""
+    deadline = time.ticks_add(time.ticks_ms(), wait_ms)
+    while True:
+        left = time.ticks_diff(deadline, time.ticks_ms())
+        if left <= 0:
+            return False
+        try:
+            packet = _lora_radio().receive(timeout_ms=left)
+        except Exception as err:
+            print("ACK wait failed:", err)
+            return False
+        if packet is None:
+            return False
+        if packet[0] == expected:
+            return True
+        if packet[0].startswith(expected[:expected.rfind(b" ") + 1]):
+            print("ACK rejected: bad signature")       # someone faking or replaying an ack
+        elif packet[0].startswith(b"ACK " + DEVICE_ID.encode() + b" "):
+            print("ACK rejected: not for this alert")
+
+
+def lora_send_confirmed(payload, ctr, sig):
+    """Send over LoRa and wait for the Relay to confirm it stored the alert.
+
+    The Relay stores the alert in its flash, then answers with a signed ack
+    "ACK <id> <ctr> <mac>" (see ackcheck.py). If no valid ack comes back, the SAME
+    message (same ctr, same signature) is sent again, up to LORA_TRIES times.
+    Returns:
+      "confirmed"    the Relay stored it and sent a valid signed ack
+      "unconfirmed"  it left the antenna but no ack came back (the Relay may still have it)
+      "failed"       the radio could not send at all
+      "sent"         acks are switched off (LORA_ACK = False) and it left the antenna
+    Note: the ack proves the Relay stored it, not yet that the server saved it."""
+    if not LORA_ACK:
+        return "sent" if lora_send(payload) else "failed"
+    if ACK_KEY is None:                  # no ackcheck.py: we cannot check acks, so never claim one
+        if not lora_send(payload):
+            return "failed"
+        print("ACK not checked: ackcheck.py is missing on the Fob")
+        return "unconfirmed"
+    expected = ackcheck.ack_text(ACK_KEY, DEVICE_ID, ctr, sig).encode()
+    sent_once = False
+    for attempt in range(1, LORA_TRIES + 1):
+        if not lora_send(payload):       # radio problem (it already retried inside)
+            return "unconfirmed" if sent_once else "failed"
+        sent_once = True
+        if _wait_for_ack(expected, ACK_WAIT_MS):
+            print("ACK received (try {})".format(attempt))
+            return "confirmed"
+        print("ACK missing (try {} of {})".format(attempt, LORA_TRIES))
+    return "unconfirmed"
 
 
 # ---------- the message ----------
@@ -189,10 +423,15 @@ def build_message(kind):
 
 # ---------- network ----------
 def wifi_connect(service=None):
+    if not WIFI_SSID or WIFI_SSID.lower() == "none":
+        return False                    # WiFi is switched off in config.py (bench testing)
     sta = network.WLAN(network.STA_IF)
     sta.active(True)
     if not sta.isconnected():
-        sta.connect(WIFI_SSID, WIFI_PASSWORD)
+        try:
+            sta.connect(WIFI_SSID, WIFI_PASSWORD)
+        except OSError:
+            pass                        # an attempt is already running, so keep waiting for it
     start = time.ticks_ms()
     while not sta.isconnected() and time.ticks_diff(time.ticks_ms(), start) < WIFI_TIMEOUT_MS:
         if service:
@@ -274,28 +513,78 @@ class Led:
 
 # ---------- vibration motor ----------
 class Motor:
+    """Vibration motor through the PN2222 on MOTOR_PIN.
+
+    PWM sets the strength (MOTOR_STRENGTH percent).
+    play(name)      runs one pattern from PATTERNS.
+    start_hold()    pulses (MEDICAL_PULSE_ON_MS on, MEDICAL_PULSE_OFF_MS off) until stop().
+    before_send()   turns the motor fully off right before the radio or WiFi sends.
+    Safety: the motor is never on for longer than MOTOR_MAX_MS in one go, and a pulsed
+    hold never lasts longer than MOTOR_MAX_MS either.
+
+    The motor must never run while the radio transmits. Bench test 2026-11-07: with the
+    motor on, every LoRa send timed out (version 0x12, mode 0x81, TX never finished).
+    With the motor off, the same send worked. Motor and radio share the 3V3 supply."""
+
     def __init__(self):
-        self.pin = Pin(MOTOR_PIN, Pin.OUT, value=0)
+        self.pwm = PWM(Pin(MOTOR_PIN), freq=MOTOR_FREQ, duty_u16=0)
+        self.on_duty = 65535 * max(0, min(100, MOTOR_STRENGTH)) // 100
         self.queue = []
         self.level = 0
         self.until = None
-        self.hold = False                 # True = buzz steadily until told otherwise
+        self.hold = False                 # True = pulse until told otherwise (MEDICAL)
+        self.hold_start = 0
+        self.on_since = None
+        self.shown = False
 
-    def play(self, name):
+    def _duty(self, value):
+        if hasattr(self.pwm, "duty_u16"):
+            self.pwm.duty_u16(value)
+        else:
+            self.pwm.duty(value // 64)
+
+    def _write(self, on, now):
+        if on:
+            if self.on_since is None:
+                self.on_since = now
+            elif time.ticks_diff(now, self.on_since) > MOTOR_MAX_MS:
+                print("motor safety cap reached, turning it off")
+                self.stop()
+                return
+        else:
+            self.on_since = None
+        on = bool(on)
+        if on != self.shown:
+            self.shown = on
+            self._duty(self.on_duty if on else 0)
+
+    def play(self, name, gap_ms=0):
+        """gap_ms = silence first, so the pattern does not blur into a buzz before it."""
         if name == "tick" and PRESS_TICK_MS <= 0:
             return
-        self.queue = list(PATTERNS[name])
+        self.queue = ([(0, gap_ms)] if gap_ms else []) + list(PATTERNS[name])
         self.until = None
         if name != "tick":
             print(">>> [VIBRATE: {}]".format(name))
         self.update(time.ticks_ms())
+
+    def start_hold(self):
+        self.hold = True
+        self.hold_start = time.ticks_ms()
+        self.update(self.hold_start)
+
+    def before_send(self):
+        """Called right before sending. Motor fully off while the radio transmits."""
+        self.stop()
 
     def stop(self):
         self.queue = []
         self.level = 0
         self.until = None
         self.hold = False
-        self.pin.value(0)
+        self.on_since = None
+        self.shown = False
+        self._duty(0)
 
     def busy(self):
         return bool(self.queue) or (self.until is not None and time.ticks_diff(time.ticks_ms(), self.until) < 0)
@@ -307,7 +596,15 @@ class Motor:
                 self.until = time.ticks_add(now, ms)
             else:
                 self.level, self.until = 0, None
-        self.pin.value(1 if (self.hold or self.level) else 0)
+        pulse = False
+        if self.hold:
+            elapsed = time.ticks_diff(now, self.hold_start)
+            if elapsed > MOTOR_MAX_MS:
+                print("motor safety cap reached, ending the MEDICAL buzz")
+                self.hold = False
+            else:
+                pulse = elapsed % (MEDICAL_PULSE_ON_MS + MEDICAL_PULSE_OFF_MS) < MEDICAL_PULSE_ON_MS
+        self._write(pulse or self.level, now)
 
     def run(self, name):
         """Play a pattern and wait for it to finish (used right before a slow network call)."""
@@ -354,11 +651,21 @@ class Fob:
     def service(self, now):
         self.led.update(now)
         self.motor.update(now)
+        gps_poll()
 
     def boot(self):
         print("SafePing Fob", DEVICE_ID)
+        print("LoRa fallback on: CS", LORA_CS, "RST", LORA_RST)
         if SECRET_KEY.startswith("paste-the-key"):
             print("WARNING: SECRET_KEY is the placeholder. The server will reject every message.")
+        print("GPS on" if gps_start() else "GPS not started, alerts will have no location")
+        print("Sensors:", sensors_start())
+        if not LORA_ACK:
+            print("LoRa acks: off")
+        elif ACK_KEY is None:
+            print("WARNING: ackcheck.py missing, LoRa alerts will never show as confirmed")
+        else:
+            print("LoRa acks: signed, waiting up to", ACK_WAIT_MS, "ms, up to", LORA_TRIES, "tries")
         self.led.show(WHITE, duration_ms=200)
         self.motor.run("tick")
         time.sleep_ms(250)
@@ -376,14 +683,18 @@ class Fob:
         self.refresh_battery()
 
     def refresh_battery(self):
-        bat = read_sensors().get("bat")
-        self.led.scale = 40 if (bat is not None and bat < 20) else 100
+        bat = read_battery()
+        self.led.scale = 40 if (bat is not None and bat < LOW_BATTERY_PCT) else 100
 
     # --- sending ---
     def send(self, kind):
         """Build, sign and send one message. Returns True if the broker accepted it."""
-        self.motor.hold = self.motor.hold and kind == "MEDICAL"
+        self.motor.before_send()           # motor off while the radio transmits
         msg = build_message(kind)
+        if "lat" in msg:
+            print("location sent, accuracy about", msg["acc"], "m")
+        else:
+            print("no GPS fix, sending without a location")
         payload = json.dumps(msg)
         print("SAFEPING_MSG " + payload)
         for attempt in range(SEND_ATTEMPTS):
@@ -395,9 +706,16 @@ class Fob:
                 return True
             except Exception as err:
                 print("send attempt", attempt + 1, "failed:", err)
-        if lora_send(payload):
+        result = lora_send_confirmed(payload, msg["ctr"], msg["sig"])
+        if result == "confirmed":
+            print("sent over LoRa", kind, "confirmed by the Relay")
+            return True
+        if result == "sent":
             print("sent over LoRa", kind)
             return True
+        if result == "unconfirmed":
+            print("NOT CONFIRMED", kind, "(no ack from the Relay)")
+            return False
         print("NOT SENT", kind)
         return False
 
@@ -407,20 +725,20 @@ class Fob:
         self.motor.stop()
         color = {"SUSPICIOUS": YELLOW, "MEDICAL": RED}.get(kind, WHITE)
         if kind == "SILENT":
-            self.motor.play("ok" if ok else "fail")     # no light, ever
+            self.motor.play("ok" if ok else "fail", RESULT_GAP_MS)     # no light, ever
         elif kind == "STATUS":
             if ok:
                 self.led.show(WHITE, 150, 150, 300)
                 self.motor.play("short")
             else:
                 self.led.show(ORANGE, duration_ms=CONFIRM_MS)
-                self.motor.play("fail")
+                self.motor.play("fail", RESULT_GAP_MS)
         elif ok:
             self.led.show(color, duration_ms=CONFIRM_MS)    # solid = confirmed
-            self.motor.play("ok")
+            self.motor.play("ok", RESULT_GAP_MS)
         else:
             self.led.show(ORANGE, duration_ms=CONFIRM_MS)   # orange = connection problem
-            self.motor.play("fail")
+            self.motor.play("fail", RESULT_GAP_MS)
         self.refresh_battery()
         self.pending = None
         if kind == "STATUS":
@@ -448,7 +766,7 @@ class Fob:
         self.state = PENDING
         if kind == "MEDICAL":
             self.led.show(RED, 150, 150)
-            self.motor.hold = True
+            self.motor.start_hold()
         else:
             self.led.show(YELLOW, 500, 500)
             self.motor.play("one")

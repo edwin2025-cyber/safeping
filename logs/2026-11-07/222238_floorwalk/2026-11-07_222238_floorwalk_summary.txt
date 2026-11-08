@@ -1,0 +1,28 @@
+SafePing field test summary
+label: floorwalk
+start: 2026-11-07 22:22:38.502
+end:   2026-11-07 22:33:57.676
+length: 679 s
+
+Fob alerts printed:          0
+  sent over LoRa:            0
+  not sent (Fob said so):    0
+  cancelled taps:            0
+  LoRa had a problem:        0
+  with a GPS position:       0
+Relay received (of LoRa):    0 of 0
+Confirmed by ack:            0 of 0
+  needed a resend:           0
+  NOT confirmed:             0
+  not confirmed but Relay had it (ack lost): 0
+Duplicates at the Relay:     0
+Fake or wrong acks rejected: 0
+LOST (sent, never heard):    0
+Relay only (not in Fob log): 17  (ctr 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 144, 146, 147, 148)
+Changed on the way:          0
+Not-SafePing packets heard:  2
+
+Signal (dBm):  min -102  max -35  avg -81
+SNR (dB):      min -4.00  max 10.25  avg 6.41
+Fob print to Relay print (s): none
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)

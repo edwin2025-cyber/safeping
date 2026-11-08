@@ -1,0 +1,18 @@
+# label ackfake  fob COM15  relay COM14
+2026-11-07 21:54:09.478 INFO  FOB connected on COM15
+2026-11-07 21:54:09.479 INFO  RELAY connected on COM14
+2026-11-07 21:54:15.951 FOB   no GPS fix, sending without a location
+2026-11-07 21:54:15.952 FOB   SAFEPING_MSG {"type": "STATUS", "p": 99584, "bat": 100, "sig": "ab7b1e6762997d72d86a875647ebb4a3da8577f07e77e08cfb33fc4169c09187", "t": 2151, "ctr": 121, "ts": 1794088455, "v": 1, "id": "FOB-001"}
+2026-11-07 21:54:15.953 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:54:16.534 RELAY SAFEPING_MSG {"type": "STATUS", "p": 99584, "bat": 100, "sig": "ab7b1e6762997d72d86a875647ebb4a3da8577f07e77e08cfb33fc4169c09187", "t": 2151, "ctr": 121, "ts": 1794088455, "v": 1, "id": "FOB-001"}
+2026-11-07 21:54:16.535 RELAY from FOB-001 type STATUS ctr 121 signal -33 dBm, snr 9.25
+2026-11-07 21:54:16.536 FOB   ACK rejected: bad signature
+2026-11-07 21:54:17.466 FOB   ACK missing (try 1 of 3)
+2026-11-07 21:54:17.866 RELAY duplicate of FOB-001 ctr 121 (acked again)
+2026-11-07 21:54:17.868 FOB   ACK rejected: bad signature
+2026-11-07 21:54:18.851 FOB   ACK missing (try 2 of 3)
+2026-11-07 21:54:19.250 RELAY duplicate of FOB-001 ctr 121 (acked again)
+2026-11-07 21:54:19.251 FOB   ACK rejected: bad signature
+2026-11-07 21:54:20.238 FOB   ACK missing (try 3 of 3)
+2026-11-07 21:54:20.239 FOB   NOT CONFIRMED STATUS (no ack from the Relay)
+2026-11-07 21:54:20.241 FOB   >>> [VIBRATE: fail]

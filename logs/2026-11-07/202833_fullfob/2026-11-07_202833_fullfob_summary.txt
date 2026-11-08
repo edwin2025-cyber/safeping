@@ -1,0 +1,22 @@
+SafePing field test summary
+label: fullfob
+start: 2026-11-07 20:28:33.382
+end:   2026-11-07 20:31:53.858
+length: 200 s
+
+Fob alerts printed:          15
+  sent over LoRa:            13
+  not sent (Fob said so):    2  (ctr 94, 104)
+  cancelled taps:            2
+  LoRa had a problem:        4  (ctr 92, 93, 94, 104)
+  with a GPS position:       15
+Relay received (of LoRa):    13 of 13
+LOST (sent, never heard):    0
+Relay only (not in Fob log): 0
+Changed on the way:          0
+Not-SafePing packets heard:  1
+
+Signal (dBm):  min -53  max -43  avg -46
+SNR (dB):      min 9.25  max 10.25  avg 9.69
+Fob print to Relay print (s): min 0.34  max 6.01  avg 1.21
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)

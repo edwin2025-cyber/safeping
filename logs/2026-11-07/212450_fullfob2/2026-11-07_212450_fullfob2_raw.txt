@@ -1,0 +1,75 @@
+# label fullfob2  fob COM15  relay COM14
+2026-11-07 21:24:50.172 INFO  RELAY connected on COM14
+2026-11-07 21:24:50.173 INFO  FOB connected on COM15
+2026-11-07 21:25:05.984 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:05.984 FOB   SAFEPING_MSG {"ctr": 107, "t": 2156, "id": "FOB-001", "v": 1, "bat": 100, "p": 99596, "type": "STATUS", "sig": "acadab2e0848fcc252fcdb22a1788ca580f79642767af1a91e128e4b0a9ae949"}
+2026-11-07 21:25:05.985 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:06.391 FOB   sent over LoRa STATUS
+2026-11-07 21:25:06.394 FOB   >>> [VIBRATE: short]
+2026-11-07 21:25:06.394 RELAY SAFEPING_MSG {"ctr": 107, "t": 2156, "id": "FOB-001", "v": 1, "bat": 100, "p": 99596, "type": "STATUS", "sig": "acadab2e0848fcc252fcdb22a1788ca580f79642767af1a91e128e4b0a9ae949"}
+2026-11-07 21:25:06.396 RELAY from FOB-001 type STATUS ctr 107 signal -28 dBm, snr 0.5
+2026-11-07 21:25:11.333 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:11.333 FOB   SAFEPING_MSG {"ctr": 108, "t": 2160, "id": "FOB-001", "v": 1, "bat": 100, "p": 99583, "type": "STATUS", "sig": "f635adf96e16076be704bcf2e85ec5af19eeed5e459495f8d2518b6d81f454f7"}
+2026-11-07 21:25:11.334 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:11.607 FOB   sent over LoRa STATUS
+2026-11-07 21:25:11.610 FOB   >>> [VIBRATE: short]
+2026-11-07 21:25:11.611 RELAY SAFEPING_MSG {"ctr": 108, "t": 2160, "id": "FOB-001", "v": 1, "bat": 100, "p": 99583, "type": "STATUS", "sig": "f635adf96e16076be704bcf2e85ec5af19eeed5e459495f8d2518b6d81f454f7"}
+2026-11-07 21:25:11.612 RELAY from FOB-001 type STATUS ctr 108 signal -29 dBm, snr 9.25
+2026-11-07 21:25:17.201 FOB   >>> [VIBRATE: one]
+2026-11-07 21:25:19.263 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:19.264 FOB   SAFEPING_MSG {"ctr": 109, "t": 2163, "id": "FOB-001", "v": 1, "bat": 100, "p": 99596, "type": "SUSPICIOUS", "sig": "5c7474e914e3ccdce5b7579b2115001a584c74fa0aa13bcd9221ddc32e42cbf3"}
+2026-11-07 21:25:19.265 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:19.541 FOB   sent over LoRa SUSPICIOUS
+2026-11-07 21:25:19.543 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:25:19.548 RELAY SAFEPING_MSG {"ctr": 109, "t": 2163, "id": "FOB-001", "v": 1, "bat": 100, "p": 99596, "type": "SUSPICIOUS", "sig": "5c7474e914e3ccdce5b7579b2115001a584c74fa0aa13bcd9221ddc32e42cbf3"}
+2026-11-07 21:25:19.550 RELAY from FOB-001 type SUSPICIOUS ctr 109 signal -30 dBm, snr 9.75
+2026-11-07 21:25:24.259 FOB   >>> [VIBRATE: one]
+2026-11-07 21:25:26.333 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:26.334 FOB   SAFEPING_MSG {"ctr": 110, "t": 2165, "id": "FOB-001", "v": 1, "bat": 100, "p": 99594, "type": "SUSPICIOUS", "sig": "a33ae2f0b4e95a4052b7259208a5a335921294409023459c165bee4ee628d476"}
+2026-11-07 21:25:26.334 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:26.612 FOB   sent over LoRa SUSPICIOUS
+2026-11-07 21:25:26.613 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:25:26.615 RELAY SAFEPING_MSG {"ctr": 110, "t": 2165, "id": "FOB-001", "v": 1, "bat": 100, "p": 99594, "type": "SUSPICIOUS", "sig": "a33ae2f0b4e95a4052b7259208a5a335921294409023459c165bee4ee628d476"}
+2026-11-07 21:25:26.617 RELAY from FOB-001 type SUSPICIOUS ctr 110 signal -31 dBm, snr 9.5
+2026-11-07 21:25:34.063 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:34.064 FOB   SAFEPING_MSG {"ctr": 111, "t": 2168, "id": "FOB-001", "v": 1, "bat": 100, "p": 99592, "type": "MEDICAL", "sig": "c4979251a996d0c573dcb78fffb6015f65a61508b5edc0652f922bbe87b61de9"}
+2026-11-07 21:25:34.064 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:34.337 FOB   sent over LoRa MEDICAL
+2026-11-07 21:25:34.339 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:25:34.341 RELAY SAFEPING_MSG {"ctr": 111, "t": 2168, "id": "FOB-001", "v": 1, "bat": 100, "p": 99592, "type": "MEDICAL", "sig": "c4979251a996d0c573dcb78fffb6015f65a61508b5edc0652f922bbe87b61de9"}
+2026-11-07 21:25:34.343 RELAY from FOB-001 type MEDICAL ctr 111 signal -30 dBm, snr 10.0
+2026-11-07 21:25:43.512 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:43.513 FOB   SAFEPING_MSG {"ctr": 112, "t": 2171, "id": "FOB-001", "v": 1, "bat": 100, "p": 99594, "type": "MEDICAL", "sig": "acc8b8a2ef02cf876d99bb37669033df0927eee7d1ed24ae7899eda0b060f6da"}
+2026-11-07 21:25:43.514 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:43.788 FOB   sent over LoRa MEDICAL
+2026-11-07 21:25:43.789 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:25:43.790 RELAY SAFEPING_MSG {"ctr": 112, "t": 2171, "id": "FOB-001", "v": 1, "bat": 100, "p": 99594, "type": "MEDICAL", "sig": "acc8b8a2ef02cf876d99bb37669033df0927eee7d1ed24ae7899eda0b060f6da"}
+2026-11-07 21:25:43.792 RELAY from FOB-001 type MEDICAL ctr 112 signal -30 dBm, snr 10.0
+2026-11-07 21:25:51.786 FOB   >>> [VIBRATE: short]
+2026-11-07 21:25:52.003 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:52.004 FOB   SAFEPING_MSG {"ctr": 113, "t": 2172, "id": "FOB-001", "v": 1, "bat": 100, "p": 99591, "type": "SILENT", "sig": "cc072aab3a40448fa350c19bca3d4cd4cb0b48fafebc1eb0dc50bf1595cd9bae"}
+2026-11-07 21:25:52.005 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:52.277 FOB   sent over LoRa SILENT
+2026-11-07 21:25:52.278 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:25:52.281 RELAY SAFEPING_MSG {"ctr": 113, "t": 2172, "id": "FOB-001", "v": 1, "bat": 100, "p": 99591, "type": "SILENT", "sig": "cc072aab3a40448fa350c19bca3d4cd4cb0b48fafebc1eb0dc50bf1595cd9bae"}
+2026-11-07 21:25:52.283 RELAY from FOB-001 type SILENT ctr 113 signal -29 dBm, snr 10.0
+2026-11-07 21:25:57.837 FOB   >>> [VIBRATE: short]
+2026-11-07 21:25:58.053 FOB   no GPS fix, sending without a location
+2026-11-07 21:25:58.053 FOB   SAFEPING_MSG {"ctr": 114, "t": 2173, "id": "FOB-001", "v": 1, "bat": 100, "p": 99592, "type": "SILENT", "sig": "2d08c0f6ff6b1c01e7d373db620b52c48d8b3d3a628853c5fcf29b847329c771"}
+2026-11-07 21:25:58.054 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:25:58.328 FOB   sent over LoRa SILENT
+2026-11-07 21:25:58.329 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:25:58.330 RELAY SAFEPING_MSG {"ctr": 114, "t": 2173, "id": "FOB-001", "v": 1, "bat": 100, "p": 99592, "type": "SILENT", "sig": "2d08c0f6ff6b1c01e7d373db620b52c48d8b3d3a628853c5fcf29b847329c771"}
+2026-11-07 21:25:58.332 RELAY from FOB-001 type SILENT ctr 114 signal -30 dBm, snr 10.0
+2026-11-07 21:26:06.002 FOB   >>> [VIBRATE: one]
+2026-11-07 21:26:06.241 FOB   CANCELLED SUSPICIOUS
+2026-11-07 21:26:06.243 FOB   >>> [VIBRATE: short]
+2026-11-07 21:26:14.349 FOB   >>> [VIBRATE: one]
+2026-11-07 21:26:16.514 FOB   >>> [VIBRATE: short]
+2026-11-07 21:26:16.733 FOB   no GPS fix, sending without a location
+2026-11-07 21:26:16.734 FOB   SAFEPING_MSG {"ctr": 115, "t": 2176, "id": "FOB-001", "v": 1, "bat": 100, "p": 99595, "type": "SILENT", "sig": "b2ebc6f947f0d8af9123226c02db3929cab685d07e1fbe8c68848c6786fdf95d"}
+2026-11-07 21:26:16.734 FOB   send attempt 1 failed: no WiFi
+2026-11-07 21:26:17.008 FOB   sent over LoRa SILENT
+2026-11-07 21:26:17.009 FOB   >>> [VIBRATE: ok]
+2026-11-07 21:26:17.012 RELAY SAFEPING_MSG {"ctr": 115, "t": 2176, "id": "FOB-001", "v": 1, "bat": 100, "p": 99595, "type": "SILENT", "sig": "b2ebc6f947f0d8af9123226c02db3929cab685d07e1fbe8c68848c6786fdf95d"}
+2026-11-07 21:26:17.014 RELAY from FOB-001 type SILENT ctr 115 signal -30 dBm, snr 10.5
