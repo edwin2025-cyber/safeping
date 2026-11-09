@@ -1,9 +1,9 @@
-import "./DevicesPage.css";
 import { Cpu } from "lucide-react";
 import { ago, formatDateTime } from "../lib/format.js";
-import { LinkLozenge } from "./Lozenge.jsx";
+import { LinkTag } from "./Tags.jsx";
+import Tooltip from "./Tooltip.jsx";
 
-function Battery({ value }) {
+export function Battery({ value }) {
   if (value === null || value === undefined) return <span className="muted">No reading</span>;
   const level = value < 10 ? "critical" : value < 20 ? "low" : "ok";
   return (
@@ -18,71 +18,99 @@ function Battery({ value }) {
   );
 }
 
-export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat }) {
+export function deviceName(d) {
+  if (d.student_name) return d.student_name;
+  return d.role === "REF" ? "Reference board" : "No name";
+}
+
+export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat, onOpen, registerFocus }) {
+  let body;
   if (devices === null) {
-    return (
-      <div className="page-pad">
-        <p className="muted">{loadFailed ? "Waiting for the server." : "Loading devices."}</p>
+    body = <p className="loading">{loadFailed ? "Waiting for the server." : "Loading devices."}</p>;
+  } else if (!devices.length) {
+    body = (
+      <div className="empty">
+        <Cpu size={24} strokeWidth={1.75} aria-hidden="true" />
+        <p className="empty-title">No devices yet</p>
+        <p className="empty-text">Register a Fob with add_device.py in the server folder.</p>
       </div>
     );
-  }
-  if (!devices.length) {
-    return (
-      <div className="page-pad">
-        <div className="empty">
-          <Cpu size={24} aria-hidden="true" />
-          <p>No devices registered. Add one with add_device.py in the server folder.</p>
-        </div>
-      </div>
+  } else {
+    body = (
+      <table className="table device-table">
+        <colgroup>
+          <col className="col-dname" />
+          <col className="col-did" />
+          <col className="col-seen" />
+          <col className="col-battery" />
+          <col className="col-link" />
+          <col className="col-open" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Student</th>
+            <th scope="col">Fob ID</th>
+            <th scope="col">Last seen</th>
+            <th scope="col">Battery</th>
+            <th scope="col">Link</th>
+            <th scope="col" className="right">
+              Open alerts
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {devices.map((d) => (
+            <tr key={d.device_id} className="device-row" onClick={() => onOpen(d.device_id)}>
+              <td>
+                <button
+                  ref={(node) => registerFocus(d.device_id, node)}
+                  type="button"
+                  className="row-open"
+                  aria-haspopup="dialog"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpen(d.device_id);
+                  }}
+                >
+                  <span className={"student-name" + (d.student_name ? "" : " is-muted")}>{deviceName(d)}</span>
+                </button>
+              </td>
+              <td className="cell-muted">{d.device_id}</td>
+              <td className="num">
+                {d.last_seen ? (
+                  <Tooltip label={formatDateTime(d.last_seen, timeFormat)}>
+                    <span>{ago(nowServer - d.last_seen)}</span>
+                  </Tooltip>
+                ) : (
+                  <span className="muted">Never</span>
+                )}
+              </td>
+              <td>
+                <Battery value={d.battery} />
+              </td>
+              <td>
+                <LinkTag link={d.link} />
+              </td>
+              <td className={"num right" + (d.open_alerts ? " strong" : " cell-muted")}>{d.open_alerts}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     );
   }
 
   return (
-    <div className="page-pad">
-      <div className="table-wrap">
-        <table className="devices">
-          <caption className="visually-hidden">Registered devices</caption>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Device ID</th>
-              <th scope="col">Role</th>
-              <th scope="col">Last seen</th>
-              <th scope="col">Battery</th>
-              <th scope="col" className="right">
-                Last counter
-              </th>
-              <th scope="col">Link</th>
-              <th scope="col" className="right">
-                Open alerts
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {devices.map((d) => (
-              <tr key={d.device_id}>
-                <td className="strong">{d.student_name || (d.role === "REF" ? "Reference sensor" : "Not set")}</td>
-                <td>{d.device_id}</td>
-                <td>{d.role === "REF" ? "Reference" : "Fob"}</td>
-                <td className="num">
-                  {d.last_seen ? (
-                    <span title={formatDateTime(d.last_seen, timeFormat)}>{ago(nowServer - d.last_seen)}</span>
-                  ) : (
-                    <span className="muted">Never</span>
-                  )}
-                </td>
-                <td>
-                  <Battery value={d.battery} />
-                </td>
-                <td className="num right">{d.last_counter ?? <span className="muted">None</span>}</td>
-                <td>
-                  <LinkLozenge link={d.link} />
-                </td>
-                <td className={"num right" + (d.open_alerts ? " strong" : "")}>{d.open_alerts}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="page page--devices">
+      <header className="page-header">
+        <h1 className="page-title">Devices</h1>
+        <div className="view-bar">
+          <p className="view-meta num">
+            {devices ? devices.length + (devices.length === 1 ? " device" : " devices") : ""}
+          </p>
+        </div>
+      </header>
+      <div className="page-body">
+        <div className="table-pane table-pane--full">{body}</div>
       </div>
     </div>
   );

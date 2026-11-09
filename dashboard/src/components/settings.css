@@ -1,0 +1,158 @@
+/* Settings: a large modal, like a settings window */
+.modal.settings {
+  flex-direction: row;
+  width: min(1100px, 92vw);
+  height: min(760px, 88vh);
+}
+.set-nav {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+  width: 240px;
+  padding: 12px 8px;
+  background: var(--color-sidebar);
+  overflow-y: auto;
+}
+.set-search {
+  margin-bottom: 8px;
+}
+.set-search .input {
+  width: 100%;
+  background: var(--color-page);
+}
+.set-nav-label {
+  height: 24px;
+  margin-top: 12px;
+  padding: 0 8px;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+  font-weight: 500;
+  line-height: 24px;
+}
+.set-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+.set-close {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  height: 0;
+  padding: 0 12px;
+}
+.set-close .icon-btn {
+  margin-top: 12px;
+}
+.set-content {
+  max-width: 720px;
+  padding: 48px 64px;
+}
+.set-title {
+  font-size: var(--text-24);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.set-lead {
+  margin-top: 4px;
+  color: var(--color-text-subtle);
+}
+.set-rows {
+  margin-top: 16px;
+}
+.set-group {
+  margin-top: 32px;
+  padding-bottom: 8px;
+  font-size: var(--text-16);
+  font-weight: 600;
+}
+.set-rows .set-group:first-child {
+  margin-top: 16px;
+}
+.set-lead + .set-rows > .set-group:first-child {
+  margin-top: 32px;
+}
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--color-border);
+}
+.set-text {
+  min-width: 0;
+}
+.set-name {
+  font-size: var(--text-14);
+  font-weight: 500;
+}
+.set-desc {
+  margin-top: 4px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+}
+.set-control {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+.set-value {
+  color: var(--color-text-subtle);
+}
+.set-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.minutes {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.minutes .input {
+  width: 72px;
+  font-variant-numeric: tabular-nums;
+}
+.minutes-unit {
+  color: var(--color-text-subtle);
+}
+.set-result .set-group {
+  margin-top: 32px;
+}
+.set-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  color: var(--color-text-subtle);
+}
+.set-note code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: var(--text-13);
+}
+.set-note-line {
+  margin-top: 16px;
+}
+.places-table {
+  margin-top: 16px;
+}
+.places-table thead th {
+  background: var(--color-surface-raised);
+}
+
+@media (max-width: 800px) {
+  .set-nav {
+    width: 180px;
+  }
+  .set-content {
+    padding: 32px 24px;
+  }
+}

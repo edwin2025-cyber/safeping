@@ -81,3 +81,21 @@ export function saveBool(key, value) {
     // ignore
   }
 }
+
+/** A remembered choice from a fixed list, like the Live view tab. */
+export function loadChoice(key, choices, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return choices.includes(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveChoice(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}

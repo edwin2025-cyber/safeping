@@ -1,4 +1,6 @@
-import { hasGps, typeMeta, linkMeta, zoneRadius } from "./alertMeta.js";
+import { alertState, hasGps, linkMeta, STATES, typeMeta, zoneRadius } from "./alertMeta.js";
+
+export const NEAR_M = 40; // closer than this: "Near the front entrance"
 
 export function ago(seconds) {
   seconds = Math.max(0, Math.round(seconds));
@@ -22,6 +24,20 @@ export function formatClock(unixSeconds, timeFormat) {
   });
 }
 
+/** 3:04 PM or 15:04 */
+export function formatTime(unixSeconds, timeFormat) {
+  return new Date(unixSeconds * 1000).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: hour12(timeFormat),
+  });
+}
+
+/** Nov 8, 2026 */
+export function formatDate(unixSeconds) {
+  return new Date(unixSeconds * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 /** Nov 8, 2026, 3:04:05 PM (seconds optional) */
 export function formatDateTime(unixSeconds, timeFormat, withSeconds = true) {
   return new Date(unixSeconds * 1000).toLocaleString(undefined, {
@@ -35,17 +51,37 @@ export function formatDateTime(unixSeconds, timeFormat, withSeconds = true) {
   });
 }
 
+export function formatNumber(n) {
+  return Number(n).toLocaleString();
+}
+
 export function coords(alert) {
   return alert.latitude.toFixed(6) + ", " + alert.longitude.toFixed(6);
 }
 
-/** Short location line for cards and the camera box. */
-export function locationLine(alert) {
+export function googleMapsUrl(alert) {
+  return "https://www.google.com/maps/search/?api=1&query=" + alert.latitude.toFixed(6) + "," + alert.longitude.toFixed(6);
+}
+
+export function studentName(alert) {
+  return alert.student_name || alert.device_id;
+}
+
+/** The place in words, or null when nothing is known ("Unknown" is shown muted).
+    Within 40 m of a named place: "Near the basketball courts".
+    40 to 200 m: "120 m NE of the front entrance" (the server only sends places within 200 m).
+    Otherwise GPS accuracy, then the floor. */
+export function placeText(alert) {
   if (hasGps(alert)) {
+    if (alert.place_name) {
+      const d = alert.place_distance_m;
+      if (d <= NEAR_M) return "Near " + alert.place_name;
+      return Math.round(d / 10) * 10 + " m " + alert.place_bearing + " of " + alert.place_name;
+    }
     return alert.accuracy !== null ? "GPS, about " + alert.accuracy + " m" : "GPS";
   }
   if (alert.floor !== null && alert.floor !== undefined) return "Indoors, floor " + alert.floor;
-  return "Location unknown";
+  return null;
 }
 
 /** "Area: 62 m (GPS 12 m + sight 50 m)" */
@@ -65,15 +101,12 @@ export function temperatureText(hundredths) {
   return (hundredths / 100).toFixed(1) + " °C";
 }
 
-export function studentName(alert) {
-  return alert.student_name || alert.device_id;
-}
-
-/** Plain text for the camera review box. Format given in the dashboard spec. */
-export function cameraText(alert, settings) {
+/** The camera review window and area for a SUSPICIOUS alert, plus the text "Copy for security" copies. */
+export function cameraInfo(alert, settings) {
   const received = alert.timestamp;
   const start = received - settings.cameraBefore * 60;
   const end = received + settings.cameraAfter * 60;
+  const place = placeText(alert);
   let area;
   if (hasGps(alert)) {
     area = "within " + zoneRadius(alert, settings.sightRadius) + " m of " + coords(alert);
@@ -82,38 +115,32 @@ export function cameraText(alert, settings) {
   } else {
     area = "Location unknown";
   }
-  return {
-    start,
-    end,
-    area,
-    text: [
-      "SafePing SUSPICIOUS alert",
-      "Student: " + (alert.student_name || "Unknown") + " (" + alert.device_id + ")",
-      "Pressed: " + formatDateTime(received, settings.timeFormat),
-      "Review cameras: " + formatDateTime(start, settings.timeFormat, false) + " to " +
-        formatDateTime(end, settings.timeFormat, false),
-      "Area: " + area,
-    ].join("\n"),
-  };
+  const lines = [
+    "SafePing SUSPICIOUS alert",
+    "Student: " + (alert.student_name || "Unknown") + " (" + alert.device_id + ")",
+    "Pressed: " + formatDateTime(received, settings.timeFormat),
+  ];
+  if (alert.place_name) lines.push("Place: " + place);
+  lines.push("Review cameras: " + formatDateTime(start, settings.timeFormat, false) + " to " + formatDateTime(end, settings.timeFormat, false));
+  lines.push("Area: " + area);
+  return { start, end, area, place: alert.place_name ? place : null, text: lines.join("\n") };
 }
 
-/** Plain text for "Copy details" in the peek. */
+/** Plain text for "Copy details". */
 export function detailsText(alert, settings) {
   const lines = [
-    "SafePing " + typeMeta(alert.alert_type).label.toUpperCase() + " alert",
+    "SafePing " + typeMeta(alert.alert_type).long.toUpperCase() + " alert",
     "Student: " + (alert.student_name || "Unknown") + " (" + alert.device_id + ")",
-    "Received: " + formatDateTime(alert.timestamp, settings.timeFormat),
+    "Pressed: " + formatDateTime(alert.timestamp, settings.timeFormat),
+    "Place: " + (placeText(alert) || "Unknown"),
   ];
-  if (alert.device_ts) lines.push("Fob time: " + formatDateTime(alert.device_ts, settings.timeFormat));
   if (hasGps(alert)) {
-    lines.push("Location: " + coords(alert) + (alert.accuracy !== null ? " (within " + alert.accuracy + " m)" : ""));
-    const area = areaLine(alert, settings.sightRadius);
-    if (area) lines.push(area);
-  } else {
-    lines.push("Location: " + locationLine(alert));
+    lines.push("GPS: " + coords(alert) + (alert.accuracy !== null ? ", within " + alert.accuracy + " m" : ""));
+    lines.push("Map: " + googleMapsUrl(alert));
   }
   if (alert.battery !== null) lines.push("Battery: " + alert.battery + "%");
-  lines.push("Link: " + linkMeta(alert.link).label);
-  lines.push("Status: " + (alert.acknowledged ? "Acknowledged" : "Open"));
+  const link = linkMeta(alert.link);
+  if (link) lines.push("Link: " + link.label);
+  lines.push("Status: " + STATES[alertState(alert)].label);
   return lines.join("\n");
 }

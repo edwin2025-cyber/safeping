@@ -8,21 +8,47 @@ If it does not exist, the old dashboard in server/static is served instead."""
 import functools
 import hmac
 import os
+import subprocess
 import time
 
 from flask import Flask, Response, abort, jsonify, request, send_from_directory
 
 import config
 import db
+import places
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
+VERSION = "2.0"   # bump by hand when the server changes in a way people should know about
+
 PRIORITY = {"SILENT": 1, "MEDICAL": 2, "SUSPICIOUS": 3, "STATUS": 9}
 
-DIST_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                         "..", "dashboard", "dist"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+DIST_DIR = os.path.normpath(os.path.join(HERE, "..", "dashboard", "dist"))
 
 CONFIG_DEFAULTS = {"sight_radius_m": 50, "camera_before_min": 2, "camera_after_min": 5}
+
+
+def _git_commit():
+    """Short commit the server runs from, for Settings > About. None without git."""
+    try:
+        result = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=HERE,
+                                capture_output=True, text=True, timeout=3)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.strip() or None if result.returncode == 0 else None
+
+
+COMMIT = _git_commit()
+
+
+def _alert_out(alert):
+    """Shapes one alert row for the API: true/false flags, priority and the nearest place."""
+    alert["priority"] = PRIORITY.get(alert["alert_type"], 9)
+    alert["acknowledged"] = bool(alert["acknowledged"])
+    alert["sms_sent"] = bool(alert["sms_sent"])
+    alert["resolved"] = bool(alert["resolved"])
+    return places.describe(alert)
 
 
 @app.before_request
@@ -79,12 +105,7 @@ def api_alerts():
     limit = min(int(request.args.get("limit", 100)), 500)
     include_status = request.args.get("status") == "1"
     include_resolved = request.args.get("resolved") == "1"
-    alerts = db.list_alerts(limit, include_status, include_resolved)
-    for alert in alerts:
-        alert["priority"] = PRIORITY.get(alert["alert_type"], 9)
-        alert["acknowledged"] = bool(alert["acknowledged"])
-        alert["sms_sent"] = bool(alert["sms_sent"])
-        alert["resolved"] = bool(alert["resolved"])
+    alerts = [_alert_out(a) for a in db.list_alerts(limit, include_status, include_resolved)]
     return jsonify({"server_time": time.time(), "alerts": alerts})
 
 
@@ -134,7 +155,16 @@ def api_config():
         "pa_per_floor": config.PA_PER_FLOOR,
         "ref_max_age_s": config.REF_MAX_AGE_S,
         "defaults": CONFIG_DEFAULTS,
+        "version": VERSION,
+        "commit": COMMIT,
     })
+
+
+@app.route("/api/places")
+@require_login
+def api_places():
+    """The named campus places from places.json. Read only."""
+    return jsonify({"places": places.load(), "max_distance_m": places.MAX_DISTANCE_M})
 
 
 @app.route("/api/devices")
@@ -147,6 +177,16 @@ def api_devices():
         if device["link"] is None:
             device["link"] = "unknown"
     return jsonify({"server_time": time.time(), "devices": devices})
+
+
+@app.route("/api/devices/<device_id>/alerts")
+@require_login
+def api_device_alerts(device_id):
+    """One device's alert history: all types and states, newest first, up to 200."""
+    if db.get_device(device_id) is None:
+        return jsonify({"ok": False, "error": "unknown device"}), 404
+    alerts = [_alert_out(a) for a in db.list_device_alerts(device_id, 200)]
+    return jsonify({"server_time": time.time(), "alerts": alerts})
 
 
 if __name__ == "__main__":

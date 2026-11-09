@@ -1,38 +1,33 @@
+.map-wrap {
+  position: relative;
+  height: 100%;
+  min-height: 240px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  isolation: isolate;
+}
+.map {
+  position: absolute;
+  inset: 0;
+}
 .leaflet-container {
   font-family: var(--font-sans);
+  font-size: var(--text-12);
   background: var(--color-surface-hover);
 }
 
-/* Attribution: always visible and readable on both themes. */
+/* Attribution: small and quiet, never hidden (CARTO and OpenStreetMap require it). */
 .leaflet-container .leaflet-control-attribution {
-  padding: 2px 8px;
-  border-top-left-radius: var(--radius-small);
+  padding: 0 8px;
+  border-top-left-radius: var(--radius-sm);
   background: var(--color-surface-raised);
   color: var(--color-text-subtle);
-  font-size: 11px;
-  line-height: 1.5;
-  opacity: 0.95;
+  font-size: var(--text-12);
+  line-height: 20px;
 }
 .leaflet-container .leaflet-control-attribution a {
   color: var(--color-blue-text);
-}
-
-/* Zoom buttons follow the theme */
-.leaflet-bar a,
-.leaflet-bar a:hover {
-  background: var(--color-surface-raised);
-  color: var(--color-text);
-  border-bottom-color: var(--color-border);
-}
-.leaflet-bar a:hover {
-  background: var(--color-surface-hover);
-}
-.leaflet-bar a.leaflet-disabled {
-  background: var(--color-surface-raised);
-  color: var(--color-text-subtlest);
-}
-.leaflet-touch .leaflet-bar {
-  border-color: var(--color-border);
 }
 
 /* No CARTO key: dim the OpenStreetMap tiles in dark mode. Markers are not affected. */
@@ -41,7 +36,8 @@
 }
 
 /* ---------- markers ---------- */
-.alert-marker-wrap {
+.alert-marker-wrap,
+.cluster-wrap {
   background: none;
   border: 0;
 }
@@ -49,38 +45,261 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--color-surface), 0 1px 3px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 2px rgb(255, 255, 255), var(--shadow-marker);
   transition: transform 120ms ease;
 }
 .alert-marker--red { background: var(--color-red-bold); color: var(--color-red-on-bold); }
 .alert-marker--yellow { background: var(--color-yellow-bold); color: var(--color-yellow-on-bold); }
 .alert-marker--purple { background: var(--color-purple-bold); color: var(--color-purple-on-bold); }
 .alert-marker--gray { background: var(--color-gray-bold); color: var(--color-gray-on-bold); }
-
-.alert-marker.is-acknowledged {
+.alert-marker.is-quiet {
   opacity: 0.6;
 }
-.alert-marker.is-highlighted {
+.alert-marker.is-highlighted,
+.cluster.is-highlighted {
   opacity: 1;
-  transform: scale(1.2);
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-blue-bold), 0 1px 3px rgba(0, 0, 0, 0.35);
+  transform: scale(1.18);
+  box-shadow: 0 0 0 2px rgb(255, 255, 255), 0 0 0 4px var(--color-blue-bold), var(--shadow-marker);
 }
 .leaflet-marker-icon:focus-visible {
   outline: none;
 }
-.leaflet-marker-icon:focus-visible .alert-marker {
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-focus-ring);
+.leaflet-marker-icon:focus-visible > span {
+  box-shadow: 0 0 0 2px rgb(255, 255, 255), 0 0 0 4px var(--color-focus-ring);
 }
 
-/* ---------- circles (stroke and fill set here, opacity set by Leaflet) ---------- */
+/* Clusters: neutral, with a count. Red ring when an open MEDICAL is inside.
+   The ring uses text-subtlest: border-bold is under 3:1 on light OpenStreetMap tiles. */
+.cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-text-subtlest);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-13);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-marker);
+  transition: transform 120ms ease;
+}
+.cluster--medical {
+  border: 2px solid var(--color-red-bold);
+}
+
+/* ---------- circles: colors here, opacity from Leaflet ---------- */
 .zone--red { stroke: var(--color-red-bold); fill: var(--color-red-bold); }
 .zone--purple { stroke: var(--color-purple-bold); fill: var(--color-purple-bold); }
 .zone--gray { stroke: var(--color-gray-bold); fill: var(--color-gray-bold); }
-
 /* SUSPICIOUS: dashed outer circle is the area the student could see. Light theme
-   uses yellow text color for the stroke, because yellow border is too faint on light tiles. */
+   uses yellow text for the stroke, because yellow border is too faint on light tiles. */
 .zone--sight { stroke: var(--color-yellow-border); fill: var(--color-yellow-bold); }
 :root[data-theme="light"] .zone--sight { stroke: var(--color-yellow-text); }
 .zone--yellow-inner { stroke: var(--color-yellow-border); fill: none; }
 :root[data-theme="light"] .zone--yellow-inner { stroke: var(--color-yellow-text); }
+
+/* ---------- floating control group ---------- */
+.map-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 32px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+.map-ctl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+.map-ctl:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.map-ctl[aria-pressed="true"] {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text);
+}
+.map-ctl[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.map-ctl[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--color-text-subtle);
+}
+.map-ctl-divider {
+  height: 1px;
+  margin: 4px;
+  background: var(--color-border);
+}
+
+/* ---------- top left: list panel (Map view) and the "no GPS" note ---------- */
+.map-overlay-tl {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+.map-overlay-tl > * {
+  pointer-events: auto;
+}
+.map-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-13);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow-raised);
+  cursor: pointer;
+}
+.map-chip:hover {
+  background: var(--color-surface-hover);
+}
+.map-chip > svg {
+  color: var(--color-text-subtle);
+}
+.map-chip-count {
+  color: var(--color-text-subtle);
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  width: 360px;
+  max-height: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+}
+.map-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.map-panel-head h2 {
+  font-size: var(--text-14);
+  font-weight: 600;
+}
+.map-panel-count {
+  flex: 1;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-13);
+}
+.map-panel-empty {
+  padding: 16px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+}
+.map-panel-list {
+  overflow-y: auto;
+  padding: 4px;
+}
+.panel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.panel-row:hover,
+.panel-row.is-hovered {
+  background: var(--color-surface-hover);
+}
+.panel-row.is-medical-open {
+  background: var(--color-red-subtlest);
+}
+.panel-row.is-medical-open:hover,
+.panel-row.is-medical-open.is-hovered {
+  background: var(--color-red-subtler);
+}
+.panel-row-top,
+.panel-row-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.panel-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-time,
+.panel-place {
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
+}
+.panel-place {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-row .status {
+  font-size: var(--text-12);
+}
+
+.popover--alerts {
+  min-width: 280px;
+}
+.menu-alert {
+  gap: 8px;
+}
+.menu-alert-name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.menu-alert-place {
+  margin-left: auto;
+  padding-left: 8px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
+  white-space: nowrap;
+}

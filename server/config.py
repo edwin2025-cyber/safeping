@@ -26,6 +26,7 @@ MAX_PAYLOAD_BYTES = 512
 PA_PER_FLOOR = float(_get("PA_PER_FLOOR", "42"))   # calibrate with the walk-the-building test
 MAX_FLOOR = int(_get("MAX_FLOOR", "4"))
 REF_MAX_AGE_S = int(_get("REF_MAX_AGE_S", "120"))   # ignore a Reference reading older than this
+PLACES_PATH = _get("SAFEPING_PLACES", os.path.join(_here, "places.json"))   # named campus places
 
 # Texts. If the Twilio values are missing the server prints the text instead (dry run).
 TWILIO_SID = _get("TWILIO_SID")

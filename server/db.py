@@ -172,6 +172,19 @@ def list_alerts(limit=100, include_status=False, include_resolved=False):
     return [dict(r) for r in rows]
 
 
+def list_device_alerts(device_id, limit=200):
+    """One device's alert history: every type and state, newest first."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT a.*, d.student_name
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE a.device_id = ?
+               ORDER BY a.id DESC LIMIT ?""",
+            (device_id, limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def ack_alert(alert_id, now):
     with connect() as c:
         cur = c.execute(

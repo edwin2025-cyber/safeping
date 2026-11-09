@@ -72,7 +72,7 @@ Register a device once: `python add_device.py FOB-001 "Student Name"`. It prints
 
 ## Dashboard
 
-The staff dashboard is a React app in `dashboard/`. Build it once with `npm install` and `npm run build` in `dashboard/`, then `python app.py` in `server/` serves it at http://127.0.0.1:5000. Map tiles use CARTO when `CARTO_KEY` is set. How to run it, the settings, and the map math: [docs/dashboard.md](docs/dashboard.md).
+The staff dashboard is a React app in `dashboard/`. Build it once with `npm.cmd install` and `npm.cmd run build` in `dashboard/`, then `python app.py` in `server/` serves it at http://127.0.0.1:5000. Map tiles use CARTO when `CARTO_KEY` is set. Named campus places go in `server/places.json`. How to run it, the settings, places and the map math: [docs/dashboard.md](docs/dashboard.md). Screenshots: [docs/screenshots/](docs/screenshots/).
 
 ## For the dashboard and login work
 

@@ -1,36 +1,47 @@
-import { BellOff, Check, CircleCheck, CircleDot, CircleHelp, Eye, HeartPulse, RadioTower, Wifi } from "lucide-react";
+import { BellOff, CircleCheck, CircleHelp, Eye, HeartPulse, RadioTower, Wifi } from "lucide-react";
 
-// Same words as the old dashboard. Color is never the only signal: each type has an icon and a word.
+// Short words for tags, long words for copied text. Color is never the only
+// signal: each type also has an icon and a word.
 export const TYPES = {
-  MEDICAL: { label: "Medical emergency", color: "red", Icon: HeartPulse },
-  SUSPICIOUS: { label: "Suspicious person", color: "yellow", Icon: Eye },
-  SILENT: { label: "Silent alert", color: "purple", Icon: BellOff },
-  STATUS: { label: "Status check", color: "gray", Icon: CircleCheck },
+  MEDICAL: { label: "Medical", long: "Medical emergency", color: "red", Icon: HeartPulse },
+  SUSPICIOUS: { label: "Suspicious", long: "Suspicious person", color: "yellow", Icon: Eye },
+  SILENT: { label: "Silent", long: "Silent alert", color: "purple", Icon: BellOff },
+  STATUS: { label: "Status", long: "Status check", color: "gray", Icon: CircleCheck },
 };
 
 export const TYPE_ORDER = ["MEDICAL", "SUSPICIOUS", "SILENT", "STATUS"];
 
 export function typeMeta(type) {
-  return TYPES[type] || { label: type, color: "gray", Icon: CircleHelp };
+  return TYPES[type] || { label: type, long: type, color: "gray", Icon: CircleHelp };
 }
 
 export const STATES = {
-  open: { label: "Open", color: "orange", Icon: CircleDot },
-  acknowledged: { label: "Acknowledged", color: "green", Icon: Check },
+  open: { label: "Open", color: "orange" },
+  acknowledged: { label: "Acknowledged", color: "green" },
+  resolved: { label: "Resolved", color: "gray" },
 };
 
+export function alertState(alert) {
+  if (alert.resolved) return "resolved";
+  return alert.acknowledged ? "acknowledged" : "open";
+}
+
+// Only known links are shown. Older alerts and test tools have no link.
 export const LINKS = {
   lora: { label: "LoRa", color: "gray", Icon: RadioTower },
   wifi: { label: "WiFi", color: "teal", Icon: Wifi },
-  unknown: { label: "Link unknown", color: "gray", Icon: CircleHelp },
 };
 
 export function linkMeta(link) {
-  return LINKS[link] || LINKS.unknown;
+  return LINKS[link] || null;
 }
 
 export function hasGps(alert) {
-  return alert.latitude !== null && alert.longitude !== null && alert.latitude !== undefined;
+  return alert.latitude !== null && alert.latitude !== undefined && alert.longitude !== null && alert.longitude !== undefined;
+}
+
+export function isOpenMedical(alert) {
+  return alert.alert_type === "MEDICAL" && alertState(alert) === "open";
 }
 
 /** Map circle radius in meters. SUSPICIOUS adds the sight radius: the area the
@@ -41,11 +52,15 @@ export function zoneRadius(alert, sightRadius) {
   return acc;
 }
 
-/** Open alerts first. Open ones by type priority, then newest. Same as the old dashboard. */
+const STATE_ORDER = { open: 0, acknowledged: 1, resolved: 2 };
+
+/** Open alerts first, by type priority, then newest. Then acknowledged, then resolved, newest first. */
 export function sortAlerts(alerts) {
   return alerts.slice().sort((x, y) => {
-    if (x.acknowledged !== y.acknowledged) return x.acknowledged ? 1 : -1;
-    if (!x.acknowledged && x.priority !== y.priority) return x.priority - y.priority;
+    const sx = STATE_ORDER[alertState(x)];
+    const sy = STATE_ORDER[alertState(y)];
+    if (sx !== sy) return sx - sy;
+    if (sx === 0 && x.priority !== y.priority) return x.priority - y.priority;
     return y.id - x.id;
   });
 }

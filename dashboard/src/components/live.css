@@ -1,0 +1,194 @@
+/* ---------- Live layouts ---------- */
+.live-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+}
+.live-body--split {
+  grid-template-columns: minmax(420px, 44%) minmax(0, 1fr);
+}
+.live-body--list,
+.live-body--map {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The scroll box spans the gutter so row hover reaches 8 px past the text,
+   and cell text lines up with the page title. */
+.table-pane {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+.live-body--split .table-pane {
+  padding-right: 8px;
+}
+.table-pane--full {
+  flex: 1;
+}
+.map-pane {
+  min-height: 0;
+  padding: 0 32px 24px 16px;
+}
+.live-body--map .map-pane {
+  padding-left: 32px;
+}
+
+/* ---------- alert table ---------- */
+.alert-table .col-type { width: 128px; }
+.alert-table .col-place { width: auto; }
+.alert-table .col-student { width: 32%; }
+.alert-table .col-time { width: 112px; }
+.alert-table .col-status { width: 148px; }
+.alert-table.is-compact .col-type { width: 108px; }
+.alert-table.is-compact .col-student { width: auto; }
+.alert-table.is-compact .col-time { width: 88px; }
+.alert-table.is-compact .col-status { width: 128px; }
+
+.alert-row,
+.device-row {
+  cursor: pointer;
+}
+.alert-row:hover td,
+.alert-row.is-hovered td,
+.device-row:hover td {
+  background: var(--color-surface-hover);
+}
+/* Open MEDICAL: a very light red across the whole row. Muted text uses text-subtle there. */
+.alert-row.is-medical-open td {
+  background: var(--color-red-subtlest);
+}
+.alert-row.is-medical-open:hover td,
+.alert-row.is-medical-open.is-hovered td {
+  background: var(--color-red-subtler);
+}
+.alert-row.is-medical-open .student-id,
+.alert-row.is-medical-open .cell-time,
+.alert-row.is-medical-open .muted {
+  color: var(--color-text-subtle);
+}
+.alert-row:has(.row-open:focus-visible),
+.device-row:has(.row-open:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.row-open {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.row-open:focus-visible {
+  outline: none;
+}
+.student-name {
+  overflow: hidden;
+  font-size: var(--text-14);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.student-name.is-muted {
+  color: var(--color-text-subtle);
+  font-weight: 400;
+}
+.student-id {
+  flex: none;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+}
+.cell-student {
+  overflow: hidden;
+}
+.is-compact .cell-student {
+  line-height: 1.3;
+}
+.cell-sub {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+  text-overflow: ellipsis;
+}
+.is-compact tbody td {
+  height: 52px;
+}
+.cell-place {
+  color: var(--color-text-subtle);
+}
+.cell-time {
+  color: var(--color-text-subtle);
+}
+
+.group-row th {
+  height: 40px;
+  padding-top: 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-page);
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+  font-weight: 500;
+  text-align: left;
+}
+.group-count {
+  margin-left: 8px;
+  color: var(--color-text-subtlest);
+}
+
+/* ---------- devices ---------- */
+.device-table .col-dname { width: 26%; }
+.device-table .col-did { width: 14%; }
+.device-table .col-seen { width: 14%; }
+.device-table .col-battery { width: 22%; }
+.device-table .col-link { width: 12%; }
+.device-table .col-open { width: 12%; }
+
+.battery {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.battery-num {
+  min-width: 40px;
+}
+.battery-track {
+  position: relative;
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-surface-hover-strong);
+  overflow: hidden;
+}
+.battery-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+}
+.battery-fill--ok { background: var(--color-gray-bold); }
+.battery-fill--low { background: var(--color-orange-bold); }
+.battery-fill--critical { background: var(--color-red-bold); }
+.battery-word {
+  font-size: var(--text-12);
+  font-weight: 500;
+}
+.battery-word--low { color: var(--color-orange-text); }
+.battery-word--critical { color: var(--color-red-text); }
+
+@media (max-width: 1000px) {
+  .live-body--split {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(200px, 45%) minmax(0, 1fr);
+  }
+  .live-body--split .table-pane {
+    padding-right: 24px;
+  }
+  .live-body--split .map-pane {
+    padding: 0 32px 24px;
+  }
+}

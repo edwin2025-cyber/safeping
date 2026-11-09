@@ -1,70 +1,84 @@
 import { useEffect, useState } from "react";
-import { Clock, Gauge, RadioTower, ServerOff } from "lucide-react";
-import { Pill } from "./Lozenge.jsx";
-import { ago, formatClock } from "../lib/format.js";
+import Tooltip from "./Tooltip.jsx";
+import { ago, formatClock, formatNumber } from "../lib/format.js";
 
 const RELAY_RECENT_S = 15 * 60;
 
-function relayPill(status) {
-  const title =
-    "Time since the last alert that came in over LoRa (USB serial bridge). The Relay sends no heartbeat, so a quiet Relay is not a fault.";
+function relayItem(status) {
+  const tip = "Time since the last alert that came in over LoRa. The Relay sends no heartbeat, so a quiet Relay is not a fault.";
   const age = status ? status.last_lora_age_s : null;
-  if (age === null || age === undefined) {
-    return { color: "gray", text: "Relay: no data", title };
-  }
-  return { color: age <= RELAY_RECENT_S ? "green" : "gray", text: "Relay: last alert " + ago(age), title };
+  if (age === null || age === undefined) return { color: "gray", value: "no data", tip };
+  return { color: age <= RELAY_RECENT_S ? "green" : "gray", value: "last alert " + ago(age), tip };
 }
 
-function referencePill(status, maxAge) {
+function referenceItem(status, maxAge) {
   const age = status ? status.reference_age_s : null;
   if (age === null || age === undefined) {
-    return { color: "gray", text: "Reference: no reading", title: "No pressure reading from the Reference board yet." };
+    return { color: "gray", value: "no reading", tip: "No pressure reading from the ground floor board yet." };
   }
-  if (age <= 60) return { color: "green", text: "Reference: " + ago(age), title: "Floors can be worked out." };
-  if (age <= maxAge) {
-    return { color: "orange", text: "Reference: " + ago(age), title: "Reading is getting old." };
-  }
-  return {
-    color: "red",
-    text: "Reference: stale, " + ago(age),
-    title: "Older than " + maxAge + " s, so indoor floors cannot be worked out.",
-  };
+  const value = formatNumber(status.reference_pressure) + " Pa";
+  const when = "Ground floor pressure, read " + ago(age) + ".";
+  if (age <= 60) return { color: "green", value, tip: when + " Indoor floors can be worked out." };
+  if (age <= maxAge) return { color: "orange", value, tip: when + " The reading is getting old." };
+  return { color: "red", value, tip: when + " Older than " + maxAge + " s, so indoor floors cannot be worked out." };
+}
+
+function StatusItem({ color, label, value, tip }) {
+  return (
+    <Tooltip label={tip}>
+      <span className="status-item" tabIndex={0} aria-label={label + ": " + value + ". " + tip}>
+        <span className={"dot dot--" + color} aria-hidden="true" />
+        <span className="si-label">{label}</span>
+        <span className="si-value num">{value}</span>
+      </span>
+    </Tooltip>
+  );
 }
 
 function ServerClock({ skew, timeFormat }) {
   const [now, setNow] = useState(() => Date.now() / 1000 + skew);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now() / 1000 + skew), 1000);
     setNow(Date.now() / 1000 + skew);
+    const timer = setInterval(() => setNow(Date.now() / 1000 + skew), 1000);
     return () => clearInterval(timer);
   }, [skew]);
+  const text = formatClock(now, timeFormat);
   return (
-    <Pill color="gray" Icon={Clock} title="Server time" label={"Server time " + formatClock(now, timeFormat)}>
-      {formatClock(now, timeFormat)}
-    </Pill>
+    <Tooltip label="Server time">
+      <span className="status-item si-clock num" tabIndex={0} aria-label={"Server time " + text}>
+        {text}
+      </span>
+    </Tooltip>
   );
 }
 
-export default function TopBar({ title, status, unreachable, skew, timeFormat, refMaxAge }) {
-  const relay = relayPill(status);
-  const ref = referencePill(status, refMaxAge);
+export default function TopBar({ crumb, status, unreachable, skew, timeFormat, refMaxAge }) {
+  const relay = relayItem(status);
+  const ref = referenceItem(status, refMaxAge);
   return (
     <header className="topbar">
-      <h1 className="page-title">{title}</h1>
-      <div className="pills">
-        <span role="status" className="pill-live">
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <span>SafePing</span>
+        <span className="crumb-sep" aria-hidden="true">
+          /
+        </span>
+        <span className="crumb-current" aria-current="page">
+          {crumb}
+        </span>
+      </nav>
+      <div className="status-items">
+        <span role="status" className="si-live">
           {unreachable && (
-            <Pill color="orange" Icon={ServerOff} title="The last update failed. Retrying automatically.">
-              Server not reachable
-            </Pill>
+            <StatusItem
+              color="orange"
+              label="Server"
+              value="not reachable"
+              tip="The last update failed. The dashboard keeps retrying on its own."
+            />
           )}
         </span>
-        <Pill color={relay.color} Icon={RadioTower} title={relay.title}>
-          {relay.text}
-        </Pill>
-        <Pill color={ref.color} Icon={Gauge} title={ref.title}>
-          {ref.text}
-        </Pill>
+        <StatusItem color={relay.color} label="Relay" value={relay.value} tip={relay.tip} />
+        <StatusItem color={ref.color} label="Reference" value={ref.value} tip={ref.tip} />
         <ServerClock skew={skew} timeFormat={timeFormat} />
       </div>
     </header>
