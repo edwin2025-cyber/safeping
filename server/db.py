@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     acknowledged    INTEGER NOT NULL DEFAULT 0,
     acknowledged_at REAL,
     sms_sent        INTEGER NOT NULL DEFAULT 0
+    -- More columns are added by MIGRATIONS below, so old databases get them too.
 );
 
 CREATE TABLE IF NOT EXISTS reference_readings (
@@ -50,6 +51,16 @@ CREATE INDEX IF NOT EXISTS idx_alerts_time ON alerts (timestamp);
 CREATE INDEX IF NOT EXISTS idx_ref_time ON reference_readings (timestamp);
 """
 
+# Columns added after the first version. Each one is added only if it is missing,
+# so existing rows stay as they are and get the default.
+MIGRATIONS = [
+    ("alerts", "resolved", "INTEGER NOT NULL DEFAULT 0"),
+    ("alerts", "resolved_at", "REAL"),
+    ("alerts", "link", "TEXT NOT NULL DEFAULT 'unknown'"),   # lora, wifi or unknown
+    ("alerts", "temperature", "INTEGER"),                    # hundredths of a degree C, like "t"
+    ("alerts", "counter", "INTEGER"),                        # the message's "ctr"
+]
+
 
 @contextmanager
 def connect():
@@ -69,6 +80,10 @@ def init_db():
     with connect() as c:
         c.execute("PRAGMA journal_mode=WAL")
         c.executescript(SCHEMA)
+        for table, column, definition in MIGRATIONS:
+            existing = {row["name"] for row in c.execute("PRAGMA table_info({})".format(table))}
+            if column not in existing:
+                c.execute("ALTER TABLE {} ADD COLUMN {} {}".format(table, column, definition))
 
 
 # ---------- devices ----------
@@ -86,6 +101,31 @@ def get_device(device_id):
         return c.execute("SELECT * FROM devices WHERE device_id = ?", (device_id,)).fetchone()
 
 
+def list_devices():
+    """One row per device for the dashboard. Never includes the secret key.
+    Reference readings do not store a device id, so a REF device's last seen
+    time is the newest reference reading."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT d.device_id, d.role, d.student_name, d.last_counter,
+                   CASE WHEN d.role = 'REF'
+                        THEN (SELECT MAX(r.timestamp) FROM reference_readings r)
+                        ELSE (SELECT MAX(a.timestamp) FROM alerts a WHERE a.device_id = d.device_id)
+                   END AS last_seen,
+                   (SELECT a.battery FROM alerts a
+                     WHERE a.device_id = d.device_id AND a.battery IS NOT NULL
+                     ORDER BY a.id DESC LIMIT 1) AS battery,
+                   (SELECT a.link FROM alerts a
+                     WHERE a.device_id = d.device_id ORDER BY a.id DESC LIMIT 1) AS link,
+                   (SELECT COUNT(*) FROM alerts a
+                     WHERE a.device_id = d.device_id AND a.acknowledged = 0
+                       AND a.resolved = 0 AND a.alert_type != 'STATUS') AS open_alerts
+               FROM devices d
+               ORDER BY d.role, d.device_id"""
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def advance_counter(device_id, counter):
     """Save a new counter only if it is higher than the last one. Returns True if it was.
     This is one UPDATE, so two messages arriving at the same moment cannot both pass."""
@@ -99,16 +139,17 @@ def advance_counter(device_id, counter):
 
 # ---------- alerts ----------
 
-def insert_alert(device_id, alert_type, received_at, device_ts, loc, pressure, battery):
+def insert_alert(device_id, alert_type, received_at, device_ts, loc, pressure, battery,
+                 temperature=None, counter=None, link="unknown"):
     with connect() as c:
         cur = c.execute(
             """INSERT INTO alerts
                (device_id, alert_type, timestamp, device_ts, latitude, longitude,
-                accuracy, floor, pressure, battery)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                accuracy, floor, pressure, battery, temperature, counter, link)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (device_id, alert_type, received_at, device_ts,
              loc.get("latitude"), loc.get("longitude"), loc.get("accuracy"),
-             loc.get("floor"), pressure, battery),
+             loc.get("floor"), pressure, battery, temperature, counter, link),
         )
         return cur.lastrowid
 
@@ -118,14 +159,15 @@ def mark_sms(alert_id, sent):
         c.execute("UPDATE alerts SET sms_sent = ? WHERE id = ?", (1 if sent else 0, alert_id))
 
 
-def list_alerts(limit=100, include_status=False):
+def list_alerts(limit=100, include_status=False, include_resolved=False):
     with connect() as c:
         rows = c.execute(
             """SELECT a.*, d.student_name
                FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
                WHERE (? = 1 OR a.alert_type != 'STATUS')
+                 AND (? = 1 OR a.resolved = 0)
                ORDER BY a.id DESC LIMIT ?""",
-            (1 if include_status else 0, limit),
+            (1 if include_status else 0, 1 if include_resolved else 0, limit),
         ).fetchall()
     return [dict(r) for r in rows]
 
@@ -137,6 +179,24 @@ def ack_alert(alert_id, now):
             (now, alert_id),
         )
         return cur.rowcount == 1
+
+
+def resolve_alert(alert_id, now):
+    """Resolving also acknowledges, if nobody did yet, so it leaves the open count."""
+    with connect() as c:
+        cur = c.execute(
+            """UPDATE alerts SET resolved = 1, resolved_at = ?,
+                   acknowledged = 1, acknowledged_at = COALESCE(acknowledged_at, ?)
+               WHERE id = ? AND resolved = 0""",
+            (now, now, alert_id),
+        )
+        return cur.rowcount == 1
+
+
+def last_alert_time(link):
+    """When the newest alert that came in over this link was received, or None."""
+    with connect() as c:
+        return c.execute("SELECT MAX(timestamp) FROM alerts WHERE link = ?", (link,)).fetchone()[0]
 
 
 def count_unacknowledged():

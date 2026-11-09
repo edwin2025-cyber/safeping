@@ -35,5 +35,6 @@ DUTY_PHONES = [p.strip() for p in _get("DUTY_PHONES", "").split(",") if p.strip(
 
 # Dashboard
 DASHBOARD_PASSWORD = _get("DASHBOARD_PASSWORD")      # leave unset for no login
+CARTO_KEY = _get("CARTO_KEY")                        # map tiles key, never commit it
 HOST = _get("HOST", "0.0.0.0")
 PORT = int(_get("PORT", "5000"))

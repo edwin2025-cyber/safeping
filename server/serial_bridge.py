@@ -32,7 +32,7 @@ def handle_line(line):
     line = line.strip()
     if not line.startswith(PREFIX):
         return None
-    return processor.process(line[len(PREFIX):])
+    return processor.process(line[len(PREFIX):], source="lora")
 
 
 def open_port(port):

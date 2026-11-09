@@ -22,6 +22,8 @@
 - LoRa packets are at most 255 bytes. The largest alert is about 241 bytes.
 - The motor must be off while the radio transmits (it stalls the transmit).
 - Message format and signing: `docs/message-format.md`. Change it there first.
+- The staff dashboard is the React app in `dashboard/` (see `docs/dashboard.md`). Flask serves `dashboard/dist` and falls back to the old `server/static` when there is no build.
+- `require_login` in `server/app.py` is the login hook. It wraps every `/api/*` route and the dashboard routes and lets everything through for now. Login and 2FA go there, on the server.
 
 ## Kept from the old CLAUDE.md files
 

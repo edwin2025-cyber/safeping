@@ -29,7 +29,9 @@ def start(block=False):
 
     def on_message(client, userdata, message):
         try:
-            result = processor.process(message.payload)
+            # "wifi" is right while the Relay uses the USB serial bridge. If the Relay
+            # later republishes LoRa alerts over MQTT, those will show as wifi too.
+            result = processor.process(message.payload, source="wifi")
             print("[mqtt] {} -> {}".format(message.topic, result))
         except Exception as error:  # never let one bad message kill the listener
             print("[mqtt] error handling message: {}".format(error))

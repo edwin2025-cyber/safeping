@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SafePing</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" href="/fonts/GeneralSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Set the theme before the page draws, so it does not flash light first.
+      (function () {
+        var theme = "auto";
+        try {
+          var saved = JSON.parse(localStorage.getItem("safeping.settings") || "{}");
+          if (saved && saved.theme) theme = saved.theme;
+        } catch (e) {}
+        if (theme === "auto") {
+          theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

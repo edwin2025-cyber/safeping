@@ -10,9 +10,17 @@ import notify
 import validate
 
 
-def process(payload, now=None):
-    """payload is bytes or text. Returns a dict describing what happened."""
+LINKS = ("lora", "wifi")
+
+
+def process(payload, now=None, source="unknown"):
+    """payload is bytes or text. Returns a dict describing what happened.
+
+    source is how the message reached the server: "lora" (serial bridge), "wifi"
+    (MQTT) or "unknown". It is only stored for the dashboard. It never changes
+    whether a message is accepted."""
     now = time.time() if now is None else now
+    link = source if source in LINKS else "unknown"
     if isinstance(payload, str):
         payload = payload.encode()
 
@@ -30,6 +38,7 @@ def process(payload, now=None):
     alert_id = db.insert_alert(
         device["device_id"], msg["type"], now, msg.get("ts"), loc,
         msg.get("p"), msg.get("bat"),
+        temperature=msg.get("t"), counter=msg.get("ctr"), link=link,
     )
 
     sms = None

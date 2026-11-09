@@ -29,6 +29,10 @@ firmware/**/config.py
 # Editor settings
 .vscode/
 
+# Dashboard (React): installed packages and the build output
+dashboard/node_modules/
+dashboard/dist/
+
 # OS junk
 Thumbs.db
 .DS_Store

@@ -1,0 +1,86 @@
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--color-surface-hover);
+}
+
+/* Attribution: always visible and readable on both themes. */
+.leaflet-container .leaflet-control-attribution {
+  padding: 2px 8px;
+  border-top-left-radius: var(--radius-small);
+  background: var(--color-surface-raised);
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+.leaflet-container .leaflet-control-attribution a {
+  color: var(--color-blue-text);
+}
+
+/* Zoom buttons follow the theme */
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+.leaflet-bar a:hover {
+  background: var(--color-surface-hover);
+}
+.leaflet-bar a.leaflet-disabled {
+  background: var(--color-surface-raised);
+  color: var(--color-text-subtlest);
+}
+.leaflet-touch .leaflet-bar {
+  border-color: var(--color-border);
+}
+
+/* No CARTO key: dim the OpenStreetMap tiles in dark mode. Markers are not affected. */
+.osm-tiles {
+  filter: var(--tile-filter);
+}
+
+/* ---------- markers ---------- */
+.alert-marker-wrap {
+  background: none;
+  border: 0;
+}
+.alert-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-surface), 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 120ms ease;
+}
+.alert-marker--red { background: var(--color-red-bold); color: var(--color-red-on-bold); }
+.alert-marker--yellow { background: var(--color-yellow-bold); color: var(--color-yellow-on-bold); }
+.alert-marker--purple { background: var(--color-purple-bold); color: var(--color-purple-on-bold); }
+.alert-marker--gray { background: var(--color-gray-bold); color: var(--color-gray-on-bold); }
+
+.alert-marker.is-acknowledged {
+  opacity: 0.6;
+}
+.alert-marker.is-highlighted {
+  opacity: 1;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-blue-bold), 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.leaflet-marker-icon:focus-visible {
+  outline: none;
+}
+.leaflet-marker-icon:focus-visible .alert-marker {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-focus-ring);
+}
+
+/* ---------- circles (stroke and fill set here, opacity set by Leaflet) ---------- */
+.zone--red { stroke: var(--color-red-bold); fill: var(--color-red-bold); }
+.zone--purple { stroke: var(--color-purple-bold); fill: var(--color-purple-bold); }
+.zone--gray { stroke: var(--color-gray-bold); fill: var(--color-gray-bold); }
+
+/* SUSPICIOUS: dashed outer circle is the area the student could see. Light theme
+   uses yellow text color for the stroke, because yellow border is too faint on light tiles. */
+.zone--sight { stroke: var(--color-yellow-border); fill: var(--color-yellow-bold); }
+:root[data-theme="light"] .zone--sight { stroke: var(--color-yellow-text); }
+.zone--yellow-inner { stroke: var(--color-yellow-border); fill: none; }
+:root[data-theme="light"] .zone--yellow-inner { stroke: var(--color-yellow-text); }

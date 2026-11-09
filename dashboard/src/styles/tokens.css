@@ -1,0 +1,205 @@
+/* SafePing design tokens. All colors are rgb.
+   scripts/check-contrast.mjs reads this file, so keep one token per line. */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* Neutrals */
+  --color-page: rgb(255, 255, 255);
+  --color-sidebar: rgb(248, 248, 248);
+  --color-surface: rgb(255, 255, 255);
+  --color-surface-raised: rgb(255, 255, 255);
+  --color-surface-hover: rgb(240, 241, 242);
+  --color-surface-pressed: rgb(221, 222, 225);
+  --color-border: rgb(221, 222, 225);
+  --color-border-bold: rgb(140, 143, 151);
+  --color-text: rgb(30, 31, 33);
+  --color-text-subtle: rgb(80, 82, 88);
+  --color-text-subtlest: rgb(107, 110, 118);
+  --color-backdrop: rgba(5, 12, 31, 0.46);
+
+  /* Red: MEDICAL, danger */
+  --color-red-subtlest: rgb(255, 236, 235);
+  --color-red-subtler: rgb(255, 213, 210);
+  --color-red-border: rgb(248, 113, 104);
+  --color-red-bold: rgb(201, 55, 44);
+  --color-red-text: rgb(174, 46, 36);
+  --color-red-on-bold: rgb(255, 255, 255);
+
+  /* Yellow: SUSPICIOUS */
+  --color-yellow-subtlest: rgb(254, 247, 200);
+  --color-yellow-subtler: rgb(245, 233, 137);
+  --color-yellow-border: rgb(221, 179, 14);
+  --color-yellow-bold: rgb(238, 209, 43);
+  --color-yellow-text: rgb(127, 95, 1);
+  --color-yellow-on-bold: rgb(30, 31, 33);
+
+  /* Purple: SILENT */
+  --color-purple-subtlest: rgb(248, 238, 254);
+  --color-purple-subtler: rgb(238, 215, 252);
+  --color-purple-border: rgb(201, 124, 244);
+  --color-purple-bold: rgb(150, 74, 192);
+  --color-purple-text: rgb(128, 63, 165);
+  --color-purple-on-bold: rgb(255, 255, 255);
+
+  /* Gray: STATUS, LoRa */
+  --color-gray-subtlest: rgb(240, 241, 242);
+  --color-gray-subtler: rgb(221, 222, 225);
+  --color-gray-border: rgb(183, 185, 190);
+  --color-gray-bold: rgb(107, 110, 118);
+  --color-gray-text: rgb(80, 82, 88);
+  --color-gray-on-bold: rgb(255, 255, 255);
+
+  /* Green: acknowledged, OK */
+  --color-green-subtlest: rgb(220, 255, 241);
+  --color-green-subtler: rgb(186, 243, 219);
+  --color-green-border: rgb(75, 206, 151);
+  --color-green-bold: rgb(31, 132, 90);
+  --color-green-text: rgb(33, 110, 78);
+  --color-green-on-bold: rgb(255, 255, 255);
+
+  /* Orange: connection problem, low battery */
+  --color-orange-subtlest: rgb(255, 245, 219);
+  --color-orange-subtler: rgb(252, 228, 166);
+  --color-orange-border: rgb(252, 167, 0);
+  --color-orange-bold: rgb(189, 91, 0);
+  --color-orange-text: rgb(158, 76, 0);
+  --color-orange-on-bold: rgb(255, 255, 255);
+
+  /* Blue: buttons, links, selected, focus */
+  --color-blue-subtlest: rgb(233, 242, 254);
+  --color-blue-subtler: rgb(207, 225, 253);
+  --color-blue-border: rgb(102, 157, 241);
+  --color-blue-bold: rgb(24, 104, 219);
+  --color-blue-text: rgb(21, 88, 188);
+  --color-blue-on-bold: rgb(255, 255, 255);
+
+  /* Teal: WiFi link */
+  --color-teal-subtlest: rgb(231, 249, 255);
+  --color-teal-subtler: rgb(198, 237, 251);
+  --color-teal-border: rgb(66, 178, 215);
+  --color-teal-bold: rgb(34, 125, 155);
+  --color-teal-text: rgb(32, 106, 131);
+  --color-teal-on-bold: rgb(255, 255, 255);
+
+  /* Interaction */
+  --color-blue-bold-hovered: rgb(21, 88, 188);
+  --color-blue-bold-pressed: rgb(20, 71, 148);
+  --color-focus-ring: rgb(70, 136, 236);
+
+  --shadow-raised: 0 1px 1px rgba(30, 31, 33, 0.25), 0 0 1px rgba(30, 31, 33, 0.31);
+  --shadow-overlay: 0 8px 12px rgba(30, 31, 33, 0.15), 0 0 1px rgba(30, 31, 33, 0.31);
+
+  /* Dims the OpenStreetMap tiles. Only used without a CARTO key. */
+  --tile-filter: none;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Neutrals */
+  --color-page: rgb(17, 18, 19);
+  --color-sidebar: rgb(24, 25, 26);
+  --color-surface: rgb(31, 31, 33);
+  --color-surface-raised: rgb(36, 37, 40);
+  --color-surface-hover: rgb(43, 44, 47);
+  --color-surface-pressed: rgb(48, 49, 52);
+  --color-border: rgb(61, 63, 67);
+  --color-border-bold: rgb(99, 102, 107);
+  --color-text: rgb(226, 227, 228);
+  --color-text-subtle: rgb(191, 193, 196);
+  --color-text-subtlest: rgb(150, 153, 158);
+  --color-backdrop: rgba(1, 4, 4, 0.46);
+
+  /* Red */
+  --color-red-subtlest: rgb(66, 34, 31);
+  --color-red-subtler: rgb(93, 31, 26);
+  --color-red-border: rgb(174, 46, 36);
+  --color-red-bold: rgb(248, 113, 104);
+  --color-red-text: rgb(253, 152, 145);
+  --color-red-on-bold: rgb(30, 31, 33);
+
+  /* Yellow */
+  --color-yellow-subtlest: rgb(51, 46, 27);
+  --color-yellow-subtler: rgb(83, 63, 4);
+  --color-yellow-border: rgb(148, 111, 0);
+  --color-yellow-bold: rgb(221, 179, 14);
+  --color-yellow-text: rgb(239, 221, 78);
+  --color-yellow-on-bold: rgb(30, 31, 33);
+
+  /* Purple */
+  --color-purple-subtlest: rgb(53, 36, 63);
+  --color-purple-subtler: rgb(72, 36, 93);
+  --color-purple-border: rgb(128, 63, 165);
+  --color-purple-bold: rgb(201, 124, 244);
+  --color-purple-text: rgb(216, 160, 247);
+  --color-purple-on-bold: rgb(30, 31, 33);
+
+  /* Gray */
+  --color-gray-subtlest: rgb(36, 37, 40);
+  --color-gray-subtler: rgb(48, 49, 52);
+  --color-gray-border: rgb(75, 77, 81);
+  --color-gray-bold: rgb(150, 153, 158);
+  --color-gray-text: rgb(191, 193, 196);
+  --color-gray-on-bold: rgb(30, 31, 33);
+
+  /* Green */
+  --color-green-subtlest: rgb(28, 51, 41);
+  --color-green-subtler: rgb(22, 75, 53);
+  --color-green-border: rgb(33, 110, 78);
+  --color-green-bold: rgb(75, 206, 151);
+  --color-green-text: rgb(126, 226, 184);
+  --color-green-on-bold: rgb(30, 31, 33);
+
+  /* Orange */
+  --color-orange-subtlest: rgb(58, 44, 31);
+  --color-orange-subtler: rgb(105, 50, 0);
+  --color-orange-border: rgb(158, 76, 0);
+  --color-orange-bold: rgb(246, 137, 9);
+  --color-orange-text: rgb(252, 167, 0);
+  --color-orange-on-bold: rgb(30, 31, 33);
+
+  /* Blue */
+  --color-blue-subtlest: rgb(28, 43, 66);
+  --color-blue-subtler: rgb(18, 50, 99);
+  --color-blue-border: rgb(21, 88, 188);
+  --color-blue-bold: rgb(102, 157, 241);
+  --color-blue-text: rgb(143, 184, 246);
+  --color-blue-on-bold: rgb(30, 31, 33);
+
+  /* Teal */
+  --color-teal-subtlest: rgb(30, 49, 55);
+  --color-teal-subtler: rgb(22, 69, 85);
+  --color-teal-border: rgb(32, 106, 131);
+  --color-teal-bold: rgb(66, 178, 215);
+  --color-teal-text: rgb(108, 195, 224);
+  --color-teal-on-bold: rgb(30, 31, 33);
+
+  /* Interaction */
+  --color-blue-bold-hovered: rgb(143, 184, 246);
+  --color-blue-bold-pressed: rgb(173, 203, 251);
+  --color-focus-ring: rgb(102, 157, 241);
+
+  --shadow-raised: 0 0 0 1px rgba(188, 214, 240, 0.04), 0 1px 1px rgba(3, 4, 4, 0.5), 0 0 1px rgba(3, 4, 4, 0.5);
+  --shadow-overlay: 0 0 0 1px rgba(188, 214, 240, 0.08), 0 8px 12px rgba(3, 4, 4, 0.36), 0 0 1px rgba(3, 4, 4, 0.5);
+
+  --tile-filter: brightness(0.62) contrast(1.15) saturate(0.7);
+}
+
+:root {
+  --font-sans: "General Sans", system-ui, "Segoe UI", sans-serif;
+  --font-size-body: 14px;
+  --font-size-small: 12px;
+  --font-size-title: 20px;
+  --line-height: 1.4;
+
+  --radius-small: 4px;
+  --radius-card: 8px;
+  --radius-modal: 12px;
+
+  --sidebar-wide: 232px;
+  --sidebar-narrow: 56px;
+  --topbar-height: 56px;
+  --list-width: 380px;
+}
