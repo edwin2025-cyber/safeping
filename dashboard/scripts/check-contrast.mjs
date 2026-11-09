@@ -53,7 +53,7 @@ for (const bg of ["red-subtlest", "red-subtler"]) {
   for (const fg of ["text", "text-subtle"]) PAIRS.push([fg, bg, "text", "open MEDICAL row"]);
 }
 // Tags: <color>-text on <color>-subtler (type, link, avatar)
-for (const c of ["red", "yellow", "purple", "gray", "teal"]) PAIRS.push([`${c}-text`, `${c}-subtler`, "text", "tag"]);
+for (const c of ["red", "yellow", "purple", "gray", "teal", "orange"]) PAIRS.push([`${c}-text`, `${c}-subtler`, "text", "tag"]);
 // Primary button
 PAIRS.push(["blue-on-bold", "blue-bold", "text", "primary button"]);
 PAIRS.push(["blue-on-bold", "blue-bold-hovered", "text", "primary button hover"]);

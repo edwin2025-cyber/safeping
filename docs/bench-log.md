@@ -92,6 +92,8 @@ Newest dates are at the bottom. Full test runs are in `logs/` (see `logs/README.
 - First real end-to-end alert: Fob (real key from add_device.py) to LoRa to Relay to USB to server to dashboard. SUSPICIOUS ctr 149 and MEDICAL ctr 150 stored. Location unknown (no GPS indoors, no Reference yet).
 - PA_PER_FLOOR set to 55 with an environment variable when starting app.py.
 
+Nov 8: Dashboard rebuilt in React (v1, then v2 redesign). CARTO key added. Server records link, temperature, counter, resolve. Campus places support added (empty list). Next: DT-10 GPS test.
+
 ## Open items
 
 - Repeat floor walk with more ground floor readings and a room vs hallway check.

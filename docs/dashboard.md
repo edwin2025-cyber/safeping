@@ -75,6 +75,25 @@ npm.cmd run dev
 
 Open the address Vite prints (http://localhost:5173). Vite passes every `/api` request to Flask on port 5000.
 
+### Mock mode (no Flask)
+
+For UI work without the server:
+
+```
+cd dashboard
+npm.cmd run dev:mock
+```
+
+This runs `vite --mode mock`. The dashboard then answers every `/api` call from fake data in the browser and never calls Flask.
+
+- The fake data is in `dashboard/src/mock/data.js`: 8 alerts (all 4 types, all 3 states), 4 devices, 4 places. All names are made up.
+- The fake routes are in `dashboard/src/mock/api.js`. Acknowledge and Resolve work, but only in memory. A page reload starts over.
+- A new random alert arrives every 45 seconds, so the sound and auto-zoom can be tested.
+- `carto_key` is always null, so the map uses OpenStreetMap tiles.
+- The top bar shows an orange "Mock data" tag.
+
+Normal `npm.cmd run dev` and `npm.cmd run build` are unchanged. The mock files are left out of the build.
+
 ### Production (one server)
 
 ```

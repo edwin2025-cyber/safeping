@@ -1,0 +1,14 @@
+SafePing field test summary (Relay only, Fob not logged)
+label: dryrun
+start: 2026-11-08 20:25:38.049
+end:   2026-11-08 20:26:56.131
+length: 78 s
+
+Relay received alerts:       4  (ctr 151, 152, 153, 154)
+  with a GPS position:       0
+Duplicates at the Relay:     0
+Not-SafePing packets heard:  0
+Sent, lost, confirmed:       unknown (no Fob log)
+
+Signal (dBm):  min -28  max -27  avg -28
+SNR (dB):      min 9.25  max 10.00  avg 9.75

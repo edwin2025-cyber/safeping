@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Tooltip from "./Tooltip.jsx";
+import { Tag } from "./Tags.jsx";
+import { MOCK } from "../lib/api.js";
 import { ago, formatClock, formatNumber } from "../lib/format.js";
 
 const RELAY_RECENT_S = 15 * 60;
@@ -65,6 +67,7 @@ export default function TopBar({ crumb, status, unreachable, skew, timeFormat, r
         <span className="crumb-current" aria-current="page">
           {crumb}
         </span>
+        {MOCK && <Tag color="orange">Mock data</Tag>}
       </nav>
       <div className="status-items">
         <span role="status" className="si-live">

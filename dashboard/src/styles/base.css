@@ -349,6 +349,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .tag--purple { background: var(--color-purple-subtler); color: var(--color-purple-text); }
 .tag--gray { background: var(--color-gray-subtler); color: var(--color-gray-text); }
 .tag--teal { background: var(--color-teal-subtler); color: var(--color-teal-text); }
+.tag--orange { background: var(--color-orange-subtler); color: var(--color-orange-text); }
 
 /* ---------- status: a dot and a word ---------- */
 .status {

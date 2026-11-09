@@ -1,0 +1,5 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try
+151,STATUS,,,2026-11-08 20:26:08.528,yes,,,,,,,-28,9.75,,,99527,21.25,96,,
+152,SUSPICIOUS,,,2026-11-08 20:26:23.196,yes,,,,,,,-28,9.25,,,99530,21.63,96,,
+153,MEDICAL,,,2026-11-08 20:26:31.357,yes,,,,,,,-28,10.0,,,99531,21.75,96,,
+154,SILENT,,,2026-11-08 20:26:46.994,yes,,,,,,,-27,10.0,,,99524,21.85,96,,

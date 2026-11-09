@@ -1,0 +1,10 @@
+# label dryrun  fob none  relay COM14
+2026-11-08 20:25:38.051 INFO  RELAY connected on COM14
+2026-11-08 20:26:08.528 RELAY SAFEPING_MSG {"ctr": 151, "t": 2125, "id": "FOB-001", "v": 1, "bat": 96, "p": 99527, "type": "STATUS", "sig": "89a262dcf631d1271e1d0d8ddb9a6d31209dbec7d7db7b2289a96ad0ce574538"}
+2026-11-08 20:26:08.529 RELAY from FOB-001 type STATUS ctr 151 signal -28 dBm, snr 9.75
+2026-11-08 20:26:23.196 RELAY SAFEPING_MSG {"ctr": 152, "t": 2163, "id": "FOB-001", "v": 1, "bat": 96, "p": 99530, "type": "SUSPICIOUS", "sig": "87e1a29907bce6d14dac1c05f861d43a0fd5a98cd08e2fbe1a2af257c91907d5"}
+2026-11-08 20:26:23.198 RELAY from FOB-001 type SUSPICIOUS ctr 152 signal -28 dBm, snr 9.25
+2026-11-08 20:26:31.357 RELAY SAFEPING_MSG {"ctr": 153, "t": 2175, "id": "FOB-001", "v": 1, "bat": 96, "p": 99531, "type": "MEDICAL", "sig": "5d6c8bbccfee48d6729d18a07c0b554062503e8bc0f871493701f325b71d887b"}
+2026-11-08 20:26:31.358 RELAY from FOB-001 type MEDICAL ctr 153 signal -28 dBm, snr 10.0
+2026-11-08 20:26:46.994 RELAY SAFEPING_MSG {"ctr": 154, "t": 2185, "id": "FOB-001", "v": 1, "bat": 96, "p": 99524, "type": "SILENT", "sig": "5e61ec5f1d3ee82cb5f5659679181a4cfbbb9feaa20faa37226fdcade5da2f5c"}
+2026-11-08 20:26:46.996 RELAY from FOB-001 type SILENT ctr 154 signal -27 dBm, snr 10.0
