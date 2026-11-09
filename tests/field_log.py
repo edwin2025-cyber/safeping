@@ -66,9 +66,10 @@ def micro_to_deg(e6):
 class Session:
     """Keeps track of every alert. Knows nothing about serial ports, so it can be tested alone."""
 
-    def __init__(self, label, base_path):
+    def __init__(self, label, base_path, fob_logged=True):
         self.label = label
         self.base = base_path
+        self.fob_logged = fob_logged   # False with --no-fob: Relay only, Fob columns stay empty
         self.start = time.time()
         self.fob = {}             # ctr -> dict with Fob side
         self.relay = {}           # ctr -> dict with Relay side
@@ -192,7 +193,7 @@ class Session:
                 "ctr": ctr,
                 "type": msg.get("type", ""),
                 "fob_time": now_text(f["time"]) if f else "",
-                "fob_result": f["result"] if f else "not in Fob log",
+                "fob_result": f["result"] if f else ("not in Fob log" if self.fob_logged else ""),
                 "relay_time": now_text(r["time"]) if r else "",
                 "received": "yes" if r else "no",
                 "delay_s": delay,
@@ -214,6 +215,8 @@ class Session:
         return rows
 
     def summary(self, end_t):
+        if not self.fob_logged:
+            return self._relay_summary(end_t)
         sent_lora = [c for c, f in self.fob.items() if f["result"] in ("LoRa", "not confirmed")]
         confirmed = [c for c, f in self.fob.items() if f.get("confirmed")]
         unconfirmed = sorted(c for c, f in self.fob.items() if f["result"] == "not confirmed")
@@ -259,6 +262,32 @@ class Session:
             "SNR (dB):      {}".format(self._range(snr, "{:.2f}")),
             "Fob print to Relay print (s): {}".format(self._range(delays, "{:.2f}")),
             "  (laptop clock for both. Starts when the Fob prints, after any cancel window.)",
+        ]
+        if self.notes:
+            lines += ["", "Notes:"] + ["  " + n for n in self.notes]
+        return "\n".join(lines) + "\n"
+
+    def _relay_summary(self, end_t):
+        """Summary for --no-fob runs. Nothing here needs the Fob log."""
+        heard = sorted(self.relay)
+        rssi = [r["rssi"] for r in self.relay.values() if r["rssi"] is not None]
+        snr = [r["snr"] for r in self.relay.values() if r["snr"] is not None]
+        with_gps = [c for c, r in self.relay.items() if "lat" in r["msg"]]
+        lines = [
+            "SafePing field test summary (Relay only, Fob not logged)",
+            "label: {}".format(self.label),
+            "start: {}".format(now_text(self.start)),
+            "end:   {}".format(now_text(end_t)),
+            "length: {:.0f} s".format(end_t - self.start),
+            "",
+            "Relay received alerts:       {}{}".format(len(heard), self._list(heard)),
+            "  with a GPS position:       {}".format(len(with_gps)),
+            "Duplicates at the Relay:     {}".format(self.duplicates),
+            "Not-SafePing packets heard:  {}".format(self.not_safeping),
+            "Sent, lost, confirmed:       unknown (no Fob log)",
+            "",
+            "Signal (dBm):  {}".format(self._range(rssi, "{:.0f}")),
+            "SNR (dB):      {}".format(self._range(snr, "{:.2f}")),
         ]
         if self.notes:
             lines += ["", "Notes:"] + ["  " + n for n in self.notes]
@@ -312,8 +341,14 @@ class Session:
                                               fmt.format(sum(values) / len(values)))
 
 
-def reader(name, port, q, stop):
-    """Read lines from one board and put them on the queue. Reconnects if the cable is bumped."""
+def reader(name, port, q, stop, quiet=False):
+    """Read lines from one board and put them on the queue. Reconnects if the cable is bumped.
+
+    quiet=True (used for the Fob): after a problem, print one line and then retry
+    without printing every error. Print one line again when it comes back.
+    """
+    connected_once = False
+    retrying = False              # True while a quiet reader is in its silent retry loop
     while not stop.is_set():
         try:
             ser = serial.Serial()
@@ -323,7 +358,12 @@ def reader(name, port, q, stop):
             ser.dtr = False           # keeps the board from resetting when the port opens
             ser.rts = False
             ser.open()
-            q.put((time.time(), "INFO", "{} connected on {}".format(name, port)))
+            if quiet and retrying and connected_once:
+                q.put((time.time(), "INFO", "Fob reconnected"))
+            else:
+                q.put((time.time(), "INFO", "{} connected on {}".format(name, port)))
+            connected_once = True
+            retrying = False
             buf = b""
             while not stop.is_set():
                 buf += ser.read(ser.in_waiting or 1)
@@ -331,7 +371,14 @@ def reader(name, port, q, stop):
                     raw, buf = buf.split(b"\n", 1)
                     q.put((time.time(), name, raw.decode("utf-8", errors="replace").strip()))
         except Exception as err:      # port busy, unplugged, or wrong name
-            q.put((time.time(), "INFO", "{} problem on {}: {}. Retrying in 2 s".format(name, port, err)))
+            if not quiet:
+                q.put((time.time(), "INFO", "{} problem on {}: {}. Retrying in 2 s".format(name, port, err)))
+            elif not retrying:
+                if connected_once:
+                    q.put((time.time(), "INFO", "Fob disconnected, retrying quietly"))
+                else:         # never connected: show the error once so a wrong COM name is visible
+                    q.put((time.time(), "INFO", "{} problem on {}: {}. Retrying quietly".format(name, port, err)))
+                retrying = True
             time.sleep(2)
 
 
@@ -341,6 +388,8 @@ def main():
     parser.add_argument("--fob", default="COM15")
     parser.add_argument("--relay", default="COM14")
     parser.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "logs"))
+    parser.add_argument("--no-fob", action="store_true",
+                        help="do not open the Fob port at all. Log only the Relay. Fob-only columns stay empty")
     args = parser.parse_args()
 
     if serial is None:
@@ -352,17 +401,19 @@ def main():
     run_dir = Path(args.out) / now.strftime("%Y-%m-%d") / "{}_{}".format(now.strftime("%H%M%S"), label)
     run_dir.mkdir(parents=True, exist_ok=True)          # logs/<date>/<time>_<label>/
     base = run_dir / "{}_{}".format(now.strftime("%Y-%m-%d_%H%M%S"), label)
-    session = Session(label, base)
+    session = Session(label, base, fob_logged=not args.no_fob)
 
     q = queue.Queue()
     stop = threading.Event()
-    for name, port in (("FOB", args.fob), ("RELAY", args.relay)):
-        threading.Thread(target=reader, args=(name, port, q, stop), daemon=True).start()
+    if not args.no_fob:
+        threading.Thread(target=reader, args=("FOB", args.fob, q, stop, True), daemon=True).start()
+    threading.Thread(target=reader, args=("RELAY", args.relay, q, stop), daemon=True).start()
 
+    fob_text = "not logged (--no-fob)" if args.no_fob else args.fob
     print("Logging to", str(base) + "_*")
-    print("Fob on", args.fob, " Relay on", args.relay, " Ctrl+C to stop")
+    print("Fob", fob_text, " Relay on", args.relay, " Ctrl+C to stop")
     raw_file = open(str(base) + "_raw.txt", "a", encoding="utf-8")
-    raw_file.write("# label {}  fob {}  relay {}\n".format(label, args.fob, args.relay))
+    raw_file.write("# label {}  fob {}  relay {}\n".format(label, "none" if args.no_fob else args.fob, args.relay))
 
     try:
         while True:
