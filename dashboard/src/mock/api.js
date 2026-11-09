@@ -9,8 +9,10 @@ import {
   MOCK_PLACES_MAX_DISTANCE_M,
   MOCK_STATUS,
 } from "./data.js";
+import { addDays, dayCount, isoDay, parseDay } from "../lib/dates.js";
 
 const NEW_ALERT_MS = 45000;
+const HISTORY_DAYS = 60;
 const PRIORITY = { SILENT: 1, MEDICAL: 2, SUSPICIOUS: 3, STATUS: 9 };
 const TYPES = Object.keys(PRIORITY);
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -59,7 +61,7 @@ function describe(alert) {
 
 // ---------- the in-memory alert list ----------
 
-function makeAlert({ device, type, state, time, link, lat, lon, acc, floor }) {
+function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackAfter = 60, resolveAfter = 540 }) {
   const dev = MOCK_DEVICES.find((d) => d.device_id === device);
   counters[device] = (counters[device] || 0) + 1;
   const hasGps = lat !== undefined;
@@ -83,17 +85,76 @@ function makeAlert({ device, type, state, time, link, lat, lon, acc, floor }) {
     counter: counters[device],
     link,
     acknowledged: acked,
-    acknowledged_at: acked ? time + 60 : null,
+    acknowledged_at: acked ? time + ackAfter : null,
     resolved: state === "resolved",
-    resolved_at: state === "resolved" ? time + 600 : null,
+    resolved_at: state === "resolved" ? time + ackAfter + resolveAfter : null,
     sms_sent: type !== "STATUS",
   });
 }
 
+// ---------- 60 days of history for Overview ----------
+// Seeded by the date, so a given day always has the same alerts.
+
+function seeded(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** 0 to 6 alerts a day, more on weekdays between 7 AM and 4 PM, mostly STATUS.
+    All resolved, with acknowledge and resolve times. The last 4 hours are left
+    to MOCK_ALERTS. */
+function history(startS) {
+  const out = [];
+  const today = isoDay(new Date(startS * 1000));
+  for (let back = HISTORY_DAYS; back >= 0; back--) {
+    const day = addDays(today, -back);
+    const midnight = parseDay(day).getTime() / 1000;
+    const rand = seeded(Number(day.replaceAll("-", "")));
+    const weekday = parseDay(day).getDay() % 6 !== 0;
+    const n = weekday ? 1 + Math.floor(rand() * 6) : Math.floor(rand() * 3);
+    for (let i = 0; i < n; i++) {
+      const hour = weekday && rand() < 0.8 ? 7 + Math.floor(rand() * 9) : Math.floor(rand() * 24);
+      const time = midnight + hour * 3600 + Math.floor(rand() * 3600);
+      const r = rand();
+      const type = r < 0.55 ? "STATUS" : r < 0.72 ? "MEDICAL" : r < 0.86 ? "SUSPICIOUS" : "SILENT";
+      const where = {};
+      const w = rand();
+      if (w < 0.6) {
+        const p = MOCK_PLACES[Math.floor(rand() * MOCK_PLACES.length)];
+        where.lat = p.lat + (rand() - 0.5) * 0.001;
+        where.lon = p.lon + (rand() - 0.5) * 0.001;
+        where.acc = 5 + Math.floor(rand() * 15);
+      } else if (w < 0.85) {
+        where.floor = 1 + Math.floor(rand() * 4);
+      }
+      const alert = {
+        device: MOCK_DEVICES[Math.floor(rand() * MOCK_DEVICES.length)].device_id,
+        type,
+        state: "resolved",
+        time,
+        link: rand() < 0.5 ? "lora" : "wifi",
+        ackAfter: Math.round(30 + 270 * rand() ** 2),
+        resolveAfter: Math.round(180 + 2400 * rand() ** 2),
+        ...where,
+      };
+      if (time < startS - 4 * 3600) out.push(alert);
+    }
+  }
+  return out.sort((a, b) => a.time - b.time);
+}
+
 const start = now();
-const alerts = MOCK_ALERTS.slice()
-  .sort((a, b) => b.minAgo - a.minAgo) // oldest first, so ids grow with time
-  .map((a) => makeAlert({ ...a, time: start - a.minAgo * 60 }));
+const alerts = [
+  ...history(start),
+  ...MOCK_ALERTS.slice()
+    .sort((a, b) => b.minAgo - a.minAgo)
+    .map((a) => ({ ...a, time: start - a.minAgo * 60 })),
+].map(makeAlert); // oldest first, so ids grow with time
 
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
@@ -181,9 +242,180 @@ function getDeviceAlerts(deviceId) {
   return { server_time: now(), alerts: list };
 }
 
+// ---------- Overview numbers and CSV, same rules as server/stats.py ----------
+
+const TYPE_ORDER = ["MEDICAL", "SUSPICIOUS", "SILENT", "STATUS"];
+const notStatus = (a) => a.alert_type !== "STATUS";
+const startOfDay = (iso) => parseDay(iso).getTime() / 1000;
+
+function badRequest() {
+  throw new Error("HTTP 400");
+}
+
+function parseRange(from, to) {
+  if (!parseDay(from) || !parseDay(to) || from > to || dayCount(from, to) > 366) badRequest();
+  return [from, to];
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const s = values.slice().sort((x, y) => x - y);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function byType(list) {
+  return Object.fromEntries(TYPE_ORDER.map((t) => [t, list.filter((a) => a.alert_type === t).length]));
+}
+
+function between(startS, endS) {
+  return alerts.filter((a) => a.timestamp >= startS && a.timestamp < endS);
+}
+
+function getStats(params) {
+  const [from, to] = parseRange(params.get("from"), params.get("to"));
+  const days = dayCount(from, to);
+  const prevFrom = addDays(from, -days);
+  const startS = startOfDay(from);
+  const endS = startOfDay(addDays(to, 1));
+  const cur = between(startS, endS);
+  const prev = between(startOfDay(prevFrom), startS);
+  const dayOf = (a) => isoDay(new Date(a.timestamp * 1000));
+  const hourOf = (a) => new Date(a.timestamp * 1000).getHours();
+
+  const perDay = [];
+  for (let i = 0; i < days; i++) {
+    const d = addDays(from, i);
+    const p = addDays(prevFrom, i);
+    const today = cur.filter((a) => dayOf(a) === d);
+    perDay.push({
+      date: d,
+      count: today.filter(notStatus).length,
+      by_type: byType(today),
+      previous_date: p,
+      previous_count: prev.filter((a) => dayOf(a) === p && notStatus(a)).length,
+    });
+  }
+  const perHour =
+    days === 1
+      ? Array.from({ length: 24 }, (_, h) => {
+          const inHour = cur.filter((a) => hourOf(a) === h);
+          return {
+            hour: h,
+            count: inHour.filter(notStatus).length,
+            by_type: byType(inHour),
+            previous_count: prev.filter((a) => hourOf(a) === h && notStatus(a)).length,
+          };
+        })
+      : null;
+
+  const grid = Array.from({ length: 7 }, () => Array(24).fill(0)); // Monday first
+  const counted = cur.filter(notStatus);
+  counted.forEach((a) => {
+    const d = new Date(a.timestamp * 1000);
+    grid[(d.getDay() + 6) % 7][d.getHours()] += 1;
+  });
+  const ackS = counted.filter((a) => a.acknowledged && a.acknowledged_at !== null).map((a) => Math.max(0, a.acknowledged_at - a.timestamp));
+  const resolveS = counted
+    .filter((a) => a.resolved && a.resolved_at !== null && a.acknowledged_at !== null)
+    .map((a) => Math.max(0, a.resolved_at - a.acknowledged_at));
+  const open = alerts.filter((a) => !a.acknowledged && !a.resolved && notStatus(a));
+  const t = now();
+  const fobs = getDevices().devices.filter((d) => d.role !== "REF");
+
+  return {
+    server_time: t,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    tz_offset_min: -new Date().getTimezoneOffset(),
+    from,
+    to,
+    days,
+    previous_from: prevFrom,
+    previous_to: addDays(from, -1),
+    total: perDay.reduce((s, d) => s + d.count, 0),
+    previous_total: perDay.reduce((s, d) => s + d.previous_count, 0),
+    per_day: perDay,
+    per_hour: perHour,
+    weekday_hour: grid,
+    flow: {
+      received: counted.length,
+      acknowledged: counted.filter((a) => a.acknowledged).length,
+      resolved: counted.filter((a) => a.resolved).length,
+      median_ack_s: median(ackS),
+      median_resolve_s: median(resolveS),
+      ack_timed: ackS.length,
+      resolve_timed: resolveS.length,
+    },
+    open_now: open.length,
+    open_medical_now: open.filter((a) => a.alert_type === "MEDICAL").length,
+    fobs_active: fobs.filter((d) => d.last_seen !== null && t - d.last_seen <= 86400).length,
+    fobs_total: fobs.length,
+    low_battery: fobs.filter((d) => d.battery !== null && d.battery < 20).length,
+  };
+}
+
+const CSV_COLUMNS = [
+  "Received", "Type", "Student", "Fob ID", "Status", "Place", "Floor",
+  "Latitude", "Longitude", "Accuracy (m)", "Battery (%)", "Link", "Acknowledged", "Resolved",
+];
+
+function localTime(ts) {
+  if (ts === null || ts === undefined) return "";
+  const d = new Date(ts * 1000);
+  const pad = (n) => String(n).padStart(2, "0");
+  return isoDay(d) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+}
+
+function csvCell(value) {
+  const s = value === null || value === undefined ? "" : String(value);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function csvText(value) {
+  const s = value === null || value === undefined ? "" : String(value);
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s; // a spreadsheet would run these as formulas
+}
+
+function csvPlace(a) {
+  if (!a.place_name) return "";
+  if (a.place_distance_m <= 40) return "Near " + a.place_name;
+  return Math.round(a.place_distance_m / 10) * 10 + " m " + a.place_bearing + " of " + a.place_name;
+}
+
+/** The CSV the server's /api/export.csv would send, made from the mock rows. */
+export function mockExportCsv(from, to) {
+  parseRange(from, to);
+  const rows = between(startOfDay(from), startOfDay(addDays(to, 1))).sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+  const lines = [CSV_COLUMNS.map(csvCell).join(",")];
+  rows.forEach((a) => {
+    lines.push(
+      [
+        localTime(a.timestamp),
+        a.alert_type,
+        csvText(a.student_name),
+        csvText(a.device_id),
+        a.resolved ? "Resolved" : a.acknowledged ? "Acknowledged" : "Open",
+        csvText(csvPlace(a)),
+        a.floor ?? "",
+        a.latitude !== null ? a.latitude.toFixed(6) : "",
+        a.longitude !== null ? a.longitude.toFixed(6) : "",
+        a.accuracy ?? "",
+        a.battery ?? "",
+        { lora: "LoRa", wifi: "WiFi" }[a.link] || "",
+        localTime(a.acknowledged_at),
+        localTime(a.resolved_at),
+      ]
+        .map(csvCell)
+        .join(","),
+    );
+  });
+  return { filename: "safeping-alerts-" + from + "-to-" + to + ".csv", text: "﻿" + lines.join("\r\n") + "\r\n" };
+}
+
 export async function mockGet(url) {
   const [path, query] = url.split("?");
   const params = new URLSearchParams(query || "");
+  if (path === "/api/stats") return getStats(params);
   if (path === "/api/alerts") return getAlerts(params);
   if (path === "/api/status") return getStatus();
   if (path === "/api/config") return { ...MOCK_CONFIG };

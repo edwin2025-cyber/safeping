@@ -16,6 +16,7 @@ from flask import Flask, Response, abort, jsonify, request, send_from_directory
 import config
 import db
 import places
+import stats
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
@@ -187,6 +188,33 @@ def api_device_alerts(device_id):
         return jsonify({"ok": False, "error": "unknown device"}), 404
     alerts = [_alert_out(a) for a in db.list_device_alerts(device_id, 200)]
     return jsonify({"server_time": time.time(), "alerts": alerts})
+
+
+@app.route("/api/stats")
+@require_login
+def api_stats():
+    """Everything the Overview page shows. ?from=2026-11-02&to=2026-11-08, both days included."""
+    try:
+        first, last = stats.parse_range(request.args)
+    except stats.BadRange as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    return jsonify(stats.build(first, last))
+
+
+@app.route("/api/export.csv")
+@require_login
+def api_export_csv():
+    """Every alert in the range as a CSV download. Same from and to as /api/stats."""
+    try:
+        first, last = stats.parse_range(request.args)
+    except stats.BadRange as error:
+        return jsonify({"ok": False, "error": str(error)}), 400
+    name = stats.export_filename(first, last)
+    return Response(
+        stats.export_csv(first, last),
+        mimetype="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="{}"'.format(name), "Cache-Control": "no-store"},
+    )
 
 
 if __name__ == "__main__":

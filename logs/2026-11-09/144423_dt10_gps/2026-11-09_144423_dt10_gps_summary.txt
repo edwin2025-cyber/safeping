@@ -1,0 +1,14 @@
+SafePing field test summary (Relay only, Fob not logged)
+label: dt10_gps
+start: 2026-11-09 14:44:23.816
+end:   2026-11-09 15:08:16.567
+length: 1433 s
+
+Relay received alerts:       17  (ctr 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 173)
+  with a GPS position:       16
+Duplicates at the Relay:     0
+Not-SafePing packets heard:  1
+Sent, lost, confirmed:       unknown (no Fob log)
+
+Signal (dBm):  min -95  max -30  avg -82
+SNR (dB):      min 5.00  max 10.00  avg 8.75

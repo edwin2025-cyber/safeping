@@ -1,8 +1,10 @@
-/* Settings: a large modal, like a settings window */
+/* Settings: a large modal, like a settings window. As tall as its content,
+   from 480 px up to 80vh. Past that the right side scrolls; the nav never does. */
 .modal.settings {
   flex-direction: row;
   width: min(1100px, 92vw);
-  height: min(760px, 88vh);
+  min-height: min(480px, 80vh);
+  max-height: 80vh;
 }
 .set-nav {
   display: flex;
@@ -50,7 +52,7 @@
 }
 .set-content {
   max-width: 720px;
-  padding: 48px 64px;
+  padding: 32px;
 }
 .set-title {
   font-size: var(--text-24);

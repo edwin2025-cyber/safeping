@@ -219,6 +219,109 @@ def count_unacknowledged():
         ).fetchone()[0]
 
 
+# ---------- Overview numbers ----------
+# Days and hours use 'localtime': the time zone of the machine the server runs on.
+# start and end are Unix seconds. An alert counts when start <= timestamp < end.
+
+def count_by_day_and_type(start, end):
+    """{("2026-11-02", "MEDICAL"): 3, ...} for alerts received in the range."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT date(timestamp, 'unixepoch', 'localtime') AS day, alert_type, COUNT(*) AS n
+               FROM alerts WHERE timestamp >= ? AND timestamp < ?
+               GROUP BY day, alert_type""",
+            (start, end),
+        ).fetchall()
+    return {(r["day"], r["alert_type"]): r["n"] for r in rows}
+
+
+def count_by_hour_and_type(start, end):
+    """{(14, "MEDICAL"): 2, ...}: local hour of the day (0 to 23) and type."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT CAST(strftime('%H', timestamp, 'unixepoch', 'localtime') AS INTEGER) AS hour,
+                      alert_type, COUNT(*) AS n
+               FROM alerts WHERE timestamp >= ? AND timestamp < ?
+               GROUP BY hour, alert_type""",
+            (start, end),
+        ).fetchall()
+    return {(r["hour"], r["alert_type"]): r["n"] for r in rows}
+
+
+def count_by_weekday_hour(start, end):
+    """[(weekday, hour, count)] for alerts other than STATUS. Weekday 0 is Sunday."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT CAST(strftime('%w', timestamp, 'unixepoch', 'localtime') AS INTEGER) AS weekday,
+                      CAST(strftime('%H', timestamp, 'unixepoch', 'localtime') AS INTEGER) AS hour,
+                      COUNT(*) AS n
+               FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? AND alert_type != 'STATUS'
+               GROUP BY weekday, hour""",
+            (start, end),
+        ).fetchall()
+    return [(r["weekday"], r["hour"], r["n"]) for r in rows]
+
+
+def flow_counts(start, end):
+    """(received, acknowledged, resolved) for alerts other than STATUS received in the range."""
+    with connect() as c:
+        row = c.execute(
+            """SELECT COUNT(*), COALESCE(SUM(acknowledged), 0), COALESCE(SUM(resolved), 0)
+               FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? AND alert_type != 'STATUS'""",
+            (start, end),
+        ).fetchone()
+    return row[0], row[1], row[2]
+
+
+def ack_seconds(start, end):
+    """Seconds from received to acknowledged, for alerts that have an acknowledge time."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT acknowledged_at - timestamp FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? AND alert_type != 'STATUS'
+                 AND acknowledged = 1 AND acknowledged_at IS NOT NULL""",
+            (start, end),
+        ).fetchall()
+    return [max(0.0, r[0]) for r in rows]
+
+
+def resolve_seconds(start, end):
+    """Seconds from acknowledged to resolved, for resolved alerts that have both times."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT resolved_at - acknowledged_at FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? AND alert_type != 'STATUS'
+                 AND resolved = 1 AND resolved_at IS NOT NULL AND acknowledged_at IS NOT NULL""",
+            (start, end),
+        ).fetchall()
+    return [max(0.0, r[0]) for r in rows]
+
+
+def count_open():
+    """(open alerts, open MEDICAL alerts) right now. STATUS is never counted, like the Live page."""
+    with connect() as c:
+        row = c.execute(
+            """SELECT COUNT(*), COALESCE(SUM(alert_type = 'MEDICAL'), 0) FROM alerts
+               WHERE acknowledged = 0 AND resolved = 0 AND alert_type != 'STATUS'"""
+        ).fetchone()
+    return row[0], row[1]
+
+
+def alerts_between(start, end):
+    """Every alert received in the range, all types and states, oldest first. For the CSV export."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT a.*, d.student_name
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE a.timestamp >= ? AND a.timestamp < ?
+               ORDER BY a.timestamp, a.id""",
+            (start, end),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 # ---------- reference readings ----------
 
 def insert_reference(received_at, pressure, temperature):

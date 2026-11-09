@@ -14,7 +14,7 @@ function Place({ alert }) {
   return text ? <span>{text}</span> : <span className="muted">Unknown</span>;
 }
 
-function AlertRow({ alert, compact, nowServer, timeFormat, highlighted, onOpen, onHover, registerFocus }) {
+function AlertRow({ alert, compact, showStatus, nowServer, timeFormat, highlighted, onOpen, onHover, registerFocus }) {
   const cls = ["alert-row"];
   if (isOpenMedical(alert)) cls.push("is-medical-open");
   if (highlighted) cls.push("is-hovered");
@@ -60,19 +60,33 @@ function AlertRow({ alert, compact, nowServer, timeFormat, highlighted, onOpen, 
           <span>{ago(nowServer - alert.timestamp)}</span>
         </Tooltip>
       </td>
-      <td>
-        <StatusDot alert={alert} />
-      </td>
+      {showStatus && (
+        <td>
+          <StatusDot alert={alert} />
+        </td>
+      )}
     </tr>
   );
 }
 
-/** Alerts as table rows. In the All view, rows are grouped by state with quiet labels. */
-export default function AlertTable({ alerts, grouped, compact, nowServer, timeFormat, highlightedId, onOpen, onHover, registerFocus }) {
+/** Alerts as table rows. In the All view, rows are grouped by state with quiet labels.
+    Under Needs action every row is Open, so the Status column is left out there. */
+export default function AlertTable({
+  alerts,
+  grouped,
+  showStatus = true,
+  compact,
+  nowServer,
+  timeFormat,
+  highlightedId,
+  onOpen,
+  onHover,
+  registerFocus,
+}) {
   const groups = grouped
     ? GROUPS.map((g) => ({ ...g, items: alerts.filter((a) => alertState(a) === g.state) })).filter((g) => g.items.length)
     : [{ state: "all", items: alerts }];
-  const columns = compact ? 4 : 5;
+  const columns = (compact ? 3 : 4) + (showStatus ? 1 : 0);
   return (
     <table className={"table alert-table" + (compact ? " is-compact" : "")}>
       <colgroup>
@@ -80,7 +94,7 @@ export default function AlertTable({ alerts, grouped, compact, nowServer, timeFo
         <col className="col-student" />
         {!compact && <col className="col-place" />}
         <col className="col-time" />
-        <col className="col-status" />
+        {showStatus && <col className="col-status" />}
       </colgroup>
       <thead>
         <tr>
@@ -88,7 +102,7 @@ export default function AlertTable({ alerts, grouped, compact, nowServer, timeFo
           <th scope="col">Student</th>
           {!compact && <th scope="col">Place</th>}
           <th scope="col">Time</th>
-          <th scope="col">Status</th>
+          {showStatus && <th scope="col">Status</th>}
         </tr>
       </thead>
       {groups.map((g) => (
@@ -106,6 +120,7 @@ export default function AlertTable({ alerts, grouped, compact, nowServer, timeFo
               key={a.id}
               alert={a}
               compact={compact}
+              showStatus={showStatus}
               nowServer={nowServer}
               timeFormat={timeFormat}
               highlighted={a.id === highlightedId}

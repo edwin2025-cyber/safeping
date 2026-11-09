@@ -2,7 +2,9 @@
 // Times are minutes before the page loaded, so the data always looks recent.
 
 export const MOCK_CONFIG = {
-  carto_key: null, // always null: the map uses OpenStreetMap tiles
+  // From dashboard/.env.mock.local (VITE_CARTO_KEY=...), which git ignores.
+  // Without it the map uses OpenStreetMap tiles.
+  carto_key: import.meta.env.VITE_CARTO_KEY || null,
   pa_per_floor: 42,
   ref_max_age_s: 120,
   defaults: { sight_radius_m: 50, camera_before_min: 2, camera_after_min: 5 },

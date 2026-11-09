@@ -8,6 +8,7 @@ import "./components/live.css";
 import "./components/map.css";
 import "./components/Peek.css";
 import "./components/settings.css";
+import "./components/overview.css";
 import App from "./App.jsx";
 
 createRoot(document.getElementById("root")).render(

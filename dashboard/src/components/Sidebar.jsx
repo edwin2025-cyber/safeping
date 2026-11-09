@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
-import { Activity, Cpu, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck } from "lucide-react";
+import { Activity, Cpu, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck } from "lucide-react";
 import Popover from "./Popover.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
 
 export const PAGES = [
+  { id: "overview", label: "Overview", Icon: LayoutDashboard },
   { id: "live", label: "Live", Icon: Activity },
   { id: "devices", label: "Devices", Icon: Cpu },
 ];

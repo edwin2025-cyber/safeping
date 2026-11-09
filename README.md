@@ -74,6 +74,8 @@ Register a device once: `python add_device.py FOB-001 "Student Name"`. It prints
 
 The staff dashboard is a React app in `dashboard/`. Build it once with `npm.cmd install` and `npm.cmd run build` in `dashboard/`, then `python app.py` in `server/` serves it at http://127.0.0.1:5000. Map tiles use CARTO when `CARTO_KEY` is set. Named campus places go in `server/places.json`. How to run it, the settings, places and the map math: [docs/dashboard.md](docs/dashboard.md). Screenshots: [docs/screenshots/](docs/screenshots/).
 
+The Overview page shows alert totals, response times, when alerts happen and a CSV export for any date range.
+
 ## For the dashboard and login work
 
 The dashboard is `server/static/` (served by `server/app.py`). Login and two-factor must be checked inside the Flask server (in front of `/api/alerts` and `/api/ack`), not only on a separate page, or anyone could open the server's address and skip it.

@@ -20,17 +20,21 @@
   padding: 0 24px 24px;
 }
 .live-body--split .table-pane {
-  padding-right: 8px;
+  padding-right: 16px;
 }
 .table-pane--full {
   flex: 1;
 }
+/* The map fills its pane to the edges. In Split view one 1 px line divides it from the list. */
 .map-pane {
   min-height: 0;
-  padding: 0 32px 24px 16px;
 }
-.live-body--map .map-pane {
-  padding-left: 32px;
+.live-body--split .map-pane {
+  border-left: 1px solid var(--color-border);
+}
+.map-pane .map-wrap {
+  border: 0;
+  border-radius: 0;
 }
 
 /* ---------- alert table ---------- */
@@ -189,6 +193,7 @@
     padding-right: 24px;
   }
   .live-body--split .map-pane {
-    padding: 0 32px 24px;
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
   }
 }

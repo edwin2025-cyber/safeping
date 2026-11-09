@@ -1,4 +1,4 @@
-# SafePing Dashboard (version 2)
+# SafePing Dashboard (version 3)
 
 The staff dashboard is a React app in `dashboard/`. Flask in `server/` serves it and its API.
 
@@ -6,25 +6,53 @@ Screenshots of every screen, in light and dark, are in [docs/screenshots/](scree
 
 ## What it does
 
-The sidebar has two pages, Live and Devices, plus Settings, which opens over the page.
+The sidebar has three pages under Monitor (Overview, Live and Devices), plus Settings, which opens over the page. The dashboard opens on the last page used, and on Live the first time.
+
+### Overview
+
+Big numbers and charts for a date range. Pick the range in the dropdown at the top right: Today, Last 7 days (the default), Last 30 days, This month, or Custom (two date inputs). The range shows under the title. Export CSV downloads every alert in the range (PDF reports come later).
+
+| Section | What it shows |
+|---|---|
+| Alerts | The total for the range, the change against the previous period of the same length, and a line chart per day: this period solid blue, the previous period dashed gray. Today shows hours instead of days |
+| Summary | Median time to acknowledge, Open now, Fobs active, Low battery. Click Open now to go to Live, or Fobs active or Low battery to go to Devices |
+| Response flow | Received, Acknowledged and Resolved, with the share of Received and the median time between steps |
+| Alerts by type | A line per type per day. STATUS is off until you turn on "Include STATUS" |
+| When alerts happen | Weekday (rows) by hour (columns). Darker blue means more alerts. Hover a cell for the count |
+
+How each number is worked out:
+
+- Days and hours use the time zone of the computer the server runs on. `/api/stats` says which one in `tz`.
+- STATUS check-ins are left out of every number except "Alerts by type" with Include STATUS on, the same way Live leaves them out of its open count. The CSV export has every alert, STATUS included.
+- An alert belongs to the range by the time the server received it. Both ends of the range count: Nov 2 to Nov 8 is 7 days.
+- Change line: (this total minus previous total) divided by the previous total. Up is red and down is green, because more alerts is worse. When the previous period had none, it says "No alerts in the previous period".
+- Received, Acknowledged, Resolved: alerts received in the range, and how many of those have been acknowledged or resolved so far.
+- Median time to acknowledge: the middle value of (acknowledged time minus received time), for alerts in the range that have an acknowledged time. Alerts with no acknowledged time are left out, never guessed. "No data" means none had one.
+- Median after acknowledged (Resolved step): the middle value of (resolved time minus acknowledged time), for resolved alerts that have both times. Resolving an alert nobody acknowledged sets both times at once, so it counts as 0 minutes here.
+- Open now: alerts that are not acknowledged and not resolved, right now, whatever the range. Red when one of them is MEDICAL.
+- Fobs active: Fobs (not Reference boards) whose newest alert of any type, STATUS included, arrived in the last 24 hours, out of all registered Fobs.
+- Low battery: Fobs whose newest battery reading is under 20%, like the Low word on the Devices page.
+- Heat grid colors: no alerts is gray, then four steps of blue up to the busiest hour. Under 7 days the full week still shows, with the note "Based on the selected range".
+
+Every chart has a text summary for screen readers and a hidden table of its numbers. Charts do not animate when the computer asks for reduced motion. The charts use recharts (MIT license). The Overview code loads only when the page is opened, so Live stays fast.
 
 ### Live
 
-Three views, picked with the tabs under the title. The browser remembers the choice.
+Three views, picked with the tabs next to the title. The browser remembers the choice.
 
 | View | What you see |
 |---|---|
-| Split (default) | Alert table on the left, map on the right |
+| Split (default) | Alert table on the left, map on the right, split by a thin line |
 | List | The alert table, full width |
-| Map | The map, full width, with a floating alert list you can hide |
+| Map | The map, edge to edge, with a floating alert list you can hide |
 
-Tools on the right of the tabs:
+Tools on the right of the title row:
 
 - Filter: one alert type, or all types.
 - Search: student name or Fob ID.
 - Needs action, Acknowledged, All. All also shows resolved alerts, grouped under quiet headers.
 
-Table columns: Type, Student (with the Fob ID), Place, Time, Status. In Split view the place moves under the name. An open MEDICAL row has a light red tint. Hovering a row lights up its marker on the map, and hovering a marker lights up its row.
+Table columns: Type, Student (with the Fob ID), Place, Time, Status. Status shows only under Acknowledged and All, because every row under Needs action is Open. In Split view the place moves under the name. An open MEDICAL row has a light red tint. Hovering a row lights up its marker on the map, and hovering a marker lights up its row.
 
 Sort order is the same as before: open alerts first, by type (SILENT, MEDICAL, SUSPICIOUS, STATUS), then newest. Then acknowledged, then resolved.
 
@@ -86,11 +114,20 @@ npm.cmd run dev:mock
 
 This runs `vite --mode mock`. The dashboard then answers every `/api` call from fake data in the browser and never calls Flask.
 
-- The fake data is in `dashboard/src/mock/data.js`: 8 alerts (all 4 types, all 3 states), 4 devices, 4 places. All names are made up.
-- The fake routes are in `dashboard/src/mock/api.js`. Acknowledge and Resolve work, but only in memory. A page reload starts over.
+- The fake data is in `dashboard/src/mock/data.js`: 8 current alerts (all 4 types, all 3 states), 4 devices, 4 places. All names are made up.
+- `dashboard/src/mock/api.js` adds about 60 days of history so Overview looks real: 0 to 6 alerts a day, more on weekdays between 7 AM and 4 PM, mostly STATUS. It is seeded by the date, so a given day always has the same alerts. History alerts are resolved and have acknowledge and resolve times.
+- The fake routes are in `dashboard/src/mock/api.js`, including `/api/stats`. Export CSV builds the file in the browser from the mock rows. Acknowledge and Resolve work, but only in memory. A page reload starts over.
 - A new random alert arrives every 45 seconds, so the sound and auto-zoom can be tested.
-- `carto_key` is always null, so the map uses OpenStreetMap tiles.
+- Without a CARTO key the map uses OpenStreetMap tiles (see below to add one).
 - The top bar shows an orange "Mock data" tag.
+
+To see CARTO tiles in mock mode, make the file `dashboard/.env.mock.local` with one line:
+
+```
+VITE_CARTO_KEY=paste-your-carto-basemaps-key-here
+```
+
+Vite reads it only in mock mode. Git ignores it (`.env.*` in `.gitignore`), so never commit it or copy the key anywhere else. Restart `npm.cmd run dev:mock` after changing it. Without the file, the map falls back to OpenStreetMap. In normal mode the key still comes from `/api/config` (the `CARTO_KEY` the server was started with).
 
 Normal `npm.cmd run dev` and `npm.cmd run build` are unchanged. The mock files are left out of the build.
 
@@ -231,12 +268,35 @@ The server version is `VERSION` in `server/app.py` (bump it by hand) plus the gi
 | `GET /api/devices` | One row per device. Never includes the secret key |
 | `GET /api/devices/<id>/alerts` | That device's alerts, all types and states, newest first, up to 200. 404 for an unknown device |
 | `GET /api/places` | The places from `places.json` |
+| `GET /api/stats?from=2026-11-02&to=2026-11-08` | Everything Overview shows, in one answer (below) |
+| `GET /api/export.csv?from=2026-11-02&to=2026-11-08` | Every alert in the range as a CSV download (below) |
+
+Both new routes are behind `require_login`, like the others. `from` and `to` are dates (`YYYY-MM-DD`), both included, at most 366 days. A missing or wrong date gets a 400 with `{"ok": false, "error": "..."}` that says what is wrong.
+
+`/api/stats` fields:
+
+| Field | Meaning |
+|---|---|
+| `from`, `to`, `days` | The range |
+| `previous_from`, `previous_to` | The previous period of the same length, just before |
+| `tz`, `tz_offset_min` | The server's time zone name and its offset from UTC in minutes |
+| `server_time` | Unix seconds |
+| `total`, `previous_total` | Alerts in the range and in the previous period, STATUS left out |
+| `per_day` | One row per day: `date`, `count` (no STATUS), `by_type` (all four types), `previous_date`, `previous_count` |
+| `per_hour` | Only for a one-day range, else null. One row per hour: `hour`, `count`, `by_type`, `previous_count` |
+| `weekday_hour` | 7 rows (Monday first) of 24 counts (hour 0 to 23), STATUS left out |
+| `flow` | `received`, `acknowledged`, `resolved`, `median_ack_s`, `median_resolve_s` (null when no times), `ack_timed` and `resolve_timed` (how many alerts the medians use) |
+| `open_now`, `open_medical_now` | Open alerts right now, whatever the range |
+| `fobs_active`, `fobs_total` | Fobs seen in the last 24 hours, and all registered Fobs |
+| `low_battery` | Fobs whose newest battery reading is under 20% |
+
+`/api/export.csv` has one row per alert, oldest first, all types: Received, Type, Student, Fob ID, Status, Place, Floor, Latitude, Longitude, Accuracy (m), Battery (%), Link, Acknowledged, Resolved. Times are `YYYY-MM-DD HH:MM:SS` in the server's time zone. Place is the named place ("Near the bus loop"), empty when there is none. The file is named like `safeping-alerts-2026-11-02-to-2026-11-08.csv`. It starts with a byte order mark so Excel reads names correctly, and a cell that starts with `=`, `+`, `-` or `@` gets a leading `'` so a spreadsheet never runs it as a formula.
 
 The Relay item in the top bar uses `last_lora_age_s`. The Relay sends no heartbeat, so it only says when the last LoRa alert arrived. A quiet Relay shows a gray dot, not a fault.
 
 ## Database columns
 
-`server/db.py` adds these to the `alerts` table when they are missing (`ALTER TABLE ... ADD COLUMN`). Existing rows keep their data. Version 2 added no columns.
+`server/db.py` adds these to the `alerts` table when they are missing (`ALTER TABLE ... ADD COLUMN`). Existing rows keep their data. Versions 2 and 3 added no columns. The acknowledge time Overview needs was already stored in `acknowledged_at`: Acknowledge sets it, and Resolve sets it too when it is empty.
 
 | Column | Meaning |
 |---|---|
@@ -253,7 +313,12 @@ When the Relay starts republishing over MQTT (planned), its alerts will show as 
 
 ## Look and colors
 
-Design tokens are in `dashboard/src/styles/tokens.css`, with a light and a dark block. The app uses only these font sizes: 12, 13, 14, 16, 20, 24, 28 px, and spacing on a 4 px grid (tags use 6 px side padding).
+Design tokens are in `dashboard/src/styles/tokens.css`, with a light and a dark block. The app uses only these font sizes: 12, 13, 14, 16, 20, 24, 28, 32 px. Panel and section spacing uses 4, 8, 12, 16, 20, 24 and 32 px (tags use 6 px side padding, heat grid cells 2 px gaps). Numbers use tabular figures everywhere, and big numbers are semibold (600).
+
+- Dark theme: solid charcoal (page 31,31,33). Raised surfaces (Peek, Settings, menus, popovers, chart panels) are lighter (43,44,47) and always have a 1 px border (61,63,67). The backdrop is black at 55% with a blur.
+- Sidebar: charcoal in both themes, with its own `--color-sb-*` tokens. The light theme keeps a white content area.
+- Chart panels use `--color-panel` (white in light, 43,44,47 in dark) with a 1 px border and 8 px corners. Lists never get boxes.
+- Chart colors: MEDICAL red bold, SUSPICIOUS `--color-chart-yellow` (179,134,0 in light), SILENT purple bold, STATUS gray bold, this period blue bold, previous period gray bold dashed. Response flow and the heat grid use `--color-flow-*` and `--color-heat-*`, one blue family.
 
 Check contrast after any color change:
 
@@ -268,7 +333,9 @@ It checks every text and background pair the dashboard uses, in both themes (tex
 - Switch tracks (off) use text subtlest, not border bold (2.85:1 dark).
 - The SUSPICIOUS dashed circle uses yellow text in the light theme, not yellow border (about 1.9:1 on light tiles).
 - Cluster rings use text subtlest, not border bold (2.82:1 on light OpenStreetMap tiles).
-- The open count on the selected Live item uses text subtle (text subtlest is 3.6:1 there).
 - The app mark uses the same blue in both themes, so the white shield always reads.
+- The account note under "Safety office" brightens to the sidebar text color on hover (the muted label color is 4.02:1 on the hover gray in light).
+- SUSPICIOUS chart lines use 179,134,0 in light (3.32:1 on white), not the yellow bold of the tags and markers.
+- Lines and the busiest heat cell pass 3:1 against their panel. The script lists the lower heat steps and the Response flow blocks as "info", not pass or fail: a light-to-dark scale has to start near the background, and every flow block has its count written above it. Hover a heat cell, or use the hidden table, for the exact count.
 
 Inputs and dropdowns use the quiet 1 px border, as specified. Their placeholder or label identifies them, so they do not need a 3:1 border. Map tile colors in the script are approximate.

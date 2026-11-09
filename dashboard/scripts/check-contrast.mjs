@@ -11,7 +11,7 @@ function readTheme(name) {
   const blocks = css.matchAll(/([^{}]+)\{([^}]*)\}/g);
   for (const [, selector, body] of blocks) {
     if (!selector.includes(`data-theme="${name}"`)) continue;
-    for (const [, key, r, g, b] of body.matchAll(/--color-([a-z-]+):\s*rgba?\((\d+),\s*(\d+),\s*(\d+)/g)) {
+    for (const [, key, r, g, b] of body.matchAll(/--color-([a-z0-9-]+):\s*rgba?\((\d+),\s*(\d+),\s*(\d+)/g)) {
       tokens[key] = [Number(r), Number(g), Number(b)];
     }
   }
@@ -33,21 +33,50 @@ function ratio(a, b) {
 
 // [foreground, background, kind, where it is used]
 // kind "text" needs 4.5:1, kind "ui" (shapes, icons and borders that carry meaning) needs 3:1.
+// kind "info" is printed but never fails: fills that always have their number written
+// next to them, and the low steps of a light-to-dark scale (they start near the background
+// on purpose; the hover and the hidden table give the exact count).
 //
 // Choices made so every pair passes (see docs/dashboard.md):
 // - Muted text on an open MEDICAL row uses text-subtle, never text-subtlest (4.48:1 in light).
 // - Switch tracks (off) use text-subtlest, not border-bold (2.85:1 in dark).
 // - The SUSPICIOUS dashed circle uses yellow-text in light, not yellow-border (1.91:1 on tiles).
-// - The Live count on a selected nav item uses text-subtle (text-subtlest is 3.6:1 there).
 // - The app mark uses a fixed brand blue, so the white shield reads in dark mode too.
 // - Cluster rings use text-subtlest, not border-bold (2.82:1 on light OpenStreetMap tiles).
+// - SUSPICIOUS chart lines use chart-yellow (179,134,0 in light), not yellow-bold (1.5:1 on white).
 const PAIRS = [];
-for (const bg of ["page", "sidebar", "surface", "surface-raised", "surface-hover"]) {
+for (const bg of ["page", "sidebar", "surface", "surface-raised", "surface-hover", "panel"]) {
   for (const fg of ["text", "text-subtle", "text-subtlest"]) PAIRS.push([fg, bg, "text", "neutral text"]);
 }
-PAIRS.push(["text", "surface-hover-strong", "text", "selected nav item, view tab, segment"]);
-PAIRS.push(["text-subtle", "surface-hover-strong", "text", "open count on the selected Live item"]);
+PAIRS.push(["text", "surface-selected", "text", "selected nav item, view tab, segment"]);
+PAIRS.push(["text", "surface-hover-strong", "text", "pressed icon button"]);
 PAIRS.push(["text", "surface-pressed", "text", "pressed button"]);
+// Sidebar: charcoal in both themes
+for (const fg of ["sb-text", "sb-text-strong", "sb-label"]) PAIRS.push([fg, "sb-bg", "text", "sidebar text and icons"]);
+PAIRS.push(["sb-text-strong", "sb-hover", "text", "sidebar item hover"]);
+PAIRS.push(["sb-text", "sb-hover", "text", "account note on hover (sb-label is 4.02:1 there in light)"]);
+PAIRS.push(["sb-text-strong", "sb-selected", "text", "selected sidebar item"]);
+PAIRS.push(["sb-placeholder", "sb-search", "text", "sidebar search placeholder"]);
+PAIRS.push(["sb-placeholder", "sb-hover", "text", "sidebar search placeholder, hover"]);
+PAIRS.push(["sb-text", "sb-selected", "text", "Ctrl+K hint"]);
+PAIRS.push(["sb-count-text", "sb-count", "text", "Live count pill"]);
+PAIRS.push(["sb-text-strong", "sb-selected", "text", "avatar initials"]);
+for (const dot of ["green-bold", "orange-bold"]) PAIRS.push([dot, "sb-bg", "ui", "server status dot"]);
+PAIRS.push(["focus-ring", "sb-bg", "ui", "focus ring in the sidebar"]);
+// Overview panels
+PAIRS.push(["red-text", "panel", "text", "change line up, Open now with a MEDICAL"]);
+PAIRS.push(["green-text", "panel", "text", "change line down"]);
+PAIRS.push(["orange-text", "panel", "text", "Low battery count"]);
+PAIRS.push(["blue-bold", "panel", "ui", "Alerts line, accent underline"]);
+PAIRS.push(["gray-bold", "panel", "ui", "previous period line, STATUS line"]);
+PAIRS.push(["red-bold", "panel", "ui", "MEDICAL line"]);
+PAIRS.push(["chart-yellow", "panel", "ui", "SUSPICIOUS line"]);
+PAIRS.push(["purple-bold", "panel", "ui", "SILENT line"]);
+PAIRS.push(["heat-4", "panel", "ui", "busiest heat cell"]);
+PAIRS.push(["text-subtle", "surface-hover", "text", "stat label on hover"]);
+for (const c of ["red", "yellow", "purple", "gray"]) PAIRS.push([`${c}-text`, `${c}-subtler`, "text", "legend tag"]);
+for (const n of [1, 2, 3]) PAIRS.push([`flow-${n}`, "panel", "info", "Response flow block (count written above it)"]);
+for (const n of [1, 2, 3]) PAIRS.push([`heat-${n}`, "panel", "info", "heat cell, lower steps"]);
 // Open MEDICAL row (and its hover)
 for (const bg of ["red-subtlest", "red-subtler"]) {
   for (const fg of ["text", "text-subtle"]) PAIRS.push([fg, bg, "text", "open MEDICAL row"]);
@@ -84,7 +113,7 @@ for (const bg of ["page", "surface-raised"]) {
   PAIRS.push(["blue-bold", bg, "ui", "switch track (on)"]);
 }
 // Status dots next to their word
-for (const bg of ["page", "surface-hover", "surface-raised", "red-subtlest", "red-subtler", "sidebar"]) {
+for (const bg of ["page", "surface-hover", "surface-raised", "red-subtlest", "red-subtler", "sb-bg"]) {
   for (const dot of ["orange-bold", "green-bold", "gray-bold"]) PAIRS.push([dot, bg, "ui", "status dot"]);
 }
 // Battery bars
@@ -118,6 +147,10 @@ for (const theme of ["light", "dark"]) {
       continue;
     }
     const r = ratio(t[fg], t[bg]);
+    if (kind === "info") {
+      console.log(`  info  ${r.toFixed(2).padStart(5)}:1 (not required)  ${fg} on ${bg}  [${where}]`);
+      continue;
+    }
     const need = kind === "text" ? 4.5 : 3;
     const ok = r >= need;
     if (!ok) failed += 1;

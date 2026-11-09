@@ -102,8 +102,8 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
   return (
     <div className="page page--devices">
       <header className="page-header">
-        <h1 className="page-title">Devices</h1>
-        <div className="view-bar">
+        <div className="page-head-main">
+          <h1 className="page-title">Devices</h1>
           <p className="view-meta num">
             {devices ? devices.length + (devices.length === 1 ? " device" : " devices") : ""}
           </p>

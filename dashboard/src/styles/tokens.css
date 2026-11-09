@@ -13,12 +13,31 @@
   --color-surface-hover: rgb(240, 241, 242);
   --color-surface-hover-strong: rgb(221, 222, 225);
   --color-surface-pressed: rgb(221, 222, 225);
+  --color-surface-selected: rgb(221, 222, 225);
   --color-border: rgb(221, 222, 225);
   --color-border-bold: rgb(140, 143, 151);
+  --color-border-raised: rgb(221, 222, 225);
   --color-text: rgb(30, 31, 33);
   --color-text-subtle: rgb(80, 82, 88);
   --color-text-subtlest: rgb(107, 110, 118);
   --color-backdrop: rgba(5, 12, 31, 0.46);
+
+  /* Chart panels on Overview */
+  --color-panel: rgb(255, 255, 255);
+  --color-panel-border: rgb(221, 222, 225);
+
+  /* Sidebar: charcoal in both themes */
+  --color-sb-bg: rgb(30, 31, 33);
+  --color-sb-text: rgb(191, 193, 196);
+  --color-sb-text-strong: rgb(255, 255, 255);
+  --color-sb-label: rgb(140, 143, 151);
+  --color-sb-hover: rgb(48, 49, 52);
+  --color-sb-selected: rgb(61, 63, 67);
+  --color-sb-search: rgb(43, 44, 47);
+  --color-sb-search-border: rgb(61, 63, 67);
+  --color-sb-placeholder: rgb(150, 153, 158);
+  --color-sb-count: rgb(61, 63, 67);
+  --color-sb-count-text: rgb(255, 255, 255);
 
   /* Red: MEDICAL, danger */
   --color-red-subtlest: rgb(255, 236, 235);
@@ -93,6 +112,19 @@
   --color-brand: rgb(24, 104, 219);
   --color-brand-on: rgb(255, 255, 255);
 
+  /* Charts. SUSPICIOUS lines use a darker yellow so they read on white. */
+  --color-chart-yellow: rgb(179, 134, 0);
+  /* Response flow, lighter to darker */
+  --color-flow-1: rgb(102, 157, 241);
+  --color-flow-2: rgb(24, 104, 219);
+  --color-flow-3: rgb(20, 71, 148);
+  /* When alerts happen: 0 alerts, then fewer to more */
+  --color-heat-0: rgb(240, 241, 242);
+  --color-heat-1: rgb(233, 242, 254);
+  --color-heat-2: rgb(207, 225, 253);
+  --color-heat-3: rgb(102, 157, 241);
+  --color-heat-4: rgb(24, 104, 219);
+
   /* Tooltips: dark gray in both themes */
   --color-tooltip-bg: rgb(44, 46, 51);
   --color-tooltip-text: rgb(255, 255, 255);
@@ -110,20 +142,37 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  /* Neutrals */
-  --color-page: rgb(17, 18, 19);
+  /* Neutrals: solid charcoal. Raised surfaces are lighter and always have a border. */
+  --color-page: rgb(31, 31, 33);
   --color-sidebar: rgb(24, 25, 26);
   --color-surface: rgb(31, 31, 33);
-  --color-surface-raised: rgb(36, 37, 40);
-  --color-surface-hover: rgb(43, 44, 47);
-  --color-surface-hover-strong: rgb(48, 49, 52);
-  --color-surface-pressed: rgb(48, 49, 52);
-  --color-border: rgb(61, 63, 67);
-  --color-border-bold: rgb(99, 102, 107);
+  --color-surface-raised: rgb(43, 44, 47);
+  --color-surface-hover: rgb(48, 49, 52);
+  --color-surface-hover-strong: rgb(61, 63, 67);
+  --color-surface-pressed: rgb(61, 63, 67);
+  --color-surface-selected: rgb(61, 63, 67);
+  --color-border: rgb(48, 49, 52);
+  --color-border-bold: rgb(75, 77, 81);
+  --color-border-raised: rgb(61, 63, 67);
   --color-text: rgb(226, 227, 228);
-  --color-text-subtle: rgb(191, 193, 196);
+  --color-text-subtle: rgb(169, 171, 175);
   --color-text-subtlest: rgb(150, 153, 158);
-  --color-backdrop: rgba(1, 4, 4, 0.46);
+  --color-backdrop: rgba(0, 0, 0, 0.55);
+
+  --color-panel: rgb(43, 44, 47);
+  --color-panel-border: rgb(61, 63, 67);
+
+  --color-sb-bg: rgb(24, 25, 26);
+  --color-sb-text: rgb(169, 171, 175);
+  --color-sb-text-strong: rgb(226, 227, 228);
+  --color-sb-label: rgb(150, 153, 158);
+  --color-sb-hover: rgb(48, 49, 52);
+  --color-sb-selected: rgb(61, 63, 67);
+  --color-sb-search: rgb(43, 44, 47);
+  --color-sb-search-border: rgb(61, 63, 67);
+  --color-sb-placeholder: rgb(150, 153, 158);
+  --color-sb-count: rgb(61, 63, 67);
+  --color-sb-count-text: rgb(226, 227, 228);
 
   /* Red */
   --color-red-subtlest: rgb(66, 34, 31);
@@ -197,13 +246,24 @@
   --color-brand: rgb(24, 104, 219);
   --color-brand-on: rgb(255, 255, 255);
 
+  --color-chart-yellow: rgb(221, 179, 14);
+  /* Response flow: brighter means further along, like darker does in the light theme */
+  --color-flow-1: rgb(21, 88, 188);
+  --color-flow-2: rgb(70, 136, 236);
+  --color-flow-3: rgb(143, 184, 246);
+  --color-heat-0: rgb(31, 31, 33);
+  --color-heat-1: rgb(28, 43, 66);
+  --color-heat-2: rgb(18, 50, 99);
+  --color-heat-3: rgb(21, 88, 188);
+  --color-heat-4: rgb(102, 157, 241);
+
   --color-tooltip-bg: rgb(62, 64, 69);
   --color-tooltip-text: rgb(255, 255, 255);
   --color-tooltip-subtle: rgb(196, 199, 204);
   --color-tooltip-border: rgba(255, 255, 255, 0.08);
 
-  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-overlay: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-raised: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-overlay: 0 24px 64px rgba(0, 0, 0, 0.6);
   --shadow-marker: 0 1px 4px rgba(0, 0, 0, 0.6);
 
   --tile-filter: brightness(0.62) contrast(1.15) saturate(0.7);
@@ -220,6 +280,7 @@
   --text-20: 20px;
   --text-24: 24px;
   --text-28: 28px;
+  --text-32: 32px;
   --line-height: 1.4;
 
   --radius-sm: 4px;
@@ -227,7 +288,7 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* Spacing is on a 4 px grid: 4, 8, 12, 16, 24, 32, 48 */
+  /* Panel and section spacing: 4, 8, 12, 16, 20, 24, 32 */
   --sidebar-wide: 240px;
   --sidebar-narrow: 56px;
   --topbar-height: 48px;

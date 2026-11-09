@@ -55,6 +55,15 @@ export function formatNumber(n) {
   return Number(n).toLocaleString();
 }
 
+/** A median time: "45 s", "1.8 min", "12 min", "1.5 h". */
+export function formatDuration(seconds) {
+  if (seconds < 60) return Math.round(seconds) + " s";
+  const min = seconds / 60;
+  if (min < 10) return min.toFixed(1) + " min";
+  if (min < 60) return Math.round(min) + " min";
+  return (min / 60).toFixed(1) + " h";
+}
+
 export function coords(alert) {
   return alert.latitude.toFixed(6) + ", " + alert.longitude.toFixed(6);
 }

@@ -223,6 +223,7 @@ export default function LivePage(props) {
       <AlertTable
         alerts={alerts}
         grouped={stateFilter === "all"}
+        showStatus={stateFilter !== "action"}
         compact={view === "split"}
         nowServer={nowServer}
         timeFormat={settings.timeFormat}
@@ -236,14 +237,14 @@ export default function LivePage(props) {
   return (
     <div className="page page--live">
       <header className="page-header">
-        <h1 className="page-title">Live</h1>
-        <div className="view-bar">
+        <div className="page-head-main">
+          <h1 className="page-title">Live</h1>
           <ViewTabs view={view} setView={setView} />
-          <div className="view-tools">
-            <FilterMenu typeFilter={typeFilter} setTypeFilter={setTypeFilter} />
-            <SearchBox query={query} setQuery={setQuery} searchOpen={searchOpen} setSearchOpen={setSearchOpen} inputRef={searchInputRef} />
-            <Segmented label="Show alerts" value={stateFilter} options={STATE_OPTIONS} onChange={setStateFilter} />
-          </div>
+        </div>
+        <div className="view-tools">
+          <FilterMenu typeFilter={typeFilter} setTypeFilter={setTypeFilter} />
+          <SearchBox query={query} setQuery={setQuery} searchOpen={searchOpen} setSearchOpen={setSearchOpen} inputRef={searchInputRef} />
+          <Segmented label="Show alerts" value={stateFilter} options={STATE_OPTIONS} onChange={setStateFilter} />
         </div>
       </header>
 

@@ -1,9 +1,12 @@
 import "./styles/app.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar, { PAGES } from "./components/Sidebar.jsx";
 import TopBar from "./components/TopBar.jsx";
 import LivePage, { VIEWS } from "./components/LivePage.jsx";
 import DevicesPage from "./components/DevicesPage.jsx";
+
+// Overview carries the chart library, so it loads only when opened. Live stays light.
+const OverviewPage = lazy(() => import("./components/OverviewPage.jsx"));
 import AlertPeek from "./components/AlertPeek.jsx";
 import DevicePeek from "./components/DevicePeek.jsx";
 import SettingsModal from "./components/SettingsModal.jsx";
@@ -24,14 +27,18 @@ function readHash() {
   return window.location.hash.replace(/^#\/?/, "");
 }
 
+const PAGE_IDS = PAGES.map((p) => p.id);
+
+/** The page in the address (#/live), or else the last page used. Live the first time. */
 function usePage() {
-  const read = () => (PAGES.some((p) => p.id === readHash()) ? readHash() : "live");
+  const read = () => (PAGE_IDS.includes(readHash()) ? readHash() : loadChoice("safeping.page", PAGE_IDS, "live"));
   const [page, setPage] = useState(read);
   useEffect(() => {
     const onHash = () => setPage(read());
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+  useEffect(() => saveChoice("safeping.page", page), [page]);
   return page;
 }
 
@@ -331,6 +338,11 @@ export default function App() {
             refMaxAge={(config && config.ref_max_age_s) || 120}
           />
           <main className="content">
+            {page === "overview" && (
+              <Suspense fallback={null}>
+                <OverviewPage timeFormat={settings.timeFormat} />
+              </Suspense>
+            )}
             {page === "live" && (
               <LivePage
                 alerts={visible}
@@ -412,7 +424,7 @@ export default function App() {
           devices={devices}
           onClose={() => {
             setSettingsOpen(false);
-            if (readHash() === "settings") window.location.hash = "#/live";
+            if (readHash() === "settings") window.location.hash = "#/" + page;
           }}
           returnFocus={() => {
             const el = settingsOpener.current;
