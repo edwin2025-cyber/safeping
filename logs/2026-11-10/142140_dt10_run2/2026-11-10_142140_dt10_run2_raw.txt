@@ -1,0 +1,3 @@
+# label dt10_run2  fob none  relay COM14
+2026-11-10 14:21:40.015 INFO  RELAY connected on COM14
+2026-11-10 14:23:52.348 RELAY ignored a packet that is not a SafePing alert

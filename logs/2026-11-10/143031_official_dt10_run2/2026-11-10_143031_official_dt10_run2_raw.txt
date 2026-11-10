@@ -1,0 +1,39 @@
+# label official_dt10_run2  fob none  relay COM14
+2026-11-10 14:30:31.970 INFO  RELAY connected on COM14
+2026-11-10 14:30:42.636 RELAY SAFEPING_MSG {"ctr": 177, "t": 2105, "id": "FOB-001", "v": 1, "bat": 79, "p": 99347, "type": "SUSPICIOUS", "sig": "8563af0e2db73594fabe1f41bc20e2f6ea022e24dfa36f254c3415f752971acb"}
+2026-11-10 14:30:42.638 RELAY from FOB-001 type SUSPICIOUS ctr 177 signal -22 dBm, snr 9.75
+2026-11-10 14:33:44.547 RELAY SAFEPING_MSG {"lat": 34725568, "p": 99513, "ctr": 178, "acc": 4, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86655330, "sig": "2edafa005fbff109a564c709387dcd00018d6514fd36555e902d227e64240c31", "t": 2466, "bat": 78, "v": 1}
+2026-11-10 14:33:44.549 RELAY from FOB-001 type SUSPICIOUS ctr 178 signal -96 dBm, snr 6.75
+2026-11-10 14:34:08.887 RELAY SAFEPING_MSG {"lat": 34725573, "p": 99511, "ctr": 179, "acc": 4, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86655325, "sig": "425c44cbdb761ea82bd488db233391c3389c3163fe51b1058945cd528e4b2c1d", "t": 2524, "bat": 78, "v": 1}
+2026-11-10 14:34:08.889 RELAY from FOB-001 type SUSPICIOUS ctr 179 signal -100 dBm, snr 4.25
+2026-11-10 14:34:45.100 RELAY SAFEPING_MSG {"lat": 34725573, "p": 99514, "ctr": 180, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86655320, "sig": "d12b1d991b90ca1dbf4eb88747554b9f56eaede9943ebfd737d708ec153ba053", "t": 2542, "bat": 78, "v": 1}
+2026-11-10 14:34:45.102 RELAY from FOB-001 type SUSPICIOUS ctr 180 signal -90 dBm, snr 8.75
+2026-11-10 14:35:16.219 RELAY SAFEPING_MSG {"lat": 34725575, "p": 99514, "ctr": 181, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86655325, "sig": "32e5c72894e7dd4e3d1b1f63c7fc31476883bafb329529b87180b587f9b3a155", "t": 2537, "bat": 78, "v": 1}
+2026-11-10 14:35:16.220 RELAY from FOB-001 type SUSPICIOUS ctr 181 signal -86 dBm, snr 9.75
+2026-11-10 14:35:50.762 RELAY SAFEPING_MSG {"lat": 34725585, "p": 99516, "ctr": 182, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86655296, "sig": "75913f05abc45cba095248e0b6cbad20b02c72bdb9e32f2c5ec31a4bf6396eb7", "t": 2589, "bat": 78, "v": 1}
+2026-11-10 14:35:50.763 RELAY from FOB-001 type SUSPICIOUS ctr 182 signal -82 dBm, snr 10.0
+2026-11-10 14:36:23.513 RELAY ignored a packet that is not a SafePing alert
+2026-11-10 14:37:28.475 RELAY ignored a packet that is not a SafePing alert
+2026-11-10 14:37:40.592 RELAY SAFEPING_MSG {"lat": 34725198, "p": 99502, "ctr": 183, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86654790, "sig": "f13e033933f97e8748e434f498b858e297561be5703f1da2413fc04534331d4e", "t": 2494, "bat": 78, "v": 1}
+2026-11-10 14:37:40.594 RELAY from FOB-001 type SUSPICIOUS ctr 183 signal -83 dBm, snr 10.25
+2026-11-10 14:38:16.759 RELAY SAFEPING_MSG {"lat": 34725198, "p": 99505, "ctr": 184, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86654781, "sig": "590dcb903eb9cb2882f04a75274043b86d66ca9773ff788e1d506a8c8944fcf4", "t": 2475, "bat": 77, "v": 1}
+2026-11-10 14:38:16.761 RELAY from FOB-001 type SUSPICIOUS ctr 184 signal -82 dBm, snr 9.75
+2026-11-10 14:38:51.192 RELAY SAFEPING_MSG {"lat": 34725198, "p": 99506, "ctr": 185, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86654771, "sig": "ececff4f1978e27664c6d534da858e3ac57fa796f1ce7322dd69ea04da752093", "t": 2503, "bat": 77, "v": 1}
+2026-11-10 14:38:51.193 RELAY from FOB-001 type SUSPICIOUS ctr 185 signal -83 dBm, snr 10.25
+2026-11-10 14:39:25.372 RELAY SAFEPING_MSG {"lat": 34725200, "p": 99502, "ctr": 186, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86654766, "sig": "1272e32f89d3198c60c81a4f1deacde40be26ba902c4b17ae2ea05458fc6a569", "t": 2513, "bat": 77, "v": 1}
+2026-11-10 14:39:25.374 RELAY from FOB-001 type SUSPICIOUS ctr 186 signal -80 dBm, snr 10.25
+2026-11-10 14:39:55.036 RELAY SAFEPING_MSG {"lat": 34725200, "p": 99503, "ctr": 187, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86654766, "sig": "93d4b6cbf33b946e00fa218560a28ba1ea89cddbdf5c1339b74240ca711e5333", "t": 2511, "bat": 77, "v": 1}
+2026-11-10 14:39:55.038 RELAY from FOB-001 type SUSPICIOUS ctr 187 signal -81 dBm, snr 9.5
+2026-11-10 14:44:06.004 RELAY SAFEPING_MSG {"lat": 34723590, "p": 99547, "ctr": 188, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86653958, "sig": "e6233ecfcfc1ab46bd1ba6c5ab4b13765e29144ac71be35677c78053a9639166", "t": 2384, "bat": 76, "v": 1}
+2026-11-10 14:44:06.006 RELAY from FOB-001 type SUSPICIOUS ctr 188 signal -89 dBm, snr 9.75
+2026-11-10 14:44:44.318 RELAY SAFEPING_MSG {"lat": 34723590, "p": 99548, "ctr": 189, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86653956, "sig": "2e9f18b730271870ed059c202c1d0883fc227c66d2e193cb18943f025e00b46a", "t": 2457, "bat": 76, "v": 1}
+2026-11-10 14:44:44.321 RELAY from FOB-001 type SUSPICIOUS ctr 189 signal -88 dBm, snr 9.5
+2026-11-10 14:45:18.676 RELAY SAFEPING_MSG {"lat": 34723588, "p": 99544, "ctr": 190, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86653958, "sig": "bbe28eb593fdc6fcedd05b4b48958a3c91e55d5d343b672aa8a113a0ec6fd540", "t": 2528, "bat": 76, "v": 1}
+2026-11-10 14:45:18.677 RELAY from FOB-001 type SUSPICIOUS ctr 190 signal -88 dBm, snr 9.0
+2026-11-10 14:45:52.840 RELAY SAFEPING_MSG {"lat": 34723588, "p": 99548, "ctr": 191, "acc": 2, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86653956, "sig": "711033421875e200930d071c53e2203d0ca71f3a421226b13760684e0d99358f", "t": 2541, "bat": 76, "v": 1}
+2026-11-10 14:45:52.842 RELAY from FOB-001 type SUSPICIOUS ctr 191 signal -90 dBm, snr 9.0
+2026-11-10 14:46:30.599 RELAY SAFEPING_MSG {"lat": 34723590, "p": 99549, "ctr": 192, "acc": 3, "type": "SUSPICIOUS", "id": "FOB-001", "lon": -86653956, "sig": "11d4a2325af6f35cb6870a8186e29c45c20d95f82170cfbca31822dd60ebda82", "t": 2581, "bat": 76, "v": 1}
+2026-11-10 14:46:30.600 RELAY from FOB-001 type SUSPICIOUS ctr 192 signal -89 dBm, snr 9.25
+2026-11-10 14:48:27.380 RELAY ignored a packet that is not a SafePing alert
+2026-11-10 14:49:49.432 RELAY ignored a packet that is not a SafePing alert
+2026-11-10 14:54:36.286 RELAY ignored a packet that is not a SafePing alert

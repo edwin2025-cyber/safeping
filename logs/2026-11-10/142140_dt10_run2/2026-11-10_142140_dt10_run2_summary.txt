@@ -1,0 +1,14 @@
+SafePing field test summary (Relay only, Fob not logged)
+label: dt10_run2
+start: 2026-11-10 14:21:40.008
+end:   2026-11-10 14:28:51.939
+length: 432 s
+
+Relay received alerts:       0
+  with a GPS position:       0
+Duplicates at the Relay:     0
+Not-SafePing packets heard:  1
+Sent, lost, confirmed:       unknown (no Fob log)
+
+Signal (dBm):  none
+SNR (dB):      none
