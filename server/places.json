@@ -1,1 +1,6 @@
-[]
+[
+  {"name": "the soccer field", "lat": 34.7235808, "lon": -86.6539513},
+  {"name": "the quad", "lat": 34.7255497, "lon": -86.6552746},
+  {"name": "the sidewalk by the Sentinel Center", "lat": 34.7252069, "lon": -86.6547724},
+  {"name": "the courts", "lat": 34.7243290, "lon": -86.6539111}
+]

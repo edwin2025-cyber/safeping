@@ -94,6 +94,8 @@ Newest dates are at the bottom. Full test runs are in `logs/` (see `logs/README.
 
 Nov 8: Dashboard rebuilt in React (v1, then v2 redesign). CARTO key added. Server records link, temperature, counter, resolve. Campus places support added (empty list). Next: DT-10 GPS test.
 
+Nov 9: DT-10 GPS test (Relay at the third-floor window, Fob on LiPo). 3 spots x 5 presses: 15 of 15 received and confirmed. GPS error vs. Maps pin: Quad 5.6 m avg, Sidewalk 1.2 m, Soccer field 0.7 m; overall 2.5 m avg, 5.8 m worst. Signal -79 to -95 dBm, SNR 5 to 10. Results in docs/dt10-results.md.
+
 ## Open items
 
 - Repeat floor walk with more ground floor readings and a room vs hallway check.
