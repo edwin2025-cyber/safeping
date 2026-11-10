@@ -29,6 +29,9 @@ DIST_DIR = os.path.normpath(os.path.join(HERE, "..", "dashboard", "dist"))
 
 CONFIG_DEFAULTS = {"sight_radius_m": 50, "camera_before_min": 2, "camera_after_min": 5}
 
+SEARCH_ALERTS = 8     # alerts a search returns, newest first
+SEARCH_RECENT = 5     # alerts an empty search returns (the newest)
+
 
 def _git_commit():
     """Short commit the server runs from, for Settings > About. None without git."""
@@ -108,6 +111,49 @@ def api_alerts():
     include_resolved = request.args.get("resolved") == "1"
     alerts = [_alert_out(a) for a in db.list_alerts(limit, include_status, include_resolved)]
     return jsonify({"server_time": time.time(), "alerts": alerts})
+
+
+@app.route("/api/alerts/<int:alert_id>")
+@require_login
+def api_alert(alert_id):
+    """One alert, in the same shape as /api/alerts. For opening an older alert from
+    Overview or search. 404 when there is no such alert."""
+    alert = db.get_alert(alert_id)
+    if alert is None:
+        return jsonify({"ok": False, "error": "unknown alert"}), 404
+    return jsonify({"server_time": time.time(), "alert": _alert_out(alert)})
+
+
+@app.route("/api/search")
+@require_login
+def api_search():
+    """Find a student: Fobs and alerts whose student name or Fob ID contains q.
+    An empty q gives every Fob and the 5 newest alerts. status=1 includes STATUS check-ins."""
+    query = (request.args.get("q") or "").strip()[:100]
+    include_status = request.args.get("status") == "1"
+    needle = query.lower()
+    students = []
+    for device in db.list_devices():
+        if device["role"] == "REF":
+            continue
+        name = device["student_name"] or ""
+        if needle and needle not in name.lower() and needle not in device["device_id"].lower():
+            continue
+        last = db.last_alert_of(device["device_id"], include_status)
+        students.append({
+            "device_id": device["device_id"],
+            "student_name": device["student_name"],
+            "last_alert": None if last is None else {
+                "id": last["id"], "type": last["alert_type"], "time": last["timestamp"]},
+        })
+    students.sort(key=lambda s: ((s["student_name"] or s["device_id"]).lower(), s["device_id"]))
+    alerts = db.search_alerts(query, include_status, SEARCH_ALERTS if query else SEARCH_RECENT)
+    return jsonify({
+        "server_time": time.time(),
+        "query": query,
+        "students": students,
+        "alerts": [_alert_out(a) for a in alerts],
+    })
 
 
 @app.route("/api/ack", methods=["POST"])

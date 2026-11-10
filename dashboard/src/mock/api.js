@@ -244,6 +244,38 @@ function getDeviceAlerts(deviceId) {
   return { server_time: now(), alerts: list };
 }
 
+/** Same as /api/alerts/<id> in server/app.py. */
+function getAlert(id) {
+  const alert = alerts.find((a) => a.id === id);
+  if (!alert) notFound();
+  return { server_time: now(), alert: copy(alert) };
+}
+
+/** Same rules as /api/search in server/app.py: Fobs and alerts whose student name or
+    Fob ID contains q. An empty q gives every Fob and the 5 newest alerts. */
+function search(params) {
+  const q = (params.get("q") || "").trim().slice(0, 100);
+  const withStatus = params.get("status") === "1";
+  const needle = q.toLowerCase();
+  const matches = (name, id) => !needle || (name || "").toLowerCase().includes(needle) || id.toLowerCase().includes(needle);
+  const counted = (a) => withStatus || a.alert_type !== "STATUS";
+  const students = MOCK_DEVICES.filter((d) => d.role !== "REF" && matches(d.student_name, d.device_id))
+    .map((d) => {
+      const last = newestFirst(alerts.filter((a) => a.device_id === d.device_id && counted(a)))[0];
+      return {
+        device_id: d.device_id,
+        student_name: d.student_name,
+        last_alert: last ? { id: last.id, type: last.alert_type, time: last.timestamp } : null,
+      };
+    })
+    .sort((x, y) => (x.student_name || x.device_id).toLowerCase().localeCompare((y.student_name || y.device_id).toLowerCase()));
+  const list = newestFirst(alerts)
+    .filter((a) => counted(a) && matches(a.student_name, a.device_id))
+    .slice(0, q ? 8 : 5)
+    .map(copy);
+  return { server_time: now(), query: q, students, alerts: list };
+}
+
 // ---------- Overview numbers and CSV, same rules as server/stats.py ----------
 
 const TYPE_ORDER = ["MEDICAL", "SUSPICIOUS", "SILENT", "STATUS"];
@@ -379,6 +411,67 @@ function getStats(params) {
     stale_fobs: fobs.filter((d) => !seen.includes(d)).map(name).sort(),
     low_battery_fobs: low.map((d) => ({ name: name(d), pct: d.battery })),
     reference_age_s: MOCK_STATUS.reference_age_s,
+    ...overviewV5(startS, endS, perDay),
+  };
+}
+
+// ---------- fields added in v5, same rules as _overview_v5 in server/stats.py ----------
+
+const SHOWN_TYPES = ["MEDICAL", "SUSPICIOUS", "SILENT"];
+const URGENT_TYPES = ["MEDICAL", "SILENT"];
+const EVENT_ORDER = { received: 0, acknowledged: 1, resolved: 2 };
+
+const alertName = (a) => a.student_name || a.device_id;
+
+function placeShort(a) {
+  if (a.latitude !== null) return a.place_name || "GPS";
+  if (a.floor !== null) return "Indoors, floor " + a.floor;
+  return null;
+}
+
+function countOnDay(day) {
+  return between(startOfDay(day), startOfDay(addDays(day, 1))).filter(notStatus).length;
+}
+
+function overviewV5(startS, endS, perDay) {
+  const openRows = newestFirst(alerts.filter((a) => !a.acknowledged && !a.resolved && notStatus(a)));
+  const today = isoDay(new Date(now() * 1000));
+  let counts = perDay.filter((d) => d.date < today).map((d) => d.count);
+  if (!counts.length) counts = [1, 2, 3, 4, 5, 6, 7].map((i) => countOnDay(addDays(today, -i)));
+  const latest = alerts.filter(notStatus).sort((x, y) => y.timestamp - x.timestamp || y.id - x.id)[0];
+  const inRange = (ts) => ts !== null && ts >= startS && ts < endS;
+
+  const points = [];
+  const events = [];
+  let indoor = 0;
+  alerts.filter(notStatus).forEach((a) => {
+    const base = { alert_id: a.id, type: a.alert_type, name: alertName(a), place: placeShort(a) };
+    if (inRange(a.timestamp)) {
+      if (a.latitude !== null) {
+        points.push({ id: a.id, type: a.alert_type, lat: a.latitude, lon: a.longitude, name: base.name, place: base.place, time: a.timestamp });
+      } else {
+        indoor += 1;
+      }
+      events.push({ ...base, kind: "received", time: a.timestamp });
+    }
+    // Resolving an alert nobody acknowledged sets both times at once. Show only Resolved then.
+    if (inRange(a.acknowledged_at) && a.acknowledged_at !== a.resolved_at) events.push({ ...base, kind: "acknowledged", time: a.acknowledged_at });
+    if (inRange(a.resolved_at)) events.push({ ...base, kind: "resolved", time: a.resolved_at });
+  });
+  events.sort((x, y) => y.time - x.time || EVENT_ORDER[y.kind] - EVENT_ORDER[x.kind] || y.alert_id - x.alert_id);
+  points.sort((x, y) => x.time - y.time || x.id - y.id);
+
+  return {
+    open_by_type: Object.fromEntries(SHOWN_TYPES.map((t) => [t, openRows.filter((a) => a.alert_type === t).length])),
+    urgent_open: openRows.filter((a) => URGENT_TYPES.includes(a.alert_type)).map((a) => ({ id: a.id, name: alertName(a), type: a.alert_type })),
+    last_alert: latest
+      ? { id: latest.id, time: latest.timestamp, type: latest.alert_type, name: alertName(latest), place: placeShort(latest) }
+      : null,
+    today_count: countOnDay(today),
+    usual_per_day: median(counts),
+    points: points.slice(-2000),
+    indoor_count: indoor,
+    recent_events: events.slice(0, 10),
   };
 }
 
@@ -462,6 +555,9 @@ export async function mockGet(url) {
   const params = new URLSearchParams(query || "");
   if (path === "/api/stats") return getStats(params);
   if (path === "/api/alerts") return getAlerts(params);
+  if (path === "/api/search") return search(params);
+  const one = path.match(/^\/api\/alerts\/(\d+)$/);
+  if (one) return getAlert(Number(one[1]));
   if (path === "/api/status") return getStatus();
   if (path === "/api/config") return { ...MOCK_CONFIG };
   if (path === "/api/places") return { places: MOCK_PLACES.map((p) => ({ ...p })), max_distance_m: MOCK_PLACES_MAX_DISTANCE_M };

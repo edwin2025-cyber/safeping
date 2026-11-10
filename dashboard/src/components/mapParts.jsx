@@ -74,17 +74,18 @@ function markerLabel(alert) {
   return typeMeta(alert.alert_type).label + ": " + studentName(alert) + (state === "open" ? "" : " (" + state + ")");
 }
 
-/** 28 px circle in the type's bold color, white ring, type icon inside.
-    Acknowledged and resolved markers are smaller and faded. Leaflet moves the
-    outer element with a CSS transform, so every visual effect (hover scale, fade)
-    sits on the inner span, never on the element Leaflet moves. */
-function markerIcon(alert, highlighted) {
+/** 26 px disc in the type color, a 2 px ring (white, or the Midnight page color in dark),
+    the type icon inside and a soft shadow. Acknowledged and resolved markers are smaller
+    and faded. Leaflet moves the outer element with a CSS transform, so every visual effect
+    (the 1.15 scale when selected, the fade) sits on the inner span, never on the element
+    Leaflet moves. */
+function markerIcon(alert, selected) {
   const type = TYPES[alert.alert_type] ? alert.alert_type : "OTHER";
   const quiet = alertState(alert) !== "open";
-  const size = quiet ? 22 : 28;
-  const classes = ["alert-marker", "alert-marker--" + typeMeta(alert.alert_type).color];
+  const size = quiet ? 22 : 26;
+  const classes = ["alert-marker", "alert-marker--" + typeMeta(alert.alert_type).key];
   if (quiet) classes.push("is-quiet");
-  if (highlighted) classes.push("is-highlighted");
+  if (selected) classes.push("is-selected");
   return L.divIcon({
     className: "alert-marker-wrap",
     html: '<span class="' + classes.join(" ") + '" data-alert-id="' + alert.id + '">' + ICON_SVG.get(type) + "</span>",
@@ -116,22 +117,23 @@ function labelElement(marker) {
 // ---------- circles ----------
 
 /** The circles for one alert, radius in meters. Colors come from CSS classes in map.css.
-    MEDICAL, SILENT, STATUS: one circle of radius acc. SUSPICIOUS: a dashed circle of
-    acc + sight radius, and a solid circle of acc inside it. */
+    1.5 px stroke in the type color, fill at 8%. MEDICAL, SILENT, STATUS: one circle of
+    radius acc. SUSPICIOUS: a dashed circle of acc + sight radius, and a solid circle of
+    acc inside it. */
 function zoneSpecs(alert, sightRadius) {
   const faded = alertState(alert) === "open" ? 1 : 0.5;
   const acc = alert.accuracy || 0;
   const tag = " zone-id-" + alert.id; // lets the map test match each circle to its marker
   if (alert.alert_type === "SUSPICIOUS") {
     const specs = [
-      { radius: zoneRadius(alert, sightRadius), style: { className: "zone zone--sight" + tag, weight: 2, dashArray: "6 6", opacity: faded, fillOpacity: 0.12 * faded } },
+      { radius: zoneRadius(alert, sightRadius), style: { className: "zone zone--suspicious" + tag, weight: 1.5, dashArray: "6 6", opacity: faded, fillOpacity: 0.08 * faded } },
     ];
-    if (acc > 0) specs.push({ radius: acc, style: { className: "zone zone--yellow-inner" + tag, weight: 1.5, opacity: faded, fillOpacity: 0 } });
+    if (acc > 0) specs.push({ radius: acc, style: { className: "zone zone--suspicious-inner" + tag, weight: 1.5, opacity: faded, fillOpacity: 0 } });
     return specs;
   }
   if (acc <= 0) return [];
-  const color = typeMeta(alert.alert_type).color;
-  return [{ radius: acc, style: { className: "zone zone--" + color + tag, weight: 2, opacity: faded, fillOpacity: 0.12 * faded } }];
+  const key = typeMeta(alert.alert_type).key;
+  return [{ radius: acc, style: { className: "zone zone--" + key + tag, weight: 1.5, opacity: faded, fillOpacity: 0.08 * faded } }];
 }
 
 /** Creates or updates the circles of one entry in place. Circles are only rebuilt
@@ -182,10 +184,11 @@ function standsAlone(group, marker) {
     Positions, styles and radii are updated in place; layers are only added or removed when
     alerts appear or disappear, so a poll never redraws the map.
 
-    A circle shows only while its marker stands on its own. When markers join a cluster their
-    circles hide at once; when a cluster splits, the circles come back after the split animation
-    ends, so a circle never floats without its marker in the middle. */
-export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover }) {
+    Circles show only for the hovered or selected alert (activeIds), and only while its marker
+    stands on its own. When markers join a cluster their circles hide at once; when a cluster
+    splits, the circles come back after the split animation ends, so a circle never floats
+    without its marker in the middle. */
+export function AlertLayer({ alerts, sightRadius, highlightedId, selectedId = null, onOpen, onHover }) {
   const map = useMap();
   const groupRef = useRef(null);
   const holderRef = useRef(null);
@@ -194,7 +197,10 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
   const syncRef = useRef(() => {});
   const handlers = useRef({ onOpen, onHover });
   handlers.current = { onOpen, onHover };
-  const lit = useRef({ id: null, parent: null });
+  const active = useRef(new Set());
+  active.current = new Set([highlightedId, selectedId].filter((id) => id !== null && id !== undefined));
+  const lit = useRef([]); // inner elements that carry is-selected now
+  const lightRef = useRef(() => {});
 
   useEffect(() => {
     const group = L.markerClusterGroup({
@@ -204,7 +210,7 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
       zoomToBoundsOnClick: true,
       maxClusterRadius: 44,
       iconCreateFunction: clusterIcon,
-      spiderLegPolylineOptions: { weight: 1.5, color: "rgb(107, 110, 118)", opacity: 0.6 },
+      spiderLegPolylineOptions: { weight: 1.5, color: "rgb(112, 109, 102)", opacity: 0.6 },
     });
     const holder = L.layerGroup(); // circles: overlay pane, default SVG renderer
     holder.addTo(map);
@@ -216,7 +222,7 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
     // cluster, but wait for the animation to end before showing new ones.
     const sync = (onlyHide = false) => {
       for (const [id, entry] of entries.current) {
-        const show = standsAlone(group, entry.marker) || spread.current.has(id);
+        const show = active.current.has(id) && (standsAlone(group, entry.marker) || spread.current.has(id));
         if (show && onlyHide && !entry.drawn) continue;
         showCircles(entry, holder, show);
       }
@@ -224,9 +230,18 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
     syncRef.current = sync;
     const animating = () => group._inZoomAnimation > 0;
     // Registered after the cluster group, so these run after it has re-clustered.
-    const onZoomEnd = () => sync(true);
-    const onMoveEnd = () => sync(animating());
-    const onAnimationEnd = () => sync(false);
+    const onZoomEnd = () => {
+      sync(true);
+      lightRef.current();
+    };
+    const onMoveEnd = () => {
+      sync(animating());
+      lightRef.current();
+    };
+    const onAnimationEnd = () => {
+      sync(false);
+      lightRef.current();
+    };
     map.on("zoomend", onZoomEnd);
     map.on("moveend", onMoveEnd);
     group.on("animationend", onAnimationEnd);
@@ -280,7 +295,7 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
       let entry = entries.current.get(a.id);
       if (!entry) {
         const marker = L.marker([a.latitude, a.longitude], {
-          icon: markerIcon(a, a.id === highlightedId),
+          icon: markerIcon(a, active.current.has(a.id)),
           keyboard: true,
           zIndexOffset: alertState(a) === "open" ? 0 : -500,
         });
@@ -304,7 +319,7 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
         if (entry.key !== key) {
           entry.key = key;
           entry.marker.setLatLng([a.latitude, a.longitude]);
-          entry.marker.setIcon(markerIcon(a, a.id === highlightedId));
+          entry.marker.setIcon(markerIcon(a, active.current.has(a.id)));
           entry.marker.setZIndexOffset(alertState(a) === "open" ? 0 : -500);
           labelElement(entry.marker);
           changed.push(entry.marker);
@@ -318,36 +333,42 @@ export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover
     if (add.length) group.addLayers(add);
     if (changed.length) group.refreshClusters(changed);
     syncRef.current(group._inZoomAnimation > 0);
-    // highlightedId is read here only for new markers; the effect below keeps it current.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // The hovered and selected ids are read here only for new markers; the effect below keeps them current.
   }, [alerts, sightRadius]);
 
-  // Hovering a row lights up its marker, or the cluster it is hiding in.
-  useEffect(() => {
+  // The hovered or selected alert: its marker scales up (or the cluster it is hiding in does),
+  // and its circles show. Also run after zooms, because markercluster redraws marker elements.
+  lightRef.current = () => {
     const group = groupRef.current;
-    const prev = lit.current;
-    if (prev.parent) prev.parent.classList.remove("is-highlighted");
-    const prevEntry = prev.id !== null ? entries.current.get(prev.id) : null;
-    if (prevEntry) {
-      const el = prevEntry.marker.getElement();
-      if (el && el.firstChild) el.firstChild.classList.remove("is-highlighted");
-      prevEntry.marker.setZIndexOffset(alertState(prevEntry.marker.alert) === "open" ? 0 : -500);
+    lit.current.forEach(({ el, entry }) => {
+      el.classList.remove("is-selected");
+      if (entry) entry.marker.setZIndexOffset(alertState(entry.marker.alert) === "open" ? 0 : -500);
+    });
+    lit.current = [];
+    if (!group) return;
+    for (const id of active.current) {
+      const entry = entries.current.get(id);
+      if (!entry) continue;
+      const visible = group.getVisibleParent(entry.marker);
+      if (visible === entry.marker) {
+        const el = entry.marker.getElement();
+        if (el && el.firstChild) {
+          el.firstChild.classList.add("is-selected");
+          entry.marker.setZIndexOffset(1000);
+          lit.current.push({ el: el.firstChild, entry });
+        }
+      } else if (visible && visible.getElement() && visible.getElement().firstChild) {
+        const el = visible.getElement().firstChild;
+        el.classList.add("is-selected");
+        lit.current.push({ el, entry: null });
+      }
     }
-    lit.current = { id: null, parent: null };
-    const entry = highlightedId !== null ? entries.current.get(highlightedId) : null;
-    if (!entry || !group) return;
-    const visible = group.getVisibleParent(entry.marker);
-    if (visible === entry.marker) {
-      const el = entry.marker.getElement();
-      if (el && el.firstChild) el.firstChild.classList.add("is-highlighted");
-      entry.marker.setZIndexOffset(1000);
-      lit.current = { id: highlightedId, parent: null };
-    } else if (visible && visible.getElement()) {
-      const el = visible.getElement().firstChild;
-      if (el) el.classList.add("is-highlighted");
-      lit.current = { id: highlightedId, parent: el };
-    }
-  }, [highlightedId, alerts]);
+  };
+  useEffect(() => {
+    lightRef.current();
+    const group = groupRef.current;
+    if (group) syncRef.current(group._inZoomAnimation > 0);
+  }, [highlightedId, selectedId, alerts]);
 
   return null;
 }

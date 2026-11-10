@@ -25,7 +25,7 @@ export const MOCK_PLACES_MAX_DISTANCE_M = 200;
 export const MOCK_DEVICES = [
   { device_id: "MOCK-FOB-01", role: "FOB", student_name: "Mock Student Alpha", battery: 92 },
   { device_id: "MOCK-FOB-02", role: "FOB", student_name: "Mock Student Bravo", battery: 64 },
-  { device_id: "MOCK-FOB-03", role: "FOB", student_name: "Mock Student Charlie", battery: 31 },
+  { device_id: "MOCK-FOB-03", role: "FOB", student_name: "Mock Student Charlie", battery: 15 },
   { device_id: "MOCK-FOB-04", role: "FOB", student_name: "Mock Student Delta", battery: 8 },
 ];
 

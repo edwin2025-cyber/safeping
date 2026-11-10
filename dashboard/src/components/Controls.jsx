@@ -1,5 +1,7 @@
+import { useId, useRef, useState } from "react";
 import { icons } from "../lib/icons.js";
 import Icon from "./Icon.jsx";
+import Popover from "./Popover.jsx";
 
 /** On and off switch. Name it with labelledBy (the id of its label). */
 export function Switch({ checked, onChange, labelledBy, disabled = false }) {
@@ -45,24 +47,67 @@ export function Segmented({ value, options, onChange, label, labelledBy }) {
   );
 }
 
-/** Dropdown: a native select with a quiet look. */
-export function Select({ value, options, onChange, labelledBy, label, id }) {
+/** Dropdown: a quiet button that opens a styled list of choices (not the browser's own list,
+    which cannot be styled). Up, Down, Home and End move, Enter picks, Esc closes.
+    An option can be { value, label, note, disabled }. */
+export function Select({ value, options, onChange, labelledBy, label, id, align = "start" }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const ownId = useId();
+  const buttonId = id || "select-" + ownId.replace(/:/g, "");
+  const current = options.find((o) => o.value === value) || options[0];
   return (
-    <span className="select">
-      <select
-        id={id}
-        value={value}
-        aria-labelledby={labelledBy}
-        aria-label={labelledBy ? undefined : label}
-        onChange={(e) => onChange(e.target.value)}
+    <>
+      <button
+        ref={ref}
+        id={buttonId}
+        type="button"
+        className="select-btn"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-labelledby={labelledBy ? labelledBy + " " + buttonId : undefined}
+        aria-label={labelledBy ? undefined : (label || "Choose") + ": " + current.label}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
+        <span>{current.label}</span>
+        <Icon icon={icons.chevronDown} size={12} />
+      </button>
+      <Popover
+        anchor={ref.current}
+        open={open}
+        onClose={() => setOpen(false)}
+        label={label || "Choices"}
+        role="listbox"
+        className="popover--select"
+        placement={align === "end" ? "bottom-end" : "bottom-start"}
+        minWidth={ref.current ? ref.current.offsetWidth : undefined}
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value}>
+          <button
+            key={o.value}
+            type="button"
+            role="option"
+            aria-selected={o.value === value}
+            aria-disabled={o.disabled || undefined}
+            className="option"
+            onClick={() => {
+              if (o.disabled) return;
+              onChange(o.value);
+              setOpen(false);
+            }}
+          >
             {o.label}
-          </option>
+            {o.note && <span className="option-note">{o.note}</span>}
+            {o.value === value && <Icon icon={icons.acknowledged} size={14} className="option-check" />}
+          </button>
         ))}
-      </select>
-      <Icon icon={icons.chevronDown} size={12} />
-    </span>
+      </Popover>
+    </>
   );
 }

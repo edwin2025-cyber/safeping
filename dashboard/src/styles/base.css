@@ -1,9 +1,54 @@
+/* Satoshi (Fontshare), the default font. Files in public/fonts/satoshi/. */
 @font-face {
-  font-family: "General Sans";
-  src: url("/fonts/GeneralSans-Variable.woff2") format("woff2");
-  font-weight: 200 700;
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 300 900;
   font-style: normal;
   font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi/Satoshi-VariableItalic.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* "SafePing Sans", the app font: Satoshi for every character except the digits 0 to 9,
+   which come from General Sans (public/fonts/general-sans/). The two unicode ranges do not
+   overlap, so the browser picks the face by character. All four faces must declare the same weight
+   range, or Chrome treats them as separate fonts and never uses the digit faces. */
+@font-face {
+  font-family: "SafePing Sans";
+  src: url("/fonts/satoshi/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-002F, U+003A-10FFFF;
+}
+@font-face {
+  font-family: "SafePing Sans";
+  src: url("/fonts/satoshi/Satoshi-VariableItalic.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-002F, U+003A-10FFFF;
+}
+@font-face {
+  font-family: "SafePing Sans";
+  src: url("/fonts/general-sans/GeneralSans-Variable.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+@font-face {
+  font-family: "SafePing Sans";
+  src: url("/fonts/general-sans/GeneralSans-VariableItalic.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0030-0039;
 }
 
 *,
@@ -240,32 +285,85 @@ input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
 }
 
-/* Dropdown: a native select with a quiet look */
-.select {
-  position: relative;
+/* Dropdown: a quiet button that opens a styled list (components/Controls.jsx) */
+.select-btn {
   display: inline-flex;
   align-items: center;
-}
-.select select {
+  justify-content: space-between;
+  gap: 8px;
   height: 32px;
-  padding: 0 32px 0 12px;
+  padding: 0 8px 0 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--text-14);
   font-weight: 500;
-  appearance: none;
+  white-space: nowrap;
   cursor: pointer;
 }
-.select select:hover {
+.select-btn:hover {
   background: var(--color-surface-hover);
 }
-.select > svg {
-  position: absolute;
-  right: 8px;
+.select-btn[aria-expanded="true"] {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-bold);
+}
+.select-btn > svg {
   color: var(--color-text-subtlest);
-  pointer-events: none;
+  transition: transform 150ms ease;
+}
+.select-btn[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.popover--select {
+  min-width: 180px;
+  animation: menu-in 120ms ease-out;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-14);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.option:hover,
+.option:focus-visible {
+  background: var(--color-surface-hover);
+  outline: none;
+}
+.option[aria-selected="true"] {
+  font-weight: 500;
+}
+.option-check {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--color-blue-text);
+}
+.option-note {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+}
+.option[aria-disabled="true"] {
+  color: var(--color-text-subtlest);
+  cursor: not-allowed;
+}
+.option[aria-disabled="true"]:hover {
+  background: transparent;
+}
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
 }
 
 /* ---------- switch ---------- */
@@ -333,7 +431,7 @@ input[type="search"]::-webkit-search-cancel-button {
   color: var(--color-text);
 }
 
-/* ---------- tags: small, sentence case, one color family each ---------- */
+/* ---------- tags: a tinted rectangle, icon and word in a darker shade of the same color ---------- */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -345,14 +443,34 @@ input[type="search"]::-webkit-search-cancel-button {
   font-weight: 500;
   white-space: nowrap;
 }
-.tag--red { background: var(--color-red-subtler); color: var(--color-red-text); }
-.tag--yellow { background: var(--color-yellow-subtler); color: var(--color-yellow-text); }
-.tag--purple { background: var(--color-purple-subtler); color: var(--color-purple-text); }
+.tag--medical { background: var(--color-tag-medical-bg); color: var(--color-tag-medical-text); }
+.tag--suspicious { background: var(--color-tag-suspicious-bg); color: var(--color-tag-suspicious-text); }
+.tag--silent { background: var(--color-tag-silent-bg); color: var(--color-tag-silent-text); }
+.tag--status,
 .tag--gray { background: var(--color-gray-subtler); color: var(--color-gray-text); }
 .tag--teal { background: var(--color-teal-subtler); color: var(--color-teal-text); }
+.tag--unknown { background: var(--color-unknown-bg); color: var(--color-unknown-text); }
+.tag--lora { background: var(--color-lora-bg); color: var(--color-lora-text); }
+.tag--wifi { background: var(--color-wifi-bg); color: var(--color-wifi-text); }
 .tag--orange { background: var(--color-orange-subtler); color: var(--color-orange-text); }
+.tag--magenta { background: var(--color-magenta-bg); color: var(--color-magenta-text); }
+/* Battery words: plain heavy text in the level's color, no box */
+.battery-word { font-weight: 700; }
+.battery-word--good { color: var(--color-battery-good-text); }
+.battery-word--low { color: var(--color-battery-low-text); }
+.battery-word--critical { color: var(--color-battery-critical-text); }
+.tone-yellow { color: var(--color-battery-low-text); }
 
-/* ---------- status: a dot and a word ---------- */
+/* ---------- type icons on their own (legends, search, Overview): the type color ---------- */
+.type-icon--medical { color: var(--color-type-medical); }
+.type-icon--suspicious { color: var(--color-type-suspicious); }
+.type-icon--silent { color: var(--color-type-silent); }
+.type-icon--status { color: var(--color-type-status); }
+/* Type words in color: only where the word is the point (urgent counts on Overview) */
+.type-text--medical { color: var(--color-type-medical); }
+.type-text--silent { color: var(--color-type-silent); }
+
+/* ---------- status: a dot and a word. Only the dot has color. ---------- */
 .status {
   display: inline-flex;
   align-items: center;
@@ -368,9 +486,21 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 50%;
 }
 .dot--orange { background: var(--color-orange-bold); }
+.dot--open { background: var(--color-open); }
 .dot--green { background: var(--color-green-bold); }
 .dot--gray { background: var(--color-gray-bold); }
 .dot--red { background: var(--color-red-bold); }
+.dot--medical { background: var(--color-type-medical); }
+.dot--silent { background: var(--color-type-silent); }
+
+/* Open MEDICAL or SILENT: a soft pulse next to the time. Still with reduced motion. */
+.dot--pulse {
+  animation: dot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
 
 kbd,
 .kbd {
@@ -460,6 +590,15 @@ kbd,
 .menu-item > svg {
   color: var(--color-text-subtle);
 }
+.menu-two-line {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+}
+.menu-note {
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
+}
 .menu-item .menu-check {
   margin-left: auto;
   color: var(--color-blue-text);
@@ -533,7 +672,6 @@ kbd,
   top: 0;
   z-index: 1;
   height: 36px;
-  border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-page);
   color: var(--color-text-subtlest);

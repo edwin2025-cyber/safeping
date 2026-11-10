@@ -1,22 +1,36 @@
 import { icons } from "./icons.js";
 
-// Short words for tags, long words for copied text. Color is never the only
-// signal: each type also has an icon and a word.
+// Short words for labels, long words for copied text. Color is never the only
+// signal: each type also has an icon and a word. key names the type color
+// (--color-type-<key>) used for icons, map markers and chart lines.
 export const TYPES = {
-  MEDICAL: { label: "Medical", long: "Medical emergency", color: "red", icon: icons.medical },
-  SUSPICIOUS: { label: "Suspicious", long: "Suspicious person", color: "yellow", icon: icons.suspicious },
-  SILENT: { label: "Silent", long: "Silent alert", color: "purple", icon: icons.silent },
-  STATUS: { label: "Status", long: "Status check", color: "gray", icon: icons.status },
+  MEDICAL: { label: "Medical", long: "Medical emergency", key: "medical", icon: icons.medical },
+  SUSPICIOUS: { label: "Suspicious", long: "Suspicious person", key: "suspicious", icon: icons.suspicious },
+  SILENT: { label: "Silent", long: "Silent alert", key: "silent", icon: icons.silent },
+  STATUS: { label: "Status", long: "Status check", key: "status", icon: icons.status },
 };
 
 export const TYPE_ORDER = ["MEDICAL", "SUSPICIOUS", "SILENT", "STATUS"];
 
 export function typeMeta(type) {
-  return TYPES[type] || { label: type, long: type, color: "gray", icon: icons.unknownType };
+  return TYPES[type] || { label: type, long: type, key: "status", icon: icons.unknownType };
+}
+
+/** The CSS color of a type, for SVG and inline styles. */
+export function typeColor(type) {
+  return "var(--color-type-" + typeMeta(type).key + ")";
+}
+
+// MEDICAL and SILENT are the urgent types: they get the pulsing dot on Live,
+// the red Live count in the sidebar and the Urgent open tile on Overview.
+export const URGENT_TYPES = ["MEDICAL", "SILENT"];
+
+export function isUrgentOpen(alert) {
+  return URGENT_TYPES.includes(alert.alert_type) && alertState(alert) === "open";
 }
 
 export const STATES = {
-  open: { label: "Open", color: "orange" },
+  open: { label: "Open", color: "open" },
   acknowledged: { label: "Acknowledged", color: "green" },
   resolved: { label: "Resolved", color: "gray" },
 };
@@ -28,8 +42,8 @@ export function alertState(alert) {
 
 // Only known links are shown. Older alerts and test tools have no link.
 export const LINKS = {
-  lora: { label: "LoRa", color: "gray", icon: icons.lora },
-  wifi: { label: "WiFi", color: "teal", icon: icons.wifi },
+  lora: { label: "LoRa", color: "lora", icon: icons.lora },
+  wifi: { label: "WiFi", color: "wifi", icon: icons.wifi },
 };
 
 export function linkMeta(link) {

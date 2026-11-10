@@ -10,6 +10,23 @@ export function ago(seconds) {
   return Math.floor(seconds / 86400) + " d ago";
 }
 
+/** Shorter, for the top bar: "40 s ago", "12 min ago", "3 h ago", "2 d ago". At most "59 min ago". */
+export function agoShort(seconds) {
+  seconds = Math.max(0, Math.round(seconds));
+  if (seconds < 60) return seconds + " s ago";
+  if (seconds < 3600) return Math.floor(seconds / 60) + " min ago";
+  if (seconds < 86400) return Math.floor(seconds / 3600) + " h ago";
+  return Math.floor(seconds / 86400) + " d ago";
+}
+
+/** Where, in a few words, for feeds and search: the named place ("the bus loop"),
+    "Indoors, floor 3", "GPS" or null. */
+export function placeShort(alert) {
+  if (hasGps(alert)) return alert.place_name || "GPS";
+  if (alert.floor !== null && alert.floor !== undefined) return "Indoors, floor " + alert.floor;
+  return null;
+}
+
 function hour12(timeFormat) {
   return timeFormat !== "24";
 }

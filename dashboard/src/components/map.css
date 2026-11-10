@@ -45,11 +45,12 @@
   border: 0;
 }
 .alert-marker svg {
-  font-size: 14px;
+  font-size: 13px;
 }
 .alert-marker.is-quiet svg {
-  font-size: 12px;
+  font-size: 11px;
 }
+/* 26 px disc in the type color, 2 px ring, icon inside (white in light, Midnight in dark) */
 .alert-marker {
   display: flex;
   align-items: center;
@@ -57,27 +58,34 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgb(255, 255, 255), var(--shadow-marker);
-  transition: transform 120ms ease;
+  color: var(--color-marker-icon);
+  box-shadow: 0 0 0 2px var(--color-marker-ring), var(--shadow-marker);
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
-.alert-marker--red { background: var(--color-red-bold); color: var(--color-red-on-bold); }
-.alert-marker--yellow { background: var(--color-yellow-bold); color: var(--color-yellow-on-bold); }
-.alert-marker--purple { background: var(--color-purple-bold); color: var(--color-purple-on-bold); }
-.alert-marker--gray { background: var(--color-gray-bold); color: var(--color-gray-on-bold); }
+.alert-marker--medical { background: var(--color-type-medical); }
+.alert-marker--suspicious { background: var(--color-type-suspicious); }
+.alert-marker--silent { background: var(--color-type-silent); }
+.alert-marker--status { background: var(--color-type-status); }
 .alert-marker.is-quiet {
   opacity: 0.6;
 }
-.alert-marker.is-highlighted,
-.cluster.is-highlighted {
+/* Selected (hovered row or open Peek): 1.15 on the inner span, a stronger shadow, no ring color */
+.alert-marker.is-selected,
+.cluster.is-selected {
   opacity: 1;
-  transform: scale(1.18);
-  box-shadow: 0 0 0 2px rgb(255, 255, 255), 0 0 0 4px var(--color-blue-bold), var(--shadow-marker);
+  transform: scale(1.15);
+}
+.alert-marker.is-selected {
+  box-shadow: 0 0 0 2px var(--color-marker-ring), var(--shadow-marker-strong);
+}
+.cluster.is-selected {
+  box-shadow: var(--shadow-marker-strong);
 }
 .leaflet-marker-icon:focus-visible {
   outline: none;
 }
 .leaflet-marker-icon:focus-visible > span {
-  box-shadow: 0 0 0 2px rgb(255, 255, 255), 0 0 0 4px var(--color-focus-ring);
+  box-shadow: 0 0 0 2px var(--color-marker-ring), 0 0 0 4px var(--color-focus-ring);
 }
 
 /* Clusters: neutral, with a count. Red ring when an open MEDICAL is inside.
@@ -102,16 +110,30 @@
   border: 2px solid var(--color-red-bold);
 }
 
-/* ---------- circles: colors here, opacity from Leaflet ---------- */
-.zone--red { stroke: var(--color-red-bold); fill: var(--color-red-bold); }
-.zone--purple { stroke: var(--color-purple-bold); fill: var(--color-purple-bold); }
-.zone--gray { stroke: var(--color-gray-bold); fill: var(--color-gray-bold); }
-/* SUSPICIOUS: dashed outer circle is the area the student could see. Light theme
-   uses yellow text for the stroke, because yellow border is too faint on light tiles. */
-.zone--sight { stroke: var(--color-yellow-border); fill: var(--color-yellow-bold); }
-:root[data-theme="light"] .zone--sight { stroke: var(--color-yellow-text); }
-.zone--yellow-inner { stroke: var(--color-yellow-border); fill: none; }
-:root[data-theme="light"] .zone--yellow-inner { stroke: var(--color-yellow-text); }
+/* ---------- circles: only for the hovered or selected alert. Colors here, opacity from Leaflet.
+   They fade in over 150 ms (no fade with reduced motion). ---------- */
+.zone {
+  animation: zone-in 150ms ease-out;
+}
+@keyframes zone-in {
+  from { opacity: 0; }
+}
+.zone--medical { stroke: var(--color-type-medical); fill: var(--color-type-medical); }
+.zone--silent { stroke: var(--color-type-silent); fill: var(--color-type-silent); }
+.zone--status { stroke: var(--color-type-status); fill: var(--color-type-status); }
+/* SUSPICIOUS: the dashed outer circle is the area the student could see, the solid one the GPS fix. */
+.zone--suspicious { stroke: var(--color-type-suspicious); fill: var(--color-type-suspicious); }
+.zone--suspicious-inner { stroke: var(--color-type-suspicious); fill: none; }
+
+/* ---------- Overview map: one small dot per alert ---------- */
+.ov-dot--medical { fill: var(--color-type-medical); }
+.ov-dot--suspicious { fill: var(--color-type-suspicious); }
+.ov-dot--silent { fill: var(--color-type-silent); }
+.ov-dot--status { fill: var(--color-type-status); }
+.ov-dot {
+  stroke: var(--color-marker-ring);
+  cursor: pointer;
+}
 
 /* ---------- floating control group ---------- */
 .map-controls {
@@ -253,16 +275,11 @@
   text-align: left;
   cursor: pointer;
 }
-.panel-row:hover,
-.panel-row.is-hovered {
+.panel-row:hover {
   background: var(--color-surface-hover);
 }
-.panel-row.is-medical-open {
-  background: var(--color-red-subtlest);
-}
-.panel-row.is-medical-open:hover,
-.panel-row.is-medical-open.is-hovered {
-  background: var(--color-red-subtler);
+.panel-row.is-selected {
+  background: var(--color-surface-selected);
 }
 .panel-row-top,
 .panel-row-bottom {

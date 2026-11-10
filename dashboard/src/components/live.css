@@ -4,8 +4,46 @@
   min-height: 0;
   display: grid;
 }
+/* Split: the table lines up with the 1600 px header, the map runs to the right edge.
+   --split (the list's share, set by dragging the divider) defaults to half. */
 .live-body--split {
-  grid-template-columns: minmax(420px, 44%) minmax(0, 1fr);
+  grid-template-columns: minmax(360px, var(--split, 50%)) 9px minmax(320px, 1fr);
+  padding-left: max(0px, calc((100% - var(--content-max)) / 2));
+}
+.splitter {
+  position: relative;
+  z-index: 2;
+  margin: 0 -4px;
+  width: 17px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.splitter-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  width: 1px;
+  background: var(--color-border);
+  transition: background 120ms ease, width 120ms ease, left 120ms ease;
+}
+.splitter:hover .splitter-line,
+.splitter:focus-visible .splitter-line,
+.live-body.is-resizing .splitter-line {
+  left: 7px;
+  width: 3px;
+  background: var(--color-blue-bold);
+}
+.splitter:focus-visible {
+  outline: none;
+}
+/* While dragging: no text selection, and the map does not catch the pointer. */
+.live-body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+.live-body.is-resizing .map-pane {
+  pointer-events: none;
 }
 .live-body--list,
 .live-body--map {
@@ -17,10 +55,16 @@
 .table-pane {
   min-height: 0;
   overflow-y: auto;
-  padding: 0 24px 24px;
+  padding: 0 16px 24px;
 }
 .live-body--split .table-pane {
   padding-right: 16px;
+}
+.live-body--list .table-pane,
+.table-pane--full {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
 }
 .table-pane--full {
   flex: 1;
@@ -29,51 +73,80 @@
 .map-pane {
   min-height: 0;
 }
-.live-body--split .map-pane {
-  border-left: 1px solid var(--color-border);
-}
 .map-pane .map-wrap {
   border: 0;
   border-radius: 0;
 }
 
 /* ---------- alert table ---------- */
-.alert-table .col-type { width: 128px; }
+.alert-table .col-type { width: 136px; }
 .alert-table .col-place { width: auto; }
-.alert-table .col-student { width: 32%; }
-.alert-table .col-time { width: 112px; }
+.alert-table .col-student { width: 34%; }
+.alert-table .col-time { width: 128px; }
 .alert-table .col-status { width: 148px; }
-.alert-table.is-compact .col-type { width: 120px; }
+.alert-table .col-actions { width: 64px; }
+.alert-table.is-compact .col-type { width: 124px; }
 .alert-table.is-compact .col-student { width: auto; }
-.alert-table.is-compact .col-time { width: 88px; }
-.alert-table.is-compact .col-status { width: 128px; }
+.alert-table.is-compact .col-time { width: 112px; }
+.alert-table.is-compact .col-status { width: 132px; }
 
+/* Rows: no tints. Hover is a 3% wash; the selected row (Peek open, or its marker hovered)
+   uses surface-selected. --row-tint also paints the row actions, so they cover the cell. */
 .alert-row,
 .device-row {
+  --row-tint: transparent;
   cursor: pointer;
 }
-.alert-row:hover td,
-.alert-row.is-hovered td,
-.device-row:hover td {
-  background: var(--color-surface-hover);
+.alert-row:hover,
+.alert-row:focus-within,
+.device-row:hover,
+.device-row:focus-within {
+  --row-tint: var(--color-surface-hover);
 }
-/* Open MEDICAL: a very light red across the whole row. Muted text uses text-subtle there. */
-.alert-row.is-medical-open td {
-  background: var(--color-red-subtlest);
+.alert-row.is-selected,
+.device-row.is-selected {
+  --row-tint: var(--color-surface-selected);
 }
-.alert-row.is-medical-open:hover td,
-.alert-row.is-medical-open.is-hovered td {
-  background: var(--color-red-subtler);
-}
-.alert-row.is-medical-open .student-id,
-.alert-row.is-medical-open .cell-time,
-.alert-row.is-medical-open .muted {
-  color: var(--color-text-subtle);
+.alert-row td,
+.device-row td {
+  background: var(--row-tint);
 }
 .alert-row:has(.row-open:focus-visible),
 .device-row:has(.row-open:focus-visible) {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
+}
+
+/* Row actions: 28 px ghost buttons in their own column at the end of the row,
+   only on hover or keyboard focus. They never cover the time or the status. */
+.table .cell-actions {
+  padding: 0 4px 0 0;
+  overflow: visible;
+  text-align: right;
+  text-overflow: clip;
+}
+.row-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 2px;
+  vertical-align: middle;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+.alert-row:hover .row-actions,
+.alert-row:focus-within .row-actions,
+.device-row:hover .row-actions,
+.device-row:focus-within .row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.row-actions .icon-btn {
+  color: var(--color-text-subtle);
+}
+.row-actions .icon-btn:hover {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text);
 }
 
 .row-open {
@@ -91,8 +164,12 @@
 .row-open:focus-visible {
   outline: none;
 }
+/* When space runs out, the Fob ID gives way first, then the name. */
 .student-name {
+  flex: 0 1 auto;
+  min-width: 48px;
   overflow: hidden;
+  color: var(--color-text);
   font-size: var(--text-14);
   font-weight: 500;
   text-overflow: ellipsis;
@@ -103,9 +180,14 @@
   font-weight: 400;
 }
 .student-id {
-  flex: none;
-  color: var(--color-text-subtlest);
-  font-size: var(--text-12);
+  flex: 0 1000 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cell-student {
   overflow: hidden;
@@ -119,15 +201,26 @@
   color: var(--color-text-subtle);
   font-size: var(--text-13);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.is-compact tbody td {
-  height: 52px;
+.cell-sub .student-id {
+  flex: none;
 }
-.cell-place {
-  color: var(--color-text-subtle);
+.cell-sub-sep {
+  margin: 0 6px;
+  color: var(--color-text-subtlest);
 }
+.cell-place,
 .cell-time {
   color: var(--color-text-subtle);
+}
+.time-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot--none {
+  visibility: hidden;
 }
 
 .group-row th {
@@ -146,24 +239,32 @@
 }
 
 /* ---------- devices ---------- */
-.device-table .col-dname { width: 26%; }
-.device-table .col-did { width: 14%; }
-.device-table .col-seen { width: 14%; }
-.device-table .col-battery { width: 22%; }
+.device-table .col-dname { width: 24%; }
+.device-table .col-did { width: 15%; }
+.device-table .col-seen { width: 15%; }
+.device-table .col-battery { width: 20%; }
 .device-table .col-link { width: 12%; }
-.device-table .col-open { width: 12%; }
+.device-table .col-open { width: 10%; }
+.device-table .col-actions { width: 48px; }
 
+/* Battery: the number and a thin 40 px bar. Green 20% and up. Under 20% the bar is yellow and a
+   "Low" tag follows; under 10% both are red ("Very low"). The number is semibold when low. */
 .battery {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 .battery-num {
-  min-width: 40px;
+  min-width: 36px;
+}
+.battery--low .battery-num,
+.battery--critical .battery-num {
+  font-weight: 600;
 }
 .battery-track {
   position: relative;
-  width: 48px;
+  width: 40px;
   height: 4px;
   border-radius: 2px;
   background: var(--color-surface-hover-strong);
@@ -174,26 +275,24 @@
   inset: 0 auto 0 0;
   border-radius: 2px;
 }
-.battery-fill--ok { background: var(--color-gray-bold); }
-.battery-fill--low { background: var(--color-orange-bold); }
-.battery-fill--critical { background: var(--color-red-bold); }
-.battery-word {
-  font-size: var(--text-12);
-  font-weight: 500;
-}
-.battery-word--low { color: var(--color-orange-text); }
-.battery-word--critical { color: var(--color-red-text); }
+.battery-fill--good { background: var(--color-battery-good); }
+.battery-fill--low { background: var(--color-battery-low); }
+.battery-fill--critical { background: var(--color-battery-critical); }
 
-@media (max-width: 1000px) {
+/* Under 1024 px: Split stacks the list above the map. */
+@media (max-width: 1023px) {
   .live-body--split {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(200px, 45%) minmax(0, 1fr);
+    padding-left: 0;
   }
   .live-body--split .table-pane {
-    padding-right: 24px;
+    padding-right: 16px;
   }
   .live-body--split .map-pane {
     border-top: 1px solid var(--color-border);
-    border-left: 0;
+  }
+  .live-body--split .splitter {
+    display: none;
   }
 }

@@ -1,13 +1,29 @@
 import { useEffect, useState } from "react";
 import { getJson } from "../lib/api.js";
+import { presetRange, RANGE_PRESETS, rangeText } from "../lib/dates.js";
+import { agoShort } from "../lib/format.js";
+import { isEmptyPreview, startEmptyPreview, stopEmptyPreview } from "../lib/preview.js";
 import { icons } from "../lib/icons.js";
 import { playAlertTone, unlockAudio } from "../lib/sound.js";
+import { usePolling } from "../lib/usePolling.js";
 import { Segmented, Select, Switch } from "./Controls.jsx";
+import { fontRow } from "./FontPicker.jsx"; // temporary font test
 import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
+import { Tag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 const DOCS_URL = "https://github.com/edwin2025-cyber/safeping/blob/main/docs/dashboard.md#campus-places";
+const HEALTH_MS = 30000;
+const HEALTH_RANGES = RANGE_PRESETS.filter((p) => p.value !== "custom");
+const REASONS = {
+  bad_signature: "bad signature",
+  replay: "replay",
+  unknown_device: "unknown device",
+  wrong_role: "wrong role",
+  bad_format: "bad format",
+  bad_json: "bad JSON",
+};
 
 export const SECTIONS = [
   { id: "appearance", group: "Preferences", label: "Appearance", icon: icons.theme, description: "How SafePing looks in this browser." },
@@ -15,8 +31,107 @@ export const SECTIONS = [
   { id: "map", group: "Preferences", label: "Map", icon: icons.map, description: "How the map shows alerts." },
   { id: "camera", group: "Safety", label: "Camera review", icon: icons.camera, description: "The area and time window for SUSPICIOUS alerts." },
   { id: "places", group: "Safety", label: "Campus places", icon: icons.place, description: "Named places that turn GPS points into words staff know." },
+  {
+    id: "health",
+    group: "System",
+    label: "Health",
+    icon: icons.health,
+    description: "Whether the system itself is working: the radio path, rejected messages, Fobs and the reference sensor.",
+  },
   { id: "about", group: "System", label: "About", icon: icons.info, description: "Facts about this SafePing server." },
 ];
+
+/** A value with an optional second line under it, both on the right of a settings row. */
+function HealthValue({ tone, icon, children, sub }) {
+  return (
+    <span className={"health-value" + (tone ? " tone-" + tone : "")}>
+      <span className="health-main">
+        {icon && <Icon icon={icon} size={14} />}
+        {children}
+      </span>
+      {sub && <span className="health-sub">{sub}</span>}
+    </span>
+  );
+}
+
+/** System health rows (from Overview in v4). Same row style as every other setting. */
+function healthRows({ health, preset, setPreset, refMaxAge }) {
+  const range = presetRange(preset);
+  const rows = [
+    {
+      section: "health", id: "h-range", name: "Range", desc: "The numbers below cover " + rangeText(range.from, range.to) + ".",
+      control: (id) => <Select labelledBy={id} value={preset} options={HEALTH_RANGES} onChange={setPreset} />,
+    },
+  ];
+  const s = health && health.preset === preset ? health.stats : null;
+  const loading = <span className="muted">Loading</span>;
+
+  const d = s ? s.delivery || { lora: 0, wifi: 0, unknown: 0 } : null;
+  rows.push({
+    section: "health", group: "Messages", id: "h-delivery", name: "Delivery",
+    desc: "Messages received by link, STATUS check-ins included. Unknown is older alerts and test tools.",
+    value: !d ? loading : d.lora + d.wifi + d.unknown === 0 ? <span className="muted">No messages in this range</span> : (
+      <span className="health-links">
+        <Tag color="lora" icon={icons.lora}>LoRa <span className="num">{d.lora}</span></Tag>
+        <Tag color="wifi" icon={icons.wifi}>WiFi <span className="num">{d.wifi}</span></Tag>
+        {d.unknown > 0 && <Tag color="unknown" icon={icons.unknownType}>Unknown <span className="num">{d.unknown}</span></Tag>}
+      </span>
+    ),
+  });
+  rows.push({
+    section: "health", group: "Messages", id: "h-duplicates", name: "Duplicates caught",
+    desc: "The server cannot tell a resend from a replay yet. Both count under Rejected messages as replay.",
+    value: !s ? loading : s.duplicates === null || s.duplicates === undefined ? <span className="muted">Not tracked</span> : <span className="num">{s.duplicates}</span>,
+  });
+  const rej = s ? s.rejected : null;
+  const reasons = rej ? Object.entries(rej.by_reason).sort((a, b) => b[1] - a[1]) : [];
+  const attack = rej && ((rej.by_reason.bad_signature || 0) > 0 || (rej.by_reason.replay || 0) > 0);
+  rows.push({
+    section: "health", group: "Messages", id: "h-rejected", name: "Rejected messages",
+    desc: "Messages the server turned away. Red when any had a bad signature or were a replay.",
+    value: !s ? loading : !rej ? <span className="muted">Not tracked</span> : (
+      <HealthValue
+        tone={attack ? "red" : null}
+        icon={attack ? icons.warning : null}
+        sub={reasons.length ? reasons.map(([r, n]) => n + " " + (REASONS[r] || r.replaceAll("_", " "))).join(", ") : null}
+      >
+        <span className="num">{rej.total}</span>
+      </HealthValue>
+    ),
+  });
+
+  const stale = s ? s.stale_fobs || [] : [];
+  const low = s ? s.low_battery_fobs || [] : [];
+  rows.push({
+    section: "health", group: "Fobs", id: "h-stale", name: "Fobs not seen in 24 h",
+    desc: "Fobs with no message of any type, STATUS included, in the last 24 hours.",
+    value: !s ? loading : (
+      <HealthValue tone={stale.length ? "orange" : null} sub={stale.length ? stale.join(", ") : null}>
+        <span className="num">{stale.length}</span>
+      </HealthValue>
+    ),
+  });
+  rows.push({
+    section: "health", group: "Fobs", id: "h-low", name: "Low battery",
+    desc: "Fobs whose newest battery reading is under 20%.",
+    value: !s ? loading : (
+      <HealthValue tone={low.length ? "yellow" : null} sub={low.length ? low.map((f) => f.name + " " + f.pct + "%").join(", ") : null}>
+        <span className="num">{low.length}</span>
+      </HealthValue>
+    ),
+  });
+  const age = s ? s.reference_age_s : null;
+  rows.push({
+    section: "health", group: "Floors", id: "h-reference", name: "Reference sensor",
+    desc: "The ground floor pressure board. Indoor floors need a reading newer than " + refMaxAge + " s.",
+    value: !s ? loading : (
+      <HealthValue tone={age === null || age === undefined || age > refMaxAge ? "orange" : null}>
+        {age === null || age === undefined ? "No reading" : "Last reading " + agoShort(age)}
+      </HealthValue>
+    ),
+  });
+  return rows;
+}
 
 function Minutes({ value, onChange, labelledBy }) {
   return (
@@ -40,11 +155,12 @@ function Minutes({ value, onChange, labelledBy }) {
 }
 
 /** Every setting row, as data, so search can look across sections. */
-function buildRows({ settings, effective, update, reset, config, devices, soundNote, testSound, setSound }) {
+function buildRows({ settings, effective, update, reset, config, devices, soundNote, testSound, setSound, health }) {
   const hasKey = !!(config && config.carto_key);
   const d = effective.defaults;
   const version = config ? config.version + (config.commit ? " (" + config.commit + ")" : "") : "Loading";
   return [
+    ...healthRows(health),
     {
       section: "appearance", id: "theme", name: "Theme", desc: "Use system setting follows your computer.",
       control: (id) => (
@@ -59,6 +175,7 @@ function buildRows({ settings, effective, update, reset, config, devices, soundN
           options={[{ value: "12", label: "12 h" }, { value: "24", label: "24 h" }]} />
       ),
     },
+    fontRow(), // temporary font test
     {
       section: "alerts", group: "Sound", id: "sound", name: "Alert sound",
       desc: soundNote || "A short tone when a new MEDICAL or SUSPICIOUS alert arrives.",
@@ -112,6 +229,21 @@ function buildRows({ settings, effective, update, reset, config, devices, soundN
     {
       section: "about", group: "Server", id: "devices", name: "Registered devices", desc: "Fobs and Reference boards.",
       value: devices ? String(devices.length) : "Loading",
+    },
+    {
+      section: "about", group: "Testing", id: "empty", name: "Show an empty dashboard",
+      desc: "See SafePing as it looks on its first day, with no Fobs, alerts, readings or places, to check that nothing breaks. "
+        + "Only this tab, until you exit or close it. Real alerts are hidden while it is on. The server and its data do not change.",
+      control: () =>
+        isEmptyPreview() ? (
+          <button type="button" className="btn btn-secondary" onClick={stopEmptyPreview}>
+            Exit preview
+          </button>
+        ) : (
+          <button type="button" className="btn btn-secondary" onClick={startEmptyPreview}>
+            Show empty dashboard
+          </button>
+        ),
     },
     {
       section: "about", group: "This browser", id: "reset", name: "Reset settings", desc: "Puts every setting on this page back to its default.",
@@ -195,11 +327,38 @@ function PlacesTable({ places }) {
   );
 }
 
-export default function SettingsModal({ settings, effective, update, reset, config, devices, onClose, returnFocus, initialSection = "appearance" }) {
+export default function SettingsModal({
+  settings,
+  effective,
+  update,
+  reset,
+  config,
+  devices,
+  refMaxAge = 120,
+  onClose,
+  returnFocus,
+  initialSection = "appearance",
+}) {
   const [section, setSection] = useState(initialSection);
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState(null);
   const [soundNote, setSoundNote] = useState(null);
+
+  // Health: /api/stats for the picked range, while Health is open or a search is shown.
+  const [healthPreset, setHealthPreset] = useState("7d");
+  const [healthStats, setHealthStats] = useState(null); // { preset, stats }
+  usePolling(
+    () => {
+      const preset = healthPreset;
+      const r = presetRange(preset);
+      getJson("/api/stats?from=" + r.from + "&to=" + r.to)
+        .then((stats) => setHealthStats({ preset, stats }))
+        .catch(() => {});
+    },
+    HEALTH_MS,
+    section === "health" || query.trim() !== "",
+    [healthPreset],
+  );
 
   useEffect(() => {
     let stop = false;
@@ -221,7 +380,8 @@ export default function SettingsModal({ settings, effective, update, reset, conf
     setTimeout(() => setSoundNote(playAlertTone() ? null : "This browser blocked the sound. Click Test sound again."), 60);
   }
 
-  const rows = buildRows({ settings, effective, update, reset, config, devices, soundNote, testSound, setSound });
+  const health = { health: healthStats, preset: healthPreset, setPreset: setHealthPreset, refMaxAge };
+  const rows = buildRows({ settings, effective, update, reset, config, devices, soundNote, testSound, setSound, health });
   const q = query.trim().toLowerCase();
   const current = SECTIONS.find((s) => s.id === section);
 

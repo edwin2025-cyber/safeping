@@ -22,6 +22,11 @@ LOW_BATTERY = 20              # percent; under this counts as low, like the Devi
 ACTIVE_S = 24 * 3600          # a Fob seen this recently counts as active
 NEAR_M = 40                   # same rule as the dashboard: closer than this reads "Near ..."
 HOTSPOT_TOP = 5               # Hotspots lists this many places, then "and N more places"
+SHOWN_TYPES = ("MEDICAL", "SUSPICIOUS", "SILENT")   # the types Overview counts (STATUS left out)
+URGENT_TYPES = ("MEDICAL", "SILENT")
+RECENT_EVENTS = 10            # Recent activity on Overview shows this many events
+MAX_POINTS = 2000             # at most this many GPS alerts on the Overview map, newest kept
+EVENT_ORDER = {"received": 0, "acknowledged": 1, "resolved": 2}
 
 
 class BadRange(ValueError):
@@ -88,6 +93,79 @@ def _hotspots(start, end):
     }
 
 
+def _place_short(lat, lon, floor):
+    """Where, in a few words: the nearest named place within 200 m ("the bus loop"),
+    "Indoors, floor 3", "GPS" when there is no named place close, or None."""
+    if lat is not None and lon is not None:
+        found = places.nearest(lat, lon)
+        return found[0] if found else "GPS"
+    if floor is not None:
+        return "Indoors, floor {}".format(floor)
+    return None
+
+
+def _usual_per_day(per_day, today):
+    """Median alerts per day (STATUS left out) over the days of the range before today.
+    When the range has no such day (Today), the 7 days before today are used."""
+    counts = [d["count"] for d in per_day if d["date"] < today.isoformat()]
+    if not counts:
+        week = db.count_by_day_and_type(_midnight(today - timedelta(days=7)), _midnight(today))
+        counts = [_not_status(week, (today - timedelta(days=i)).isoformat()) for i in range(1, 8)]
+    return _median(counts)
+
+
+def _overview_v5(start, end, per_day, now):
+    """Fields added in dashboard v5: open alerts by type, urgent open alerts, the last alert,
+    today's count and the usual count, GPS points for the map, and Recent activity."""
+    open_rows = db.open_alerts()
+    today = datetime.fromtimestamp(now).date()
+    today_counts = db.count_by_day_and_type(_midnight(today), _midnight(today + timedelta(days=1)))
+
+    latest = db.latest_alert()
+    last_alert = None
+    if latest is not None:
+        last_alert = {
+            "id": latest["id"],
+            "time": latest["timestamp"],
+            "type": latest["alert_type"],
+            "name": _device_name(latest),
+            "place": _place_short(latest["latitude"], latest["longitude"], latest["floor"]),
+        }
+
+    points, indoor, events = [], 0, []
+    for a in db.alert_events(start, end):
+        name = _device_name(a)
+        place = _place_short(a["latitude"], a["longitude"], a["floor"])
+        base = {"alert_id": a["id"], "type": a["alert_type"], "name": name, "place": place}
+        if start <= a["timestamp"] < end:
+            if a["latitude"] is not None and a["longitude"] is not None:
+                points.append({"id": a["id"], "type": a["alert_type"], "lat": a["latitude"], "lon": a["longitude"],
+                               "name": name, "place": place, "time": a["timestamp"]})
+            else:
+                indoor += 1
+            events.append(dict(base, kind="received", time=a["timestamp"]))
+        ack, res = a["acknowledged_at"], a["resolved_at"]
+        # Resolving an alert nobody acknowledged sets both times at once. Show only Resolved then.
+        if ack is not None and start <= ack < end and ack != res:
+            events.append(dict(base, kind="acknowledged", time=ack))
+        if res is not None and start <= res < end:
+            events.append(dict(base, kind="resolved", time=res))
+    events.sort(key=lambda e: (e["time"], EVENT_ORDER[e["kind"]], e["alert_id"]), reverse=True)
+    points.sort(key=lambda p: (p["time"], p["id"]))
+
+    return {
+        "open_by_type": {t: sum(1 for a in open_rows if a["alert_type"] == t) for t in SHOWN_TYPES},
+        "urgent_open": [{"id": a["id"], "name": _device_name(a), "type": a["alert_type"]}
+                        for a in open_rows if a["alert_type"] in URGENT_TYPES],
+        "last_alert": last_alert,
+        "today_count": _not_status(today_counts, today.isoformat()),
+        "usual_per_day": _usual_per_day(per_day, today),
+        "points": points[-MAX_POINTS:],
+        "indoor_count": indoor,
+        "recent_events": events[:RECENT_EVENTS],
+    }
+
+
 def build(first, last, now=None):
     """Everything the Overview page shows, in one answer."""
     now = time.time() if now is None else now
@@ -142,7 +220,7 @@ def build(first, last, now=None):
     ref = db.latest_reference()
 
     local_now = datetime.now().astimezone()
-    return {
+    result = {
         "server_time": now,
         "tz": local_now.tzname(),
         "tz_offset_min": int(local_now.utcoffset().total_seconds() // 60),
@@ -183,6 +261,8 @@ def build(first, last, now=None):
         "low_battery_fobs": [{"name": _device_name(d), "pct": d["battery"]} for d in low],
         "reference_age_s": None if ref is None else round(now - ref["timestamp"]),
     }
+    result.update(_overview_v5(start, end, per_day, now))
+    return result
 
 
 def _device_name(device):

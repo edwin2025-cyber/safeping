@@ -89,7 +89,7 @@ function IndoorNote({ alerts, onOpen }) {
 }
 
 /** Map view: the alert list floats over the map and can be hidden. */
-function ListPanel({ alerts, collapsed, onToggle, nowServer, highlightedId, onOpen, onHover, registerFocus }) {
+function ListPanel({ alerts, collapsed, onToggle, nowServer, selectedRowId, onOpen, onHover, registerFocus }) {
   if (collapsed) {
     return (
       <Tooltip label="Show list">
@@ -121,7 +121,7 @@ function ListPanel({ alerts, collapsed, onToggle, nowServer, highlightedId, onOp
               <button
                 ref={(node) => registerFocus(a.id, node)}
                 type="button"
-                className={"panel-row" + (a.id === highlightedId ? " is-hovered" : "") + (a.alert_type === "MEDICAL" && alertState(a) === "open" ? " is-medical-open" : "")}
+                className={"panel-row" + (a.id === selectedRowId ? " is-selected" : "")}
                 onClick={() => onOpen(a.id)}
                 onMouseEnter={() => onHover(a.id)}
                 onMouseLeave={() => onHover(null)}
@@ -157,7 +157,10 @@ export default function AlertMap({
   cartoKey,
   configLoaded,
   highlightedId,
+  selectedId,
+  selectedRowId,
   onHover,
+  onRowHover,
   onOpen,
   flyTarget,
   withPanel,
@@ -188,7 +191,14 @@ export default function AlertMap({
         <AttributionPrefix />
         <SizeWatcher />
         <MapController alerts={alerts} flyTarget={flyTarget} reducedMotion={reducedMotion} />
-        <AlertLayer alerts={list} sightRadius={settings.sightRadius} highlightedId={highlightedId} onOpen={onOpen} onHover={onHover} />
+        <AlertLayer
+          alerts={list}
+          sightRadius={settings.sightRadius}
+          highlightedId={highlightedId}
+          selectedId={selectedId}
+          onOpen={onOpen}
+          onHover={onHover}
+        />
       </MapContainer>
 
       <div className="map-overlay-tl">
@@ -198,9 +208,9 @@ export default function AlertMap({
             collapsed={panelCollapsed}
             onToggle={onTogglePanel}
             nowServer={nowServer}
-            highlightedId={highlightedId}
+            selectedRowId={selectedRowId}
             onOpen={onOpen}
-            onHover={onHover}
+            onHover={onRowHover}
             registerFocus={registerFocus}
           />
         )}

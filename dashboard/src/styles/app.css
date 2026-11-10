@@ -1,8 +1,11 @@
-﻿/* ---------- shell ---------- */
+/* ---------- shell ---------- */
+/* The sidebar opens and closes smoothly: the column width animates (no animation with
+   reduced motion). Icons keep the same place in both states, and labels fade. */
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-wide) minmax(0, 1fr);
   height: 100%;
+  transition: grid-template-columns var(--sidebar-speed) ease;
 }
 .app.is-collapsed {
   grid-template-columns: var(--sidebar-narrow) minmax(0, 1fr);
@@ -19,105 +22,106 @@
   background: var(--color-page);
 }
 
-/* ---------- sidebar: Midnight in both themes (sb tokens) ---------- */
+/* ---------- sidebar: light gray in light, Midnight in dark ---------- */
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
   min-height: 0;
   padding: 8px;
-  background: var(--color-sb-bg);
-  color: var(--color-sb-text);
+  background: var(--color-sidebar);
+  color: var(--color-text-subtle);
   overflow-x: hidden;
   overflow-y: auto;
 }
 :root[data-theme="dark"] .sidebar {
   border-right: 1px solid var(--color-border);
 }
+.sb-label {
+  transition: opacity 150ms ease;
+}
+
+/* Top: wordmark on the left, fold button on the right. Folded, an "S" sits in the middle and
+   turns into the open button on hover, like the logo in Claude's sidebar. */
 .sb-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 40px;
-  padding: 0 0 0 8px;
-}
-.sb-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.app-mark {
-  display: inline-flex;
+  position: relative;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius);
-  background: var(--color-brand);
-  color: var(--color-brand-on);
+  height: 40px;
+  margin-bottom: 8px;
 }
-.sb-brand-name {
-  color: var(--color-sb-text-strong);
-  font-size: var(--text-14);
+.wordmark {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  color: var(--color-text);
+  font-size: var(--text-16);
   font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 24px;
   white-space: nowrap;
 }
-.sidebar .icon-btn {
-  color: var(--color-sb-text);
+.wordmark-full,
+.wordmark-short {
+  transition: opacity 150ms ease;
+}
+.wordmark-short {
+  position: absolute;
+  top: 0;
+  left: -10px;
+  width: 40px;
+  text-align: center;
+  opacity: 0;
+}
+.sidebar .sb-toggle {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  color: var(--color-text-subtle);
+  transition: right var(--sidebar-speed) ease, opacity 150ms ease;
 }
 .sidebar .icon-btn:hover {
-  background: var(--color-sb-hover);
-  color: var(--color-sb-text-strong);
+  background: var(--color-sidebar-hover);
+  color: var(--color-text);
 }
-.sb-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  margin: 4px 0 8px;
-  padding: 0 8px;
-  border: 1px solid var(--color-sb-search-border);
-  border-radius: var(--radius);
-  background: var(--color-sb-search);
-  color: var(--color-sb-placeholder);
-  font-size: var(--text-14);
-  cursor: pointer;
-}
-.sb-search:hover {
-  background: var(--color-sb-hover);
-}
-.sb-search-text {
-  flex: 1;
-  text-align: left;
-}
-.sidebar kbd {
-  background: var(--color-sb-selected);
-  color: var(--color-sb-text);
-}
+
 .sb-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 12px;
+  gap: 2px;
+  margin-top: 16px;
 }
 .sb-section ul {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 .sb-section-label {
-  height: 24px;
-  padding: 0 8px;
-  color: var(--color-sb-label);
+  position: relative;
+  height: 28px;
+  padding: 0 10px;
+  color: var(--color-text-subtlest);
   font-size: var(--text-12);
   font-weight: 500;
-  line-height: 24px;
+  line-height: 28px;
+  white-space: nowrap;
+}
+/* Folded: the label fades and a short divider takes its place */
+.sb-section-label::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 20px;
+  height: 1px;
+  background: var(--color-border);
+  opacity: 0;
+  transition: opacity 150ms ease;
 }
 
-/* Nav items: sidebar and Settings modal. Selected = stronger gray, no colored bar. */
+/* Nav rows: sidebar and Settings. 32 px tall, no borders, no colored bars. */
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -125,10 +129,11 @@
   height: 32px;
   padding: 0 8px;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-subtle);
   font-size: var(--text-14);
+  font-weight: 500;
   text-align: left;
   text-decoration: none;
   white-space: nowrap;
@@ -136,44 +141,61 @@
 }
 .nav-item:hover {
   background: var(--color-surface-hover);
+  color: var(--color-text);
   text-decoration: none;
 }
 .nav-item.is-selected {
   background: var(--color-surface-selected);
   color: var(--color-text);
-  font-weight: 500;
 }
+/* In the sidebar the icon sits 18 px from the edge in both states, so it never jumps. */
 .sidebar .nav-item {
-  color: var(--color-sb-text);
+  padding: 0 8px 0 10px;
+  overflow: hidden;
 }
 .sidebar .nav-item:hover {
-  background: var(--color-sb-hover);
-  color: var(--color-sb-text-strong);
+  background: var(--color-sidebar-hover);
 }
 .sidebar .nav-item.is-selected {
-  background: var(--color-sb-selected);
-  color: var(--color-sb-text-strong);
+  background: var(--color-sidebar-selected);
 }
 .nav-text {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
 }
+/* "Ctrl+K" after Find a student: only on hover or keyboard focus */
+.nav-hint {
+  flex: none;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.sidebar .nav-item:hover .nav-hint,
+.sidebar .nav-item:focus-visible .nav-hint {
+  opacity: 1;
+}
+/* Live count: muted text, or a red pill when an urgent alert is open */
 .nav-count {
+  position: absolute;
+  top: 6px;
+  right: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 20px;
   height: 20px;
   padding: 0 4px;
-  border-radius: 10px;
-  background: var(--color-sb-count);
-  color: var(--color-sb-count-text);
+  color: var(--color-text-subtle);
   font-size: var(--text-12);
   font-weight: 500;
+  transition: top var(--sidebar-speed) ease, right var(--sidebar-speed) ease, opacity 150ms ease, transform var(--sidebar-speed) ease;
 }
 .nav-count.is-urgent {
+  border-radius: 10px;
   background: var(--color-red-bold);
   color: var(--color-red-on-bold);
   font-weight: 600;
@@ -190,12 +212,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: var(--radius);
-  color: var(--color-sb-text);
-  font-size: var(--text-13);
+  height: 24px;
+  padding: 0 8px 0 17px;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
   white-space: nowrap;
+}
+.sb-server .dot {
+  width: 6px;
+  height: 6px;
 }
 .sb-account {
   display: flex;
@@ -203,33 +228,32 @@
   gap: 8px;
   width: 100%;
   min-height: 44px;
-  padding: 4px 8px;
+  padding: 4px 8px 4px 6px;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   background: transparent;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 .sb-account:hover,
 .sb-account[aria-expanded="true"] {
-  background: var(--color-sb-hover);
+  background: var(--color-sidebar-hover);
 }
+/* The initials circle has its own color and a thin ring, so it stays visible on the hover gray. */
 .avatar {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--color-gray-subtler);
-  color: var(--color-gray-text);
+  background: var(--color-avatar);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
   font-size: var(--text-12);
   font-weight: 600;
-}
-.sidebar .avatar {
-  background: var(--color-sb-selected);
-  color: var(--color-sb-text-strong);
 }
 .sb-account-text {
   display: flex;
@@ -237,54 +261,75 @@
   min-width: 0;
 }
 .sb-account-name {
-  color: var(--color-sb-text-strong);
+  color: var(--color-text);
   font-size: var(--text-14);
   font-weight: 500;
+  line-height: 20px;
 }
 .sb-account-note {
-  color: var(--color-sb-label);
+  color: var(--color-text-subtlest);
   font-size: var(--text-12);
-}
-/* sb-label is under 4.5:1 on the hover gray in light, so the note brightens with the row. */
-.sb-account:hover .sb-account-note,
-.sb-account[aria-expanded="true"] .sb-account-note {
-  color: var(--color-sb-text);
+  line-height: 16px;
 }
 
-/* Collapsed: icons only, 56 px */
-.sidebar.is-collapsed .sb-label {
-  display: none;
+/* ---------- folded: icons only, 56 px ---------- */
+.sidebar.is-collapsed .sb-label,
+.sidebar.is-collapsed .wordmark-full,
+.sidebar.is-collapsed .nav-hint {
+  opacity: 0;
+  pointer-events: none;
 }
-.sidebar.is-collapsed .sb-top {
-  flex-direction: column;
-  gap: 8px;
-  height: auto;
-  padding: 8px 0 0;
+.sidebar.is-collapsed .sb-section-label::after {
+  opacity: 1;
 }
-.sidebar.is-collapsed .sb-search,
-.sidebar.is-collapsed .nav-item,
-.sidebar.is-collapsed .sb-account,
-.sidebar.is-collapsed .sb-server {
-  justify-content: center;
-  padding: 0;
+.sidebar.is-collapsed .wordmark-short {
+  opacity: 1;
 }
-.sidebar.is-collapsed .sb-search {
-  border-color: transparent;
-  background: transparent;
+.sidebar.is-collapsed .sb-toggle {
+  right: 6px;
+  opacity: 0;
 }
-.sidebar.is-collapsed .sb-search:hover {
-  background: var(--color-sb-hover);
+.sidebar.is-collapsed .sb-top:hover .wordmark-short,
+.sidebar.is-collapsed .sb-top:focus-within .wordmark-short {
+  opacity: 0;
 }
-.sidebar.is-collapsed .nav-item {
-  position: relative;
+.sidebar.is-collapsed .sb-top:hover .sb-toggle,
+.sidebar.is-collapsed .sb-toggle:focus-visible {
+  opacity: 1;
 }
 .sidebar.is-collapsed .nav-count {
-  position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 16px;
-  height: 16px;
-  font-size: var(--text-12);
+  top: 1px;
+  right: 1px;
+  transform: scale(0.85);
+}
+.sidebar.is-collapsed .nav-count:not(.is-urgent) {
+  opacity: 0;
+}
+
+/* ---------- empty dashboard preview banner (Settings > About) ---------- */
+.preview-banner {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 16px 6px 24px;
+  background: var(--color-orange-subtler);
+  color: var(--color-orange-text);
+  font-size: var(--text-13);
+}
+.preview-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+.preview-banner strong {
+  font-weight: 600;
+}
+.preview-exit {
+  height: 28px;
+  border-color: var(--color-orange-border);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 /* ---------- top bar ---------- */
@@ -305,6 +350,7 @@
   min-width: 0;
   color: var(--color-text-subtle);
   font-size: var(--text-14);
+  font-weight: 500;
   white-space: nowrap;
 }
 .crumb-sep {
@@ -315,36 +361,59 @@
   color: var(--color-text);
   text-overflow: ellipsis;
 }
-.status-items {
+
+/* Relay, Reference and the clock: one quiet group of plain text with thin dividers.
+   Each value sits on top of hidden "widest" text, so its width never changes. */
+.status-group {
   display: flex;
   align-items: center;
-  gap: 4px;
   min-width: 0;
-}
-.si-live:empty {
-  display: none;
+  font-size: var(--text-13);
+  font-variant-numeric: tabular-nums;
 }
 .status-item {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0 12px;
   border-radius: var(--radius);
-  font-size: var(--text-13);
   white-space: nowrap;
   cursor: default;
 }
-.status-item:hover {
-  background: var(--color-surface-hover);
+.status-item:last-child {
+  padding-right: 8px;
+}
+.status-sep {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  background: var(--color-border-bold);
+}
+.status-item .dot {
+  width: 6px;
+  height: 6px;
 }
 .si-label {
   color: var(--color-text-subtle);
   font-weight: 500;
 }
-.si-value,
-.si-clock {
+.si-value {
+  display: inline-grid;
   color: var(--color-text-subtlest);
+}
+.si-value > span {
+  grid-area: 1 / 1;
+}
+.si-ghost {
+  visibility: hidden;
+}
+.si-clock .si-value {
+  color: var(--color-text-subtle);
+}
+.si-alert .si-label,
+.si-alert .si-value {
+  color: var(--color-orange-text);
 }
 
 /* ---------- pages ---------- */
@@ -354,7 +423,8 @@
   height: 100%;
   min-height: 0;
 }
-/* One row: title (and tabs or a count) on the left, tools on the right. */
+/* One row: title (and tabs or a count) on the left, tools on the right.
+   Content is at most 1600 px wide, centered, so wide screens do not stretch it. */
 .page-header {
   display: flex;
   flex: none;
@@ -362,7 +432,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-  padding: 24px 32px 16px;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 24px 24px 16px;
 }
 .page-head-main {
   display: flex;
@@ -373,6 +446,7 @@
 .page-head-stack {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 .page-title {
@@ -382,8 +456,12 @@
   white-space: nowrap;
 }
 .page-sub {
-  color: var(--color-text-subtlest);
+  color: var(--color-text-subtle);
   font-size: var(--text-13);
+  font-weight: 500;
+}
+.page-sub .tone-orange {
+  color: var(--color-orange-text);
 }
 .view-meta {
   color: var(--color-text-subtlest);
@@ -409,6 +487,7 @@
 }
 .view-tab:hover {
   background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 .view-tab[aria-selected="true"] {
   background: var(--color-surface-selected);
@@ -451,32 +530,4 @@
 }
 .cell-muted {
   color: var(--color-text-subtle);
-}
-
-/* ---------- narrow windows ---------- */
-@media (max-width: 799px) {
-  .app,
-  .app.is-collapsed {
-    grid-template-columns: var(--sidebar-narrow) minmax(0, 1fr);
-  }
-  .sidebar .sb-label,
-  .sb-toggle {
-    display: none;
-  }
-  .sidebar .sb-search,
-  .sidebar .nav-item,
-  .sidebar .sb-account,
-  .sidebar .sb-server {
-    justify-content: center;
-    padding: 0;
-  }
-  .si-value {
-    display: none;
-  }
-  .page-header {
-    padding: 24px 16px 16px;
-  }
-  .page-head-main {
-    gap: 16px;
-  }
 }

@@ -4,17 +4,35 @@ import Icon from "./Icon.jsx";
 import { LinkTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
+const LOW = 20; // percent, like Overview
+const CRITICAL = 10;
+const SEEN_S = 24 * 3600;
+
+/** "good" (20% and up), "low" (under 20%), "critical" (under 10%), or null with no reading. */
+export function batteryLevel(value) {
+  if (value === null || value === undefined) return null;
+  return value < CRITICAL ? "critical" : value < LOW ? "low" : "good";
+}
+
+const BATTERY_WORD = { good: "Good", low: "Low", critical: "Very low" };
+
+/** The level word as heavy colored text: green Good, yellow Low, red Very low. */
+export function BatteryTag({ level, children }) {
+  return <span className={"battery-word battery-word--" + level}>{children || BATTERY_WORD[level]}</span>;
+}
+
+/** The number and a thin 40 px bar: green 20% and up, yellow under 20%, red under 10%.
+ *  Low and very low batteries also get their word as a tag, so the color is never the only sign. */
 export function Battery({ value }) {
-  if (value === null || value === undefined) return <span className="muted">No reading</span>;
-  const level = value < 10 ? "critical" : value < 20 ? "low" : "ok";
+  const level = batteryLevel(value);
+  if (!level) return <span className="muted">No reading</span>;
   return (
-    <span className="battery">
+    <span className={"battery battery--" + level}>
       <span className="battery-num num">{value}%</span>
       <span className="battery-track" aria-hidden="true">
         <span className={"battery-fill battery-fill--" + level} style={{ width: Math.max(4, value) + "%" }} />
       </span>
-      {level === "low" && <span className="battery-word battery-word--low">Low</span>}
-      {level === "critical" && <span className="battery-word battery-word--critical">Very low</span>}
+      {level !== "good" && <BatteryTag level={level} />}
     </span>
   );
 }
@@ -24,7 +42,26 @@ export function deviceName(d) {
   return d.role === "REF" ? "Reference board" : "No name";
 }
 
-export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat, onOpen, registerFocus }) {
+function plural(n, one, many) {
+  return n + " " + (n === 1 ? one : many);
+}
+
+/** "4 Fobs, 1 low battery, all seen today". Only the problem part is orange. */
+function Summary({ devices, nowServer }) {
+  const fobs = devices.filter((d) => d.role !== "REF");
+  if (!fobs.length) return <span>No Fobs registered</span>;
+  const low = fobs.filter((d) => d.battery !== null && d.battery !== undefined && d.battery < LOW).length;
+  const unseen = fobs.filter((d) => !d.last_seen || nowServer - d.last_seen > SEEN_S).length;
+  return (
+    <span>
+      {plural(fobs.length, "Fob", "Fobs")},{" "}
+      {low ? <span className="tone-yellow">{plural(low,"low battery", "low batteries")}</span> : "no low batteries"},{" "}
+      {unseen ? <span className="tone-orange">{unseen} not seen today</span> : "all seen today"}
+    </span>
+  );
+}
+
+export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat, onOpen, selectedId, registerFocus }) {
   let body;
   if (devices === null) {
     body = <p className="loading">{loadFailed ? "Waiting for the server." : "Loading devices."}</p>;
@@ -46,6 +83,7 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
           <col className="col-battery" />
           <col className="col-link" />
           <col className="col-open" />
+          <col className="col-actions" />
         </colgroup>
         <thead>
           <tr>
@@ -57,11 +95,14 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
             <th scope="col" className="right">
               Open alerts
             </th>
+            <th scope="col">
+              <span className="visually-hidden">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {devices.map((d) => (
-            <tr key={d.device_id} className="device-row" onClick={() => onOpen(d.device_id)}>
+            <tr key={d.device_id} className={"device-row" + (d.device_id === selectedId ? " is-selected" : "")} onClick={() => onOpen(d.device_id)}>
               <td>
                 <button
                   ref={(node) => registerFocus(d.device_id, node)}
@@ -77,7 +118,7 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
                 </button>
               </td>
               <td className="cell-muted">{d.device_id}</td>
-              <td className="num">
+              <td className="num cell-muted">
                 {d.last_seen ? (
                   <Tooltip label={formatDateTime(d.last_seen, timeFormat)}>
                     <span>{ago(nowServer - d.last_seen)}</span>
@@ -93,6 +134,24 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
                 <LinkTag link={d.link} />
               </td>
               <td className={"num right" + (d.open_alerts ? " strong" : " cell-muted")}>{d.open_alerts}</td>
+              <td className="cell-actions">
+                <span className="row-actions">
+                  <Tooltip label="Open">
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn-sm"
+                      aria-label={"Open " + deviceName(d)}
+                      aria-haspopup="dialog"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpen(d.device_id);
+                      }}
+                    >
+                      <Icon icon={icons.openRow} size={14} />
+                    </button>
+                  </Tooltip>
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -103,11 +162,9 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
   return (
     <div className="page page--devices">
       <header className="page-header">
-        <div className="page-head-main">
+        <div className="page-head-stack">
           <h1 className="page-title">Devices</h1>
-          <p className="view-meta num">
-            {devices ? devices.length + (devices.length === 1 ? " device" : " devices") : ""}
-          </p>
+          <p className="page-sub num">{devices && devices.length > 0 ? <Summary devices={devices} nowServer={nowServer} /> : " "}</p>
         </div>
       </header>
       <div className="page-body">

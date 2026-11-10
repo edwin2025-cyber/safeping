@@ -1,13 +1,16 @@
-/* SafePing design tokens. All colors are rgb.
-   scripts/check-contrast.mjs reads this file, so keep one token per line. */
+/* SafePing design tokens. All colors are rgb or rgba.
+   scripts/check-contrast.mjs reads this file, so keep one token per line.
+   An rgba value is checked as if it sits on the page color of its theme. */
 
 :root,
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* Neutrals */
+  /* Neutrals: pure white (the version 4 values). The sidebar is a very light gray. */
   --color-page: rgb(255, 255, 255);
   --color-sidebar: rgb(248, 248, 248);
+  --color-sidebar-hover: rgb(240, 241, 242);
+  --color-sidebar-selected: rgb(234, 235, 237);
   --color-surface: rgb(255, 255, 255);
   --color-surface-raised: rgb(255, 255, 255);
   --color-surface-overlay: rgb(255, 255, 255);
@@ -23,25 +26,68 @@
   --color-text-subtle: rgb(80, 82, 88);
   --color-text-subtlest: rgb(107, 110, 118);
   --color-backdrop: rgba(5, 12, 31, 0.46);
+  --color-avatar: rgb(221, 222, 225);
 
   /* Chart panels and stat tiles on Overview */
   --color-panel: rgb(255, 255, 255);
   --color-panel-border: rgb(221, 222, 225);
 
-  /* Sidebar: Midnight in both themes, so the brand looks the same in light and dark */
-  --color-sb-bg: rgb(15, 16, 18);
-  --color-sb-text: rgb(180, 183, 190);
-  --color-sb-text-strong: rgb(237, 237, 239);
-  --color-sb-label: rgb(138, 143, 152);
-  --color-sb-hover: rgb(26, 27, 31);
-  --color-sb-selected: rgb(36, 38, 43);
-  --color-sb-search: rgb(22, 23, 26);
-  --color-sb-search-border: rgb(38, 40, 45);
-  --color-sb-placeholder: rgb(138, 143, 152);
-  --color-sb-count: rgb(36, 38, 43);
-  --color-sb-count-text: rgb(237, 237, 239);
+  /* Alert types: icons, map markers and chart lines. Chart areas use the same color, faded. */
+  --color-type-medical: rgb(201, 45, 63);
+  --color-type-suspicious: rgb(214, 51, 132); /* magenta, the same pink as the Open dot */
+  --color-type-silent: rgb(116, 77, 214);
+  --color-type-status: rgb(107, 110, 118);
 
-  /* Red: MEDICAL, danger */
+  /* Type tags: a tinted rectangle, icon and word in a darker shade of the same color */
+  --color-tag-medical-bg: rgb(255, 228, 231);
+  --color-tag-medical-text: rgb(168, 29, 49);
+  --color-tag-suspicious-bg: rgb(252, 231, 243);
+  --color-tag-suspicious-text: rgb(162, 28, 100);
+  --color-tag-silent-bg: rgb(237, 231, 255);
+  --color-tag-silent-text: rgb(92, 57, 190);
+
+  /* Link tags: three grays, light (Unknown), middle (LoRa), dark (WiFi) */
+  --color-unknown-bg: rgb(240, 241, 242);
+  --color-unknown-text: rgb(94, 97, 105);
+  --color-lora-bg: rgb(214, 216, 220);
+  --color-lora-text: rgb(52, 54, 60);
+  --color-wifi-bg: rgb(160, 164, 172);
+  --color-wifi-text: rgb(20, 21, 23);
+
+  /* Review cameras: the same blue as Suspicious */
+  --color-camera-bg: rgb(224, 240, 252);
+  --color-camera-text: rgb(18, 96, 160);
+
+  /* Battery: green 20% and up, yellow under 20%, red under 10%. The bar, then a tag with the word */
+  --color-battery-good: rgb(22, 163, 74);
+  --color-battery-good-bg: rgb(220, 252, 231);
+  --color-battery-good-text: rgb(21, 118, 58);
+  --color-battery-low: rgb(234, 179, 8);
+  --color-battery-low-bg: rgb(254, 240, 138);
+  --color-battery-low-text: rgb(150, 96, 0);
+  --color-battery-critical: rgb(201, 55, 44);
+  --color-battery-critical-bg: rgb(255, 213, 210);
+  --color-battery-critical-text: rgb(174, 46, 36);
+
+  /* Open status and the Mock data tag: magenta */
+  --color-open: rgb(14, 116, 144);
+  --color-magenta-bg: rgb(252, 231, 243);
+  --color-magenta-text: rgb(162, 28, 100);
+
+  /* Busy hours: one blue from faint (few alerts) to deep (most alerts), gray dashes for none */
+  --color-heat-1: rgb(211, 226, 248);
+  --color-heat-2: rgb(165, 196, 240);
+  --color-heat-3: rgb(118, 162, 227);
+  --color-heat-4: rgb(74, 126, 207);
+  --color-heat-5: rgb(44, 94, 178);
+  --color-heat-6: rgb(27, 64, 140);
+  --color-bar-empty: rgb(221, 222, 225);
+
+  /* Map markers: the icon inside and the ring around the disc */
+  --color-marker-icon: rgb(255, 255, 255);
+  --color-marker-ring: rgb(255, 255, 255);
+
+  /* Red: danger, urgent count */
   --color-red-subtlest: rgb(255, 236, 235);
   --color-red-subtler: rgb(255, 213, 210);
   --color-red-border: rgb(248, 113, 104);
@@ -49,7 +95,7 @@
   --color-red-text: rgb(174, 46, 36);
   --color-red-on-bold: rgb(255, 255, 255);
 
-  /* Yellow: SUSPICIOUS */
+  /* Yellow: the Review cameras callout */
   --color-yellow-subtlest: rgb(254, 247, 200);
   --color-yellow-subtler: rgb(245, 233, 137);
   --color-yellow-border: rgb(221, 179, 14);
@@ -57,7 +103,7 @@
   --color-yellow-text: rgb(127, 95, 1);
   --color-yellow-on-bold: rgb(30, 31, 33);
 
-  /* Purple: SILENT */
+  /* Purple */
   --color-purple-subtlest: rgb(248, 238, 254);
   --color-purple-subtler: rgb(238, 215, 252);
   --color-purple-border: rgb(201, 124, 244);
@@ -110,15 +156,6 @@
   --color-blue-bold-pressed: rgb(20, 71, 148);
   --color-focus-ring: rgb(70, 136, 236);
 
-  /* App mark: the same blue in both themes, so the white shield always reads */
-  --color-brand: rgb(24, 104, 219);
-  --color-brand-on: rgb(255, 255, 255);
-
-  /* Response flow bars, lighter to darker */
-  --color-flow-1: rgb(102, 157, 241);
-  --color-flow-2: rgb(24, 104, 219);
-  --color-flow-3: rgb(20, 71, 148);
-
   /* Tooltips: dark gray in light, an overlay surface in dark */
   --color-tooltip-bg: rgb(44, 46, 51);
   --color-tooltip-text: rgb(255, 255, 255);
@@ -126,9 +163,11 @@
   --color-tooltip-border: rgba(255, 255, 255, 0);
 
   --shadow-raised: 0 8px 24px rgba(9, 30, 66, 0.12), 0 0 1px rgba(9, 30, 66, 0.31);
+  --shadow-panel: none;
   --shadow-overlay: 0 24px 64px rgba(9, 30, 66, 0.2), 0 0 1px rgba(9, 30, 66, 0.31);
   --shadow-menu: 0 8px 24px rgba(9, 30, 66, 0.12), 0 0 1px rgba(9, 30, 66, 0.31);
   --shadow-marker: 0 1px 4px rgba(9, 30, 66, 0.35);
+  --shadow-marker-strong: 0 3px 10px rgba(9, 30, 66, 0.45);
 
   /* Dims the OpenStreetMap tiles. Only used without a CARTO key. */
   --tile-filter: none;
@@ -141,10 +180,12 @@
      Every raised and overlay surface has its 1 px border, so nothing looks see-through. */
   --color-page: rgb(15, 16, 18);
   --color-sidebar: rgb(11, 12, 14);
+  --color-sidebar-hover: rgb(26, 27, 31);
+  --color-sidebar-selected: rgb(36, 38, 43);
   --color-surface: rgb(15, 16, 18);
   --color-surface-raised: rgb(22, 23, 26);
   --color-surface-overlay: rgb(22, 23, 26);
-  --color-surface-hover: rgb(26, 27, 31);
+  --color-surface-hover: rgba(255, 255, 255, 0.03);
   --color-surface-hover-strong: rgb(44, 46, 52);
   --color-surface-pressed: rgb(36, 38, 43);
   --color-surface-selected: rgb(36, 38, 43);
@@ -156,24 +197,63 @@
   --color-text-subtle: rgb(180, 183, 190);
   --color-text-subtlest: rgb(138, 143, 152);
   --color-backdrop: rgba(0, 0, 0, 0.6);
+  --color-avatar: rgb(52, 55, 61);
 
   --color-panel: rgb(22, 23, 26);
   --color-panel-border: rgb(38, 40, 45);
 
-  --color-sb-bg: rgb(11, 12, 14);
-  --color-sb-text: rgb(180, 183, 190);
-  --color-sb-text-strong: rgb(237, 237, 239);
-  --color-sb-label: rgb(138, 143, 152);
-  --color-sb-hover: rgb(26, 27, 31);
-  --color-sb-selected: rgb(36, 38, 43);
-  --color-sb-search: rgb(22, 23, 26);
-  --color-sb-search-border: rgb(38, 40, 45);
-  --color-sb-placeholder: rgb(138, 143, 152);
-  --color-sb-count: rgb(36, 38, 43);
-  --color-sb-count-text: rgb(237, 237, 239);
+  --color-type-medical: rgb(255, 107, 122);
+  --color-type-suspicious: rgb(244, 114, 182);
+  --color-type-silent: rgb(168, 139, 250);
+  --color-type-status: rgb(150, 153, 158);
 
-  /* Color families. subtler (tag backgrounds) are deep tints, so tags glow a little.
-     red-subtlest is the open MEDICAL row tint. */
+  /* Type tags: deep tints, so they glow a little */
+  --color-tag-medical-bg: rgb(66, 24, 31);
+  --color-tag-medical-text: rgb(255, 150, 160);
+  --color-tag-suspicious-bg: rgb(70, 22, 48);
+  --color-tag-suspicious-text: rgb(249, 168, 212);
+  --color-tag-silent-bg: rgb(43, 33, 74);
+  --color-tag-silent-text: rgb(200, 184, 255);
+
+  --color-unknown-bg: rgb(30, 31, 35);
+  --color-unknown-text: rgb(150, 153, 158);
+  --color-lora-bg: rgb(48, 50, 56);
+  --color-lora-text: rgb(205, 207, 211);
+  --color-wifi-bg: rgb(86, 89, 97);
+  --color-wifi-text: rgb(245, 245, 247);
+
+  --color-camera-bg: rgb(14, 46, 66);
+  --color-camera-text: rgb(150, 215, 245);
+
+  --color-battery-good: rgb(74, 222, 128);
+  --color-battery-good-bg: rgb(20, 56, 36);
+  --color-battery-good-text: rgb(134, 239, 172);
+  --color-battery-low: rgb(250, 204, 21);
+  --color-battery-low-bg: rgb(66, 52, 8);
+  --color-battery-low-text: rgb(253, 224, 71);
+  --color-battery-critical: rgb(248, 113, 104);
+  --color-battery-critical-bg: rgb(58, 29, 26);
+  --color-battery-critical-text: rgb(253, 152, 145);
+
+  --color-open: rgb(34, 211, 238);
+  --color-magenta-bg: rgb(70, 22, 48);
+  --color-magenta-text: rgb(249, 168, 212);
+
+  /* Busy hours: dim (few alerts) to bright (most alerts) on the dark panel */
+  --color-heat-1: rgb(36, 54, 88);
+  --color-heat-2: rgb(44, 74, 124);
+  --color-heat-3: rgb(56, 98, 164);
+  --color-heat-4: rgb(78, 128, 204);
+  --color-heat-5: rgb(112, 160, 232);
+  --color-heat-6: rgb(160, 196, 250);
+  --color-bar-empty: rgb(60, 62, 67);
+
+  /* A white icon is under 3:1 on the light dark-theme type colors, so the icon
+     takes the Midnight page color, like the ring. */
+  --color-marker-icon: rgb(15, 16, 18);
+  --color-marker-ring: rgb(15, 16, 18);
+
+  /* Color families. subtler are deep tints. */
 
   /* Red */
   --color-red-subtlest: rgb(40, 22, 20);
@@ -244,29 +324,24 @@
   --color-blue-bold-pressed: rgb(173, 203, 251);
   --color-focus-ring: rgb(102, 157, 241);
 
-  --color-brand: rgb(24, 104, 219);
-  --color-brand-on: rgb(255, 255, 255);
-
-  /* Response flow: brighter means further along, like darker does in the light theme */
-  --color-flow-1: rgb(21, 88, 188);
-  --color-flow-2: rgb(70, 136, 236);
-  --color-flow-3: rgb(143, 184, 246);
-
   --color-tooltip-bg: rgb(22, 23, 26);
   --color-tooltip-text: rgb(237, 237, 239);
   --color-tooltip-subtle: rgb(180, 183, 190);
   --color-tooltip-border: rgb(44, 46, 52);
 
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-panel: none;
   --shadow-overlay: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
   --shadow-menu: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
   --shadow-marker: 0 1px 4px rgba(0, 0, 0, 0.6);
+  --shadow-marker-strong: 0 3px 12px rgba(0, 0, 0, 0.8);
 
   --tile-filter: brightness(0.62) contrast(1.15) saturate(0.7);
 }
 
 :root {
-  --font-sans: "General Sans", system-ui, "Segoe UI", sans-serif;
+  /* Satoshi for letters, General Sans for the digits 0 to 9 (see base.css) */
+  --font-sans: "SafePing Sans", "Satoshi", system-ui, "Segoe UI", sans-serif;
 
   /* The only font sizes in the app */
   --text-12: 12px;
@@ -287,8 +362,10 @@
   /* Panel and section spacing: 4, 8, 12, 16, 20, 24, 32 */
   --sidebar-wide: 240px;
   --sidebar-narrow: 56px;
+  --sidebar-speed: 220ms;
   --topbar-height: 48px;
-  --row-height: 44px;
+  --row-height: 48px;
+  --content-max: 1600px;
   --icon: 16px;
   --icon-stroke: 1.75;
   --backdrop-blur: 4px;

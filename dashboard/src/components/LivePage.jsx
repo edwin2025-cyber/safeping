@@ -7,6 +7,7 @@ import Popover from "./Popover.jsx";
 import Tooltip from "./Tooltip.jsx";
 import { TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
 import { icons } from "../lib/icons.js";
+import { TypeIcon } from "./Tags.jsx";
 
 export const VIEWS = [
   { id: "split", label: "Split", icon: icons.split },
@@ -56,8 +57,12 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const active = typeFilter !== "ALL";
-  const label = active ? "Filter: " + typeMeta(typeFilter).label : "Filter by type";
-  const options = [{ value: "ALL", label: "All types" }, ...TYPE_ORDER.map((t) => ({ value: t, label: typeMeta(t).label, icon: typeMeta(t).icon }))];
+  const label = !active ? "Filter by type" : typeFilter === "URGENT" ? "Filter: Medical and Silent" : "Filter: " + typeMeta(typeFilter).label;
+  const options = [
+    { value: "ALL", label: "All types" },
+    { value: "URGENT", label: "Medical and Silent" },
+    ...TYPE_ORDER.map((t) => ({ value: t, label: typeMeta(t).label, type: t })),
+  ];
   return (
     <>
       <Tooltip label={label}>
@@ -87,7 +92,7 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
               setOpen(false);
             }}
           >
-            {o.icon ? <Icon icon={o.icon} fixed /> : <span className="menu-icon-space" aria-hidden="true" />}
+            {o.type ? <TypeIcon type={o.type} size={16} /> : <span className="menu-icon-space" aria-hidden="true" />}
             {o.label}
             {typeFilter === o.value && <Icon icon={icons.acknowledged} className="menu-check" />}
           </button>
@@ -100,8 +105,8 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
 function SearchBox({ query, setQuery, searchOpen, setSearchOpen, inputRef }) {
   if (!searchOpen && !query) {
     return (
-      <Tooltip label="Search" shortcut="Ctrl+K">
-        <button type="button" className="icon-btn" aria-label="Search alerts" aria-keyshortcuts="Control+K" onClick={() => setSearchOpen(true)}>
+      <Tooltip label="Filter by student or Fob ID">
+        <button type="button" className="icon-btn" aria-label="Filter alerts by student or Fob ID" onClick={() => setSearchOpen(true)}>
           <Icon icon={icons.search} />
         </button>
       </Tooltip>
@@ -115,7 +120,7 @@ function SearchBox({ query, setQuery, searchOpen, setSearchOpen, inputRef }) {
         type="search"
         className="input"
         placeholder="Student or Fob ID"
-        aria-label="Search alerts by student name or Fob ID"
+        aria-label="Filter alerts by student name or Fob ID"
         value={query}
         autoFocus
         onChange={(e) => setQuery(e.target.value)}
@@ -146,6 +151,86 @@ function SearchBox({ query, setQuery, searchOpen, setSearchOpen, inputRef }) {
         </Tooltip>
       )}
     </span>
+  );
+}
+
+const SPLIT_MIN_LIST = 360; // px
+const SPLIT_MIN_MAP = 320; // px
+const SPLIT_STEP = 2; // percent per arrow key
+
+/** The divider between the list and the map in Split view. Drag it, or focus it and use
+    Left and Right. Double-click puts it back in the middle. */
+function Splitter({ bodyRef, split, setSplit, saveSplit }) {
+  function bounds() {
+    const body = bodyRef.current;
+    const pad = parseFloat(getComputedStyle(body).paddingLeft) || 0;
+    const rect = body.getBoundingClientRect();
+    const width = rect.width - pad;
+    return { left: rect.left + pad, width, min: (SPLIT_MIN_LIST / width) * 100, max: ((width - SPLIT_MIN_MAP - 8) / width) * 100 };
+  }
+  const clamp = (pct, b) => Math.round(Math.min(b.max, Math.max(b.min, pct)) * 10) / 10;
+
+  function onPointerDown(event) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const handle = event.currentTarget;
+    const body = bodyRef.current;
+    handle.setPointerCapture(event.pointerId);
+    body.classList.add("is-resizing");
+    let last = split;
+    const move = (e) => {
+      const b = bounds();
+      last = clamp(((e.clientX - b.left) / b.width) * 100, b);
+      setSplit(last);
+    };
+    const up = () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+      body.classList.remove("is-resizing");
+      saveSplit(last);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  }
+
+  function onKeyDown(event) {
+    const b = bounds();
+    let next = null;
+    if (event.key === "ArrowLeft") next = split - SPLIT_STEP;
+    else if (event.key === "ArrowRight") next = split + SPLIT_STEP;
+    else if (event.key === "Home") next = b.min;
+    else if (event.key === "End") next = b.max;
+    else if (event.key === "Enter") next = 50;
+    if (next === null) return;
+    event.preventDefault();
+    const value = clamp(next, b);
+    setSplit(value);
+    saveSplit(value);
+  }
+
+  return (
+    <Tooltip label="Drag to resize the list and the map" shortcut="Double-click to reset">
+      <div
+        className="splitter"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the list and the map"
+        aria-valuenow={Math.round(split)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onKeyDown={onKeyDown}
+        onDoubleClick={() => {
+          setSplit(50);
+          saveSplit(50);
+        }}
+      >
+        <span className="splitter-line" aria-hidden="true" />
+      </div>
+    </Tooltip>
   );
 }
 
@@ -197,14 +282,22 @@ export default function LivePage(props) {
     config,
     configLoaded,
     nowServer,
-    highlightedId,
-    setHighlightedId,
+    highlightedId, // hovered row or marker: lights up the marker and shows its circle
+    selectedRowId, // its Peek is open, or its marker is hovered
+    selectedId, // its Peek is open: the map shows its circle too
+    onRowHover,
+    onMarkerHover,
     onOpen,
+    onAck,
     flyTarget,
     panelCollapsed,
     togglePanel,
     registerFocus,
+    split,
+    setSplit,
+    saveSplit,
   } = props;
+  const bodyRef = useRef(null);
 
   const filtered = typeFilter !== "ALL" || query.trim() !== "";
   const clear = () => {
@@ -222,13 +315,14 @@ export default function LivePage(props) {
       <AlertTable
         alerts={alerts}
         grouped={stateFilter === "all"}
-        showStatus={stateFilter !== "action"}
+        showStatus={stateFilter !== "action" && view !== "split"}
         compact={view === "split"}
         nowServer={nowServer}
         timeFormat={settings.timeFormat}
-        highlightedId={highlightedId}
+        selectedId={selectedRowId}
         onOpen={onOpen}
-        onHover={setHighlightedId}
+        onAck={onAck}
+        onHover={onRowHover}
         registerFocus={registerFocus}
       />
     );
@@ -247,8 +341,16 @@ export default function LivePage(props) {
         </div>
       </header>
 
-      <div id="live-panel" role="tabpanel" aria-labelledby={"tab-" + view} className={"live-body live-body--" + view}>
+      <div
+        ref={bodyRef}
+        id="live-panel"
+        role="tabpanel"
+        aria-labelledby={"tab-" + view}
+        className={"live-body live-body--" + view}
+        style={view === "split" ? { "--split": split + "%" } : undefined}
+      >
         {view !== "map" && <div className="table-pane">{table}</div>}
+        {view === "split" && <Splitter bodyRef={bodyRef} split={split} setSplit={setSplit} saveSplit={saveSplit} />}
         {view !== "list" && (
           <div className="map-pane">
             <AlertMap
@@ -259,7 +361,10 @@ export default function LivePage(props) {
               cartoKey={config && config.carto_key}
               configLoaded={configLoaded}
               highlightedId={highlightedId}
-              onHover={setHighlightedId}
+              selectedId={selectedId}
+              selectedRowId={selectedRowId}
+              onHover={onMarkerHover}
+              onRowHover={onRowHover}
               onOpen={onOpen}
               flyTarget={flyTarget}
               withPanel={view === "map"}

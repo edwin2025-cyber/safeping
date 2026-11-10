@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { copyText } from "../lib/clipboard.js";
+import { copyRich, copyText } from "../lib/clipboard.js";
 import { icons } from "../lib/icons.js";
 import Icon from "./Icon.jsx";
 
-/** Button that copies text and says "Copied" in place for a moment. */
-export default function CopyButton({ getText, label = "Copy", variant = "secondary" }) {
+/** Button that copies text and says "Copied" in place for a moment. With getHtml it also
+    copies a formatted table, for pasting into Excel, Word or email. */
+export default function CopyButton({ getText, getHtml, label = "Copy", variant = "secondary" }) {
   const [state, setState] = useState("idle"); // idle, copied, failed
   const timer = useRef(null);
 
@@ -12,7 +13,8 @@ export default function CopyButton({ getText, label = "Copy", variant = "seconda
 
   async function onClick() {
     try {
-      await copyText(getText());
+      if (getHtml) await copyRich(getText(), getHtml());
+      else await copyText(getText());
       setState("copied");
     } catch {
       setState("failed");

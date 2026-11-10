@@ -186,6 +186,52 @@ def list_device_alerts(device_id, limit=200):
     return [dict(r) for r in rows]
 
 
+def get_alert(alert_id):
+    """One alert with its student name, or None. For the alert panel (/api/alerts/<id>)."""
+    with connect() as c:
+        row = c.execute(
+            """SELECT a.*, d.student_name
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE a.id = ?""",
+            (alert_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def _contains(text):
+    """A LIKE pattern for 'contains text'. % and _ typed by the user match themselves."""
+    return "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+def search_alerts(query, include_status, limit):
+    """Newest alerts whose student name or Fob ID contains the query (ASCII letters in any case).
+    An empty query matches every alert."""
+    pattern = _contains(query)
+    with connect() as c:
+        rows = c.execute(
+            """SELECT a.*, d.student_name
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE (? = 1 OR a.alert_type != 'STATUS')
+                 AND (? = '' OR COALESCE(d.student_name, '') LIKE ? ESCAPE '\\'
+                      OR a.device_id LIKE ? ESCAPE '\\')
+               ORDER BY a.timestamp DESC, a.id DESC LIMIT ?""",
+            (1 if include_status else 0, query, pattern, pattern, limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def last_alert_of(device_id, include_status):
+    """The newest alert from one device as {id, alert_type, timestamp}, or None."""
+    with connect() as c:
+        row = c.execute(
+            """SELECT id, alert_type, timestamp FROM alerts
+               WHERE device_id = ? AND (? = 1 OR alert_type != 'STATUS')
+               ORDER BY timestamp DESC, id DESC LIMIT 1""",
+            (device_id, 1 if include_status else 0),
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def ack_alert(alert_id, now):
     with connect() as c:
         cur = c.execute(
@@ -349,6 +395,47 @@ def count_open():
                WHERE acknowledged = 0 AND resolved = 0 AND alert_type != 'STATUS'"""
         ).fetchone()
     return row[0], row[1]
+
+
+def open_alerts():
+    """Open alerts right now (not acknowledged, not resolved), STATUS left out, newest first."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT a.id, a.alert_type, a.device_id, d.student_name
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE a.acknowledged = 0 AND a.resolved = 0 AND a.alert_type != 'STATUS'
+               ORDER BY a.timestamp DESC, a.id DESC"""
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def latest_alert():
+    """The newest alert other than STATUS, with its student name, or None."""
+    with connect() as c:
+        row = c.execute(
+            """SELECT a.*, d.student_name
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE a.alert_type != 'STATUS'
+               ORDER BY a.timestamp DESC, a.id DESC LIMIT 1"""
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def alert_events(start, end):
+    """Alerts other than STATUS that were received, acknowledged or resolved in the range,
+    with their student names. For the Overview map and Recent activity."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT a.id, a.alert_type, a.device_id, d.student_name, a.timestamp,
+                      a.acknowledged_at, a.resolved_at, a.latitude, a.longitude, a.floor
+               FROM alerts a LEFT JOIN devices d ON d.device_id = a.device_id
+               WHERE a.alert_type != 'STATUS'
+                 AND ((a.timestamp >= ? AND a.timestamp < ?)
+                      OR (a.acknowledged_at >= ? AND a.acknowledged_at < ?)
+                      OR (a.resolved_at >= ? AND a.resolved_at < ?))""",
+            (start, end, start, end, start, end),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def alerts_between(start, end):

@@ -1,10 +1,9 @@
 /* ---------- Overview: one screen, no page scroll ----------
-   Header row 48 px, then a grid that fills the rest of the window:
-   five stat tiles, then two rows of panels that share the height left. */
+   Header row, then a grid that fills the rest of the window (at most 1600 px wide):
+   four stat tiles, the Alerts chart, then the map and Recent activity side by side. */
 .page--overview .ov-header {
   flex-wrap: nowrap;
-  height: 48px;
-  padding: 8px 24px 0;
+  padding: 12px 24px 8px;
 }
 .ov-head-text {
   display: flex;
@@ -26,19 +25,30 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px 16px;
+  gap: 16px;
   height: 100%;
-  padding: 8px 24px;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 4px 24px 16px;
 }
 .tiles {
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
-.ov-trend { grid-column: span 8; }
-.ov-flow { grid-column: span 4; }
-.ov-half { grid-column: span 6; }
+/* Row 2: Alerts (two thirds) and Busy hours. Row 3: the map and Recent activity, half each. */
+.ov-chart {
+  grid-column: span 8;
+  container-type: inline-size;
+}
+.ov-busy {
+  grid-column: span 4;
+}
+.ov-map,
+.ov-feed {
+  grid-column: span 6;
+}
 
 .range-picker {
   display: flex;
@@ -46,14 +56,120 @@
   gap: 8px;
   margin-right: 4px;
 }
-.range-date {
-  width: 148px;
+.range-btn {
+  justify-content: flex-start;
+  padding: 0 12px;
 }
-.range-to {
+.range-btn .icon {
   color: var(--color-text-subtle);
+}
+
+/* The Custom calendar */
+.popover--calendar {
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  padding: 12px;
+  animation: menu-in 120ms ease-out;
+}
+.cal {
+  width: 252px;
+}
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.cal-title {
+  font-size: var(--text-14);
+  font-weight: 600;
+}
+.cal-head .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cal-week,
+.cal-row {
+  display: grid;
+  grid-template-columns: repeat(7, 36px);
+}
+.cal-week span {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+  font-weight: 500;
+}
+.cal-cell,
+.cal-blank {
+  position: relative;
+  height: 34px;
+}
+.cal-day {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
   font-size: var(--text-13);
+  cursor: pointer;
+}
+/* The band across a range, with round ends */
+.cal-day.in-range {
+  background: var(--color-blue-subtlest);
+}
+.cal-day.is-start {
+  border-radius: 17px 0 0 17px;
+}
+.cal-day.is-end {
+  border-radius: 0 17px 17px 0;
+}
+.cal-day.is-start.is-end {
+  border-radius: 17px;
+}
+.cal-day.is-start,
+.cal-day.is-end {
+  background: var(--color-blue-bold);
+  color: var(--color-blue-on-bold);
+  font-weight: 600;
+}
+.cal-day:not(.in-range):hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-radius: 17px;
+}
+.cal-day.in-range:not(.is-start):not(.is-end):hover {
+  background: var(--color-blue-subtler);
+}
+.cal-day.is-today:not(.is-start):not(.is-end) {
+  font-weight: 700;
+  color: var(--color-blue-text);
+}
+.cal-day:disabled {
+  color: var(--color-text-subtlest);
+  opacity: 0.45;
+  cursor: default;
+}
+.cal-day:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+  border-radius: 17px;
+}
+.cal-foot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
+  text-align: center;
 }
 .range-error {
+  max-width: var(--content-max);
+  margin: 0 auto;
   padding: 8px 24px 0;
   color: var(--color-orange-text);
   font-size: var(--text-13);
@@ -66,14 +182,20 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  padding: 12px;
+  padding: 12px 16px;
   border: 1px solid var(--color-panel-border);
   border-radius: var(--radius-md);
   background: var(--color-panel);
+  box-shadow: var(--shadow-panel);
   color: var(--color-text);
+  font: inherit;
+  text-align: left;
+}
+.tile--link {
+  cursor: pointer;
 }
 .tile--link:hover {
-  background: var(--color-surface-hover);
+  background: linear-gradient(var(--color-surface-hover), var(--color-surface-hover)), var(--color-panel);
   text-decoration: none;
 }
 .tile-top {
@@ -92,42 +214,66 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-mid {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 32px;
-}
+/* 38 px line: room for the tails of g, p and y under the big number ("9 min ago"),
+   which the overflow clip would otherwise cut. */
 .tile-value {
+  overflow: hidden;
   font-size: var(--text-28);
   font-weight: 600;
-  line-height: 32px;
+  line-height: 38px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* "No data": quieter and smaller, on the same line height */
+/* "No alerts yet": quieter and smaller, on the same line height */
 .tile-value.is-muted {
   color: var(--color-text-subtlest);
   font-size: var(--text-20);
 }
-.spark {
-  flex: none;
-}
-.tile-unit {
-  margin-right: auto;
-  color: var(--color-text-subtlest);
-  font-size: var(--text-12);
-  line-height: 16px;
-  align-self: flex-end;
-  padding-bottom: 4px;
-}
+/* Context line: items side by side with space between them, no commas. Each item is an
+   icon and a few words; a long last item ends in an ellipsis. */
 .tile-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
   overflow: hidden;
   color: var(--color-text-subtle);
   font-size: var(--text-12);
+  font-weight: 600;
   line-height: 16px;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+.ctx-item {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.ctx-item.is-quiet > svg {
+  color: var(--color-text-subtlest);
+}
+/* The place gives way before the name */
+.ctx-item.is-quiet {
+  flex-shrink: 3;
+}
+/* A narrow tile (a laptop screen) shows the open counts as icon and number only. */
+.tile {
+  container-type: inline-size;
+}
+@container (max-width: 250px) {
+  .ctx-word {
+    display: none;
+  }
+}
+.ctx-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ctx-more {
+  flex: none;
+  color: var(--color-text-subtlest);
 }
 
 /* Color only when it means something */
@@ -145,6 +291,7 @@
   border: 1px solid var(--color-panel-border);
   border-radius: var(--radius-md);
   background: var(--color-panel);
+  box-shadow: var(--shadow-panel);
 }
 .panel-head {
   display: flex;
@@ -152,17 +299,32 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 20px;
+  min-height: 20px;
   margin-bottom: 8px;
+}
+.panel-head-text {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
 }
 .panel-title {
   display: flex;
   align-items: center;
+  align-self: center;
   gap: 8px;
   min-width: 0;
   font-size: var(--text-14);
   font-weight: 600;
   line-height: 20px;
+  white-space: nowrap;
+}
+.panel-sub {
+  overflow: hidden;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+  font-weight: 500;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .panel-icon {
@@ -176,7 +338,7 @@
 }
 .panel-foot {
   flex: none;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 .panel-note {
   overflow: hidden;
@@ -204,27 +366,13 @@
 .skel {
   display: block;
   border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
+  background: var(--color-border);
 }
 .skel-gap {
   margin-top: 12px;
 }
 
-/* Bars: 8 px tall, rounded, no track. Width is set inline. */
-.bar-slot {
-  display: block;
-  height: 8px;
-  min-width: 0;
-}
-.bar {
-  display: block;
-  height: 8px;
-  min-width: 0;
-  max-width: 100%;
-  border-radius: 4px;
-}
-
-/* ---------- Alerts over time ---------- */
+/* ---------- Alerts chart ---------- */
 .chart-fill {
   position: relative;
   flex: 1;
@@ -234,189 +382,319 @@
   position: absolute;
   inset: 0;
 }
+/* Swatch for the previous period: the same 4 on, 4 off dash as the chart line */
 .legend-line {
   display: inline-block;
   flex: none;
   width: 16px;
-  height: 0;
-  border-top: 2px solid var(--key);
+  height: 2px;
+  background: var(--color-gray-bold);
 }
 .legend-line.is-dashed {
-  border-top-style: dashed;
+  background: repeating-linear-gradient(to right, var(--color-gray-bold) 0 4px, transparent 4px 7px);
 }
-.mini-legend {
+.ov-legend {
   display: flex;
-  gap: 16px;
-  color: var(--color-text-subtle);
-  font-size: var(--text-12);
-  white-space: nowrap;
-}
-.mini-legend li {
-  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
-}
-
-/* ---------- Response flow ---------- */
-.flow-list {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: space-around;
-  gap: 4px;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.flow-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.flow-line {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  line-height: 16px;
-}
-.flow-label {
-  color: var(--color-text-subtle);
-  font-size: var(--text-13);
-  font-weight: 500;
-}
-.flow-count {
-  font-size: var(--text-13);
-  font-weight: 600;
-}
-.flow-share {
-  margin-left: auto;
-  color: var(--color-text-subtle);
-  font-size: var(--text-12);
-}
-.flow-note {
-  color: var(--color-text-subtlest);
-  font-size: var(--text-12);
-  line-height: 16px;
-}
-
-/* ---------- Hotspots ---------- */
-.hot-list {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: space-around;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.hot-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px;
   gap: 12px;
-  align-items: center;
-  line-height: 16px;
-}
-.hot-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--color-text-subtlest);
-}
-.hot-name {
   overflow: hidden;
   color: var(--color-text);
-  font-size: var(--text-13);
-  text-overflow: ellipsis;
+  font-size: var(--text-12);
+  font-weight: 500;
   white-space: nowrap;
 }
-.hot-count {
-  font-size: var(--text-13);
-  font-weight: 600;
-  text-align: right;
+.ov-legend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.hot-more {
-  color: var(--color-text-subtlest);
-  font-size: var(--text-12);
-  line-height: 16px;
+.ov-legend .ov-legend-group {
+  color: var(--color-text-subtle);
+}
+.ov-legend-count {
+  color: var(--color-text-subtle);
+}
+/* A type with no alerts in the range has nothing to draw, so its legend item fades. */
+.ov-legend li.is-zero {
+  opacity: 0.5;
+}
+.ov-legend .ov-legend-before {
+  gap: 8px;
+  margin-left: 4px;
+  color: var(--color-text-subtle);
+}
+/* A narrow Alerts panel drops the "Last 7 days:" word; the header already says the range. */
+@container (max-width: 660px) {
+  .ov-legend .ov-legend-group {
+    display: none;
+  }
 }
 
-/* ---------- System health ---------- */
-.health {
+/* ---------- Busy hours ---------- */
+.busy {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  margin: 0;
+  padding-top: 8px;
 }
-.health-row {
+.busy-bars {
   display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex: 1;
+  align-items: flex-end;
+  gap: 3px;
   min-height: 0;
-  border-bottom: 1px solid var(--color-border);
-  line-height: 16px;
 }
-.health-row:last-child {
-  border-bottom: 0;
-}
-.health dt {
+.busy-col {
   display: flex;
+  flex: 1;
+  align-items: flex-end;
+  height: 100%;
+  min-width: 0;
+  cursor: default;
+}
+.busy-bar {
+  display: block;
+  width: 100%;
+  border-radius: 3px 3px 1px 1px;
+  transition: opacity 120ms ease;
+}
+/* One blue, faint for few alerts and deep for many (dim to bright in dark) */
+.heat-1 { background: var(--color-heat-1); }
+.heat-2 { background: var(--color-heat-2); }
+.heat-3 { background: var(--color-heat-3); }
+.heat-4 { background: var(--color-heat-4); }
+.heat-5 { background: var(--color-heat-5); }
+.heat-6 { background: var(--color-heat-6); }
+.heat-scale {
+  display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 8px;
-  color: var(--color-text-subtle);
-  font-size: var(--text-13);
-}
-.health dd {
-  font-size: var(--text-13);
-}
-.health dt svg {
-  color: var(--color-text-subtlest);
-}
-.health dd {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  min-width: 0;
-  margin: 0;
-  text-align: right;
-}
-.health-value {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  max-width: 100%;
-  min-width: 0;
-  font-weight: 500;
-}
-.health-sub {
+  gap: 2px;
   color: var(--color-text-subtlest);
   font-size: var(--text-12);
+  font-weight: 500;
 }
-.health-names {
-  overflow: hidden;
+.heat-scale > span:first-child {
+  margin-right: 4px;
+}
+.heat-scale > span:last-child {
+  margin-left: 4px;
+}
+.heat-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+/* A narrow Busy hours panel keeps the scale and drops "Alerts by hour of day". */
+.ov-busy {
+  container-type: inline-size;
+}
+@container (max-width: 400px) {
+  .ov-busy .panel-sub {
+    display: none;
+  }
+}
+.busy-bar.is-empty {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-bar-empty);
+}
+/* Hovering one hour quiets the others */
+.busy-bars:hover .busy-bar {
+  opacity: 0.45;
+}
+.busy-bars .busy-col:hover .busy-bar {
+  opacity: 1;
+}
+.busy-axis {
+  position: relative;
+  flex: none;
+  height: 20px;
+  margin-top: 8px;
   color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+  line-height: 16px;
+}
+.busy-axis span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.busy-axis span:first-child {
+  transform: translateX(-30%);
+}
+
+/* Every band and line grows up from the baseline together when the chart first shows (or the
+   range changes), with one long ease-out. The lines keep their width while they grow.
+   No animation with reduced motion (base.css). */
+.chart-fill.is-animated .recharts-area,
+.chart-fill.is-animated .recharts-line {
+  transform-box: view-box;
+  transform-origin: 0 var(--baseline, 100%);
+  animation: chart-grow 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ov-chart .recharts-line-curve {
+  vector-effect: non-scaling-stroke;
+}
+@keyframes chart-grow {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* The guide line, the dots and the card glide together from point to point. */
+.ov-chart {
+  --glide: 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.glide-layer {
+  pointer-events: none;
+}
+.glide-guide {
+  stroke: var(--color-border-bold);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0;
+  transition: transform var(--glide), opacity 150ms ease;
+}
+.glide-dot {
+  stroke: var(--color-panel);
+  stroke-width: 2;
+  opacity: 0;
+  transition: transform var(--glide), opacity 150ms ease;
+}
+.glide-layer.is-shown .glide-guide,
+.glide-layer.is-shown .glide-dot.is-on {
+  opacity: 1;
+}
+.glide-layer.is-jump .glide-guide,
+.glide-layer.is-jump .glide-dot {
+  transition: opacity 150ms ease;
+}
+
+/* The tooltip card glides on the same slide as the dots. is-jump turns that off for
+   the first position, so it never slides in from a corner. */
+.glide-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 184px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-overlay);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-overlay);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text);
+  font-size: var(--text-12);
+  font-weight: 500;
+  line-height: 16px;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform var(--glide), opacity 120ms ease;
+}
+.glide-tip.is-jump {
+  transition: opacity 120ms ease;
+}
+.glide-tip.is-shown {
+  opacity: 1;
+}
+.glide-tip-title {
+  color: var(--color-text-subtle);
+}
+.glide-tip-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-13);
+  font-weight: 600;
+}
+.glide-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.glide-tip-label {
+  flex: 1;
+}
+.glide-tip-prev {
+  color: var(--color-text-subtle);
   font-weight: 400;
+}
+.glide-tip-prev .legend-line {
+  width: 15px;
+}
+
+/* ---------- Where alerts happened ---------- */
+.ov-map-wrap {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  border-radius: var(--radius);
+}
+
+/* ---------- Recent activity ---------- */
+.feed {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -8px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.feed-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-13);
+  text-align: left;
+  cursor: pointer;
+}
+.feed-row:hover {
+  background: var(--color-surface-hover);
+}
+.feed-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.health .tone-orange .health-names {
-  color: var(--color-orange-text);
+.feed-time {
+  flex: none;
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
 }
-.health-tags {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
+.feed-ack {
+  color: var(--color-green-bold);
+}
+.feed-resolved {
+  color: var(--color-gray-bold);
 }
 
-/* ---------- chart text and tooltips ---------- */
+/* ---------- chart text ---------- */
 .panel .recharts-text {
   font-family: var(--font-sans);
 }
@@ -424,92 +702,42 @@
 .panel .recharts-wrapper:focus {
   outline: none;
 }
-.chart-tip {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 180px;
-  padding: 8px;
-  border: 1px solid var(--color-tooltip-border);
-  border-radius: var(--radius);
-  background: var(--color-tooltip-bg);
-  box-shadow: var(--shadow-menu);
-  color: var(--color-tooltip-text);
-  font-size: var(--text-12);
-  font-weight: 500;
-  line-height: 1.4;
-}
-.chart-tip-title {
-  color: var(--color-tooltip-subtle);
-}
-.chart-tip-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.chart-tip-key {
-  flex: none;
-  width: 12px;
-  height: 0;
-  border-top: 2px solid var(--key);
-}
-.chart-tip-key.is-dashed {
-  border-top-style: dashed;
-}
-.chart-tip-label {
-  flex: 1;
-}
-.chart-tip-value {
-  font-weight: 600;
-}
-.chart-tip-types {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  padding-left: 20px;
-  color: var(--color-tooltip-subtle);
-}
-.chart-tip-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
 
 /* ---------- smaller windows ---------- */
-/* Short windows: the page scrolls instead of squeezing the charts. */
-@media (max-height: 599px) {
+/* Short windows (under 650 px): the page scrolls instead of squeezing the panels. */
+@media (max-height: 649px) {
   .overview {
     height: auto;
-    grid-template-rows: auto 240px 240px;
+    grid-template-rows: auto 260px 300px;
   }
 }
-/* Narrow windows: one panel per row, and the page scrolls. */
+/* Under 1100 px: tiles go 2 by 2, the bottom row stacks, and the page scrolls. */
 @media (max-width: 1099px) {
   .overview {
     height: auto;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-auto-rows: auto;
   }
   .tiles {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .ov-trend,
-  .ov-flow,
-  .ov-half {
-    grid-column: span 12;
-    min-height: 240px;
+  .ov-chart,
+  .ov-busy,
+  .ov-map,
+  .ov-feed {
+    grid-column: 1 / -1;
   }
-}
-@media (max-width: 799px) {
-  .overview {
-    padding: 12px 16px 24px;
+  .ov-chart {
+    min-height: 280px;
+  }
+  .ov-busy {
+    min-height: 220px;
+  }
+  .ov-map {
+    min-height: 320px;
   }
   .page--overview .ov-header {
-    height: auto;
     flex-wrap: wrap;
-    padding: 16px;
-  }
-  .tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

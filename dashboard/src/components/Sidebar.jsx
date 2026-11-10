@@ -21,59 +21,69 @@ function MaybeTip({ show, label, shortcut, children }) {
   );
 }
 
-export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenMedical, serverOk, onSearch, onOpenSettings }) {
+export default function Sidebar({ page, collapsed, onToggle, openCount, hasUrgentOpen, serverOk, onFind, onOpenSettings }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const accountRef = useRef(null);
   const settingsRef = useRef(null);
+  const findRef = useRef(null);
+  const toggleLabel = collapsed ? "Open sidebar" : "Close sidebar";
 
   return (
     <nav className={"sidebar" + (collapsed ? " is-collapsed" : "")} aria-label="Main">
       <div className="sb-top">
-        <div className="sb-brand">
-          <span className="app-mark" aria-hidden="true">
-            <Icon icon={icons.app} size={14} />
+        <span className="wordmark" aria-label="SafePing">
+          <span className="wordmark-full" aria-hidden="true">
+            SafePing
           </span>
-          <span className="sb-label sb-brand-name">SafePing</span>
-        </div>
-        <Tooltip label={collapsed ? "Open sidebar" : "Close sidebar"} shortcut="Ctrl+\">
-          <button
-            type="button"
-            className="icon-btn icon-btn-sm sb-toggle"
-            onClick={onToggle}
-            aria-label={collapsed ? "Open sidebar" : "Close sidebar"}
-            aria-keyshortcuts="Control+\"
-          >
+          <span className="wordmark-short" aria-hidden="true">
+            S
+          </span>
+        </span>
+        <Tooltip label={toggleLabel} shortcut="Ctrl+\">
+          <button type="button" className="icon-btn icon-btn-sm sb-toggle" onClick={onToggle} aria-label={toggleLabel} aria-keyshortcuts="Control+\">
             <Icon icon={collapsed ? icons.expand : icons.collapse} />
           </button>
         </Tooltip>
       </div>
 
-      <MaybeTip show={collapsed} label="Search" shortcut="Ctrl+K">
-        <button type="button" className="sb-search" onClick={onSearch} aria-label="Search alerts" aria-keyshortcuts="Control+K">
+      <MaybeTip show={collapsed} label="Find a student" shortcut="Ctrl+K">
+        <button
+          ref={findRef}
+          type="button"
+          className="nav-item"
+          onClick={() => onFind(findRef.current)}
+          aria-label="Find a student"
+          aria-haspopup="dialog"
+          aria-keyshortcuts="Control+K"
+        >
           <Icon icon={icons.search} fixed />
-          <span className="sb-label sb-search-text">Search</span>
-          <kbd className="sb-label">Ctrl+K</kbd>
+          <span className="sb-label nav-text">Find a student</span>
+          <span className="sb-label nav-hint" aria-hidden="true">
+            Ctrl+K
+          </span>
         </button>
       </MaybeTip>
 
       <div className="sb-section">
-        <div className="sb-section-label sb-label">Monitor</div>
+        <div className="sb-section-label sb-section-text" aria-hidden={collapsed || undefined}>
+          <span className="sb-label">Monitor</span>
+        </div>
         <ul>
           {PAGES.map(({ id, label, icon }) => {
             const count = id === "live" ? openCount : 0;
             return (
               <li key={id}>
-                <MaybeTip show={collapsed} label={label}>
+                <MaybeTip show={collapsed} label={count ? label + ", " + count + " open" : label}>
                   <a
                     href={"#/" + id}
                     className={"nav-item" + (page === id ? " is-selected" : "")}
                     aria-current={page === id ? "page" : undefined}
-                    aria-label={count ? label + ", " + count + " open" : label}
+                    aria-label={count ? label + ", " + count + " open" + (hasUrgentOpen ? ", urgent" : "") : label}
                   >
                     <Icon icon={icon} fixed />
                     <span className="sb-label nav-text">{label}</span>
                     {count > 0 && (
-                      <span className={"nav-count num" + (hasOpenMedical ? " is-urgent" : "")} aria-hidden="true">
+                      <span className={"nav-count num" + (hasUrgentOpen ? " is-urgent" : "")} aria-hidden="true">
                         {count}
                       </span>
                     )}
@@ -86,7 +96,9 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
       </div>
 
       <div className="sb-section">
-        <div className="sb-section-label sb-label">Workspace</div>
+        <div className="sb-section-label" aria-hidden={collapsed || undefined}>
+          <span className="sb-label">Workspace</span>
+        </div>
         <ul>
           <li>
             <MaybeTip show={collapsed} label="Settings">

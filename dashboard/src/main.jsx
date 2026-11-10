@@ -10,7 +10,11 @@ import "./components/map.css";
 import "./components/Peek.css";
 import "./components/settings.css";
 import "./components/overview.css";
+import "./components/palette.css";
 import App from "./App.jsx";
+import { applySavedFont } from "./components/FontPicker.jsx"; // temporary font test
+
+applySavedFont();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

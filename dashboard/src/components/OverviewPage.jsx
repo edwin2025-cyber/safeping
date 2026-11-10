@@ -1,31 +1,49 @@
-import { useMemo, useRef, useState } from "react";
-import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Line,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+  usePlotArea,
+  useYAxisScale,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { MapContainer, useMap } from "react-leaflet";
+import L from "../lib/leafletSetup.js";
 import { downloadCsv, getJson } from "../lib/api.js";
-import { typeMeta } from "../lib/alertMeta.js";
+import { typeColor, typeMeta } from "../lib/alertMeta.js";
 import { dayCount, dayLong, dayTick, hourLong, hourTick, isoDay, parseDay, presetRange, RANGE_PRESETS, rangeText } from "../lib/dates.js";
-import { ago, formatDuration } from "../lib/format.js";
+import { ago, formatDateTime } from "../lib/format.js";
 import { icons } from "../lib/icons.js";
 import { useReducedMotion } from "../lib/theme.js";
+import { hideTooltip, showTooltip } from "../lib/tooltip.js";
 import { usePolling } from "../lib/usePolling.js";
 import { Select } from "./Controls.jsx";
+import DateRangePicker from "./DateRangePicker.jsx";
 import Icon from "./Icon.jsx";
-import { Tag } from "./Tags.jsx";
+import Popover from "./Popover.jsx";
+import { TypeIcon } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
+import { AttributionPrefix, BaseTiles, DEFAULT_CENTER, MAP_OPTIONS, MAX_ZOOM, SizeWatcher } from "./mapParts.jsx";
 
 const STATS_MS = 30000;
+const TICK_MS = 15000; // relative times on this page update every 15 s
 const RANGE_KEY = "safeping.overviewRange";
-const TIP_TYPES = ["MEDICAL", "SUSPICIOUS", "SILENT"]; // STATUS is never in the counts
+const CHART_TYPES = ["MEDICAL", "SUSPICIOUS", "SILENT"]; // STATUS is never in Overview numbers
+const URGENT = ["MEDICAL", "SILENT"];
 const AXIS = { tickLine: false, axisLine: false, tickMargin: 8, tick: { fontSize: 12, fill: "var(--color-text-subtlest)" } };
-const CURSOR = { stroke: "var(--color-border-bold)", strokeWidth: 1 };
-const REASONS = {
-  bad_signature: "bad signature",
-  replay: "replay",
-  unknown_device: "unknown device",
-  wrong_role: "wrong role",
-  bad_format: "bad format",
-  bad_json: "bad JSON",
+
+// What the chart legend, header and tooltip call this range and the one before it.
+const PERIODS = {
+  today: { now: "Today", before: "Yesterday", phrase: "today" },
+  "7d": { now: "Last 7 days", before: "Week before", phrase: "in the last 7 days" },
+  "30d": { now: "Last 30 days", before: "30 days before", phrase: "in the last 30 days" },
+  month: { now: "This month", before: "Last month", phrase: "this month" },
+  custom: { now: "Selected range", before: "Same length before", phrase: "in the selected range" },
 };
-const PLACE_ICON = { place: icons.place, gps: icons.gps, floor: icons.floor, none: icons.unknownType };
 
 // ---------- range ----------
 
@@ -56,62 +74,121 @@ function rangeError({ from, to }) {
 }
 
 function RangePicker({ range, setRange }) {
-  const today = isoDay(new Date());
+  const [calOpen, setCalOpen] = useState(false);
   return (
     <div className="range-picker">
       {range.preset === "custom" && (
-        <>
-          <input
-            type="date"
-            className="input range-date"
-            aria-label="Start date"
-            value={range.from}
-            max={today}
-            onChange={(e) => setRange({ ...range, from: e.target.value })}
-          />
-          <span className="range-to">to</span>
-          <input
-            type="date"
-            className="input range-date"
-            aria-label="End date"
-            value={range.to}
-            max={today}
-            onChange={(e) => setRange({ ...range, to: e.target.value })}
-          />
-        </>
+        <DateRangePicker
+          from={range.from}
+          to={range.to}
+          open={calOpen}
+          setOpen={setCalOpen}
+          onChange={(from, to) => setRange({ preset: "custom", from, to })}
+        />
       )}
       <Select
         label="Date range"
+        align="end"
         value={range.preset}
         options={RANGE_PRESETS}
-        onChange={(preset) => setRange(preset === "custom" ? { ...range, preset } : { preset, ...presetRange(preset) })}
+        onChange={(preset) => {
+          setRange(preset === "custom" ? { ...range, preset } : { preset, ...presetRange(preset) });
+          setCalOpen(preset === "custom" && range.preset !== "custom");
+        }}
       />
     </div>
   );
 }
 
+/** Export: an Excel workbook (formatted, with a summary) or the plain CSV. */
+function ExportMenu({ from, to, disabled, timeFormat }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const ref = useRef(null);
+
+  async function excel() {
+    setOpen(false);
+    setBusy(true);
+    setFailed(false);
+    try {
+      const { downloadXlsx } = await import("../lib/exportXlsx.js");
+      await downloadXlsx(from, to, timeFormat);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        ref={ref}
+        type="button"
+        className="btn btn-secondary"
+        disabled={disabled || busy}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Icon icon={icons.download} />
+        {busy ? "Preparing" : failed ? "Export failed" : "Export"}
+        <Icon icon={icons.chevronDown} size={12} />
+      </button>
+      <Popover anchor={ref.current} open={open} onClose={() => setOpen(false)} label="Export" placement="bottom-end">
+        <div className="popover-title">Every alert in the range</div>
+        <button type="button" role="menuitem" className="menu-item" onClick={excel}>
+          <Icon icon={icons.excel} fixed />
+          <span className="menu-two-line">
+            Excel workbook
+            <span className="menu-note">Formatted table, colors and a summary sheet</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="menu-item"
+          onClick={() => {
+            setOpen(false);
+            downloadCsv(from, to);
+          }}
+        >
+          <Icon icon={icons.csv} fixed />
+          <span className="menu-two-line">
+            CSV file
+            <span className="menu-note">Plain rows for any program</span>
+          </span>
+        </button>
+      </Popover>
+    </>
+  );
+}
+
 // ---------- small parts ----------
 
-function plural(n, word) {
-  return n + " " + word + (n === 1 ? "" : "s");
+/** Server time now, updated every 15 seconds. */
+function useServerNow(skew) {
+  const [now, setNow] = useState(() => Date.now() / 1000 + skew);
+  useEffect(() => {
+    setNow(Date.now() / 1000 + skew);
+    const timer = setInterval(() => setNow(Date.now() / 1000 + skew), TICK_MS);
+    return () => clearInterval(timer);
+  }, [skew]);
+  return now;
 }
 
-function periodWord(days) {
-  return days === 1 ? "the day before" : "previous " + days + " days";
-}
-
-function capital(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function Panel({ id, icon, title, tools, className = "", children }) {
+function Panel({ id, icon, title, sub, tools, className = "", children }) {
   return (
     <section className={"panel " + className} aria-labelledby={id + "-title"}>
       <div className="panel-head">
-        <h2 id={id + "-title"} className="panel-title">
-          {icon && <Icon icon={icon} className="panel-icon" />}
-          {title}
-        </h2>
+        <div className="panel-head-text">
+          <h2 id={id + "-title"} className="panel-title">
+            {icon && <Icon icon={icon} className="panel-icon" />}
+            {title}
+          </h2>
+          {sub && <span className="panel-sub num">{sub}</span>}
+        </div>
         {tools}
       </div>
       <div className="panel-body">{children}</div>
@@ -119,10 +196,10 @@ function Panel({ id, icon, title, tools, className = "", children }) {
   );
 }
 
-function PanelEmpty({ text = "No alerts in this range." }) {
+function PanelEmpty({ icon = icons.chart, text = "No alerts in this range." }) {
   return (
     <div className="panel-empty">
-      <Icon icon={icons.chart} />
+      <Icon icon={icon} />
       <span>{text}</span>
     </div>
   );
@@ -132,25 +209,183 @@ function Skeleton({ height, width = "100%" }) {
   return <span className="skel" style={{ height, width }} aria-hidden="true" />;
 }
 
-/** Per-day rows (or per-hour rows for a single day) for the trend chart and the sparkline. */
+function possessive(name) {
+  return name + (name.endsWith("s") ? "'" : "'s");
+}
+
+// ---------- stat tiles ----------
+
+/** One stat tile: icon and label, big number, a context line. A button when it goes somewhere. */
+function Tile({ icon, label, value, valueClass = "", context, contextText, onClick, action }) {
+  const body = (
+    <>
+      <span className="tile-top">
+        <Icon icon={icon} fixed />
+        <span className="tile-label">{label}</span>
+      </span>
+      <span className={"tile-value num " + valueClass}>{value}</span>
+      <span className="tile-context" title={contextText}>
+        {context}
+      </span>
+    </>
+  );
+  if (!onClick) return <div className="tile">{body}</div>;
+  return (
+    <Tooltip label={action}>
+      <button type="button" className="tile tile--link" onClick={onClick} aria-label={label + ": " + value + ". " + contextText + ". " + action}>
+        {body}
+      </button>
+    </Tooltip>
+  );
+}
+
+/** A count and a type word with its icon. Urgent types get their color, the rest stay neutral. */
+function TypeCount({ type, n }) {
+  const meta = typeMeta(type);
+  return (
+    <span className="ctx-item">
+      <TypeIcon type={type} size={12} />
+      <span className={"ctx-text" + (URGENT.includes(type) ? " type-text--" + meta.key : "")}>
+        {n}
+        <span className="ctx-word"> {meta.label}</span>
+      </span>
+    </span>
+  );
+}
+
+/** One item of a context line: an icon and a few words. Items sit side by side with space
+    between them, no commas; the icons tell them apart. */
+function CtxItem({ icon, type, children, quiet = false }) {
+  return (
+    <span className={"ctx-item" + (quiet ? " is-quiet" : "")}>
+      {type ? <TypeIcon type={type} size={12} /> : <Icon icon={icon} size={12} fixed />}
+      <span className="ctx-text">{children}</span>
+    </span>
+  );
+}
+
+function usualText(usual) {
+  if (usual === null || usual === undefined) return "No earlier days to compare";
+  if (usual === 0) return "Usually none";
+  return "Usually about " + Math.max(1, Math.round(usual)) + " a day";
+}
+
+function StatTiles({ stats, now, timeFormat, onOpenAlert, goLive }) {
+  // 1. Open now
+  const byType = stats.open_by_type || {};
+  const openParts = CHART_TYPES.filter((t) => byType[t] > 0);
+  const openText = openParts.map((t) => byType[t] + " " + typeMeta(t).label).join(", ") || "None open";
+
+  // 2. Urgent open: Medical and Silent
+  const urgent = stats.urgent_open || [];
+  const shown = urgent.slice(0, 2);
+  const more = urgent.length - shown.length;
+  const urgentText = urgent.length ? shown.map((u) => u.name).join(", ") + (more ? " and " + more + " more" : "") : "None";
+
+  // 3. Last alert
+  const last = stats.last_alert;
+  const lastText = last ? [typeMeta(last.type).label, last.name, last.place].filter(Boolean).join(", ") : "No alerts yet";
+
+  // 4. Today
+  const usual = stats.usual_per_day;
+  const today = stats.today_count;
+  const spike = usual !== null && usual !== undefined && today >= 3 && today >= 2 * usual;
+
+  return (
+    <div className="tiles" role="group" aria-label="Summary">
+      <Tile
+        icon={icons.openNow}
+        label="Open now"
+        value={stats.open_now}
+        contextText={openText}
+        context={openParts.length ? openParts.map((t) => <TypeCount key={t} type={t} n={byType[t]} />) : <span className="muted">None open</span>}
+        onClick={() => goLive({ state: "action", type: "ALL" })}
+        action="Go to Live, Needs action"
+      />
+      <Tile
+        icon={icons.urgent}
+        label="Urgent open"
+        value={urgent.length}
+        valueClass={urgent.length ? "type-text--medical" : ""}
+        contextText={urgentText}
+        context={
+          urgent.length ? (
+            <>
+              {shown.map((u) => (
+                <CtxItem key={u.id} type={u.type}>
+                  {u.name}
+                </CtxItem>
+              ))}
+              {more > 0 && <span className="ctx-more">+{more} more</span>}
+            </>
+          ) : (
+            <span className="muted">None</span>
+          )
+        }
+        onClick={() => goLive({ state: "action", type: "URGENT" })}
+        action="Go to Live, Medical and Silent"
+      />
+      <Tile
+        icon={icons.lastAlert}
+        label="Last alert"
+        value={last ? ago(now - last.time) : "No alerts yet"}
+        valueClass={last ? "" : "is-muted"}
+        contextText={last ? lastText + ", " + formatDateTime(last.time, timeFormat, false) : ""}
+        context={
+          last ? (
+            <>
+              <CtxItem type={last.type}>{last.name}</CtxItem>
+              {last.place && (
+                <CtxItem icon={icons.place} quiet>
+                  {last.place}
+                </CtxItem>
+              )}
+            </>
+          ) : (
+            <span className="muted">Nothing received yet</span>
+          )
+        }
+        onClick={last ? () => onOpenAlert(last.id) : null}
+        action="Open the alert"
+      />
+      <Tile
+        icon={icons.today}
+        label="Today"
+        value={today}
+        contextText={usualText(usual)}
+        context={<span className={spike ? "tone-orange" : undefined}>{usualText(usual)}</span>}
+        onClick={() => goLive({ state: "all", type: "ALL" })}
+        action="Go to Live, All"
+      />
+    </div>
+  );
+}
+
+// ---------- Alerts chart ----------
+
+/** Per-day rows (or per-hour rows for a single day). */
 function seriesRows(stats, timeFormat) {
   if (stats.per_hour) {
     return stats.per_hour.map((h) => ({
       tick: hourTick(h.hour, timeFormat),
       title: dayLong(stats.from) + ", " + hourLong(h.hour, timeFormat),
       prevTitle: dayLong(stats.previous_from) + ", " + hourLong(h.hour, timeFormat),
-      current: h.count,
+      total: h.count,
       previous: h.previous_count,
-      ...h.by_type,
+      MEDICAL: h.by_type.MEDICAL || 0,
+      SUSPICIOUS: h.by_type.SUSPICIOUS || 0,
+      SILENT: h.by_type.SILENT || 0,
     }));
   }
   return stats.per_day.map((d) => ({
     tick: dayTick(d.date, stats.days),
     title: dayLong(d.date),
     prevTitle: dayLong(d.previous_date),
-    current: d.count,
+    total: d.count,
     previous: d.previous_count,
-    ...d.by_type,
+    MEDICAL: d.by_type.MEDICAL || 0,
+    SUSPICIOUS: d.by_type.SUSPICIOUS || 0,
+    SILENT: d.by_type.SILENT || 0,
   }));
 }
 
@@ -159,224 +394,266 @@ function tickInterval(stats) {
   return stats.days <= 7 ? 0 : "preserveStartEnd";
 }
 
-// ---------- stat tiles ----------
+/** Adds one line per type along the top of its band. A line is drawn only where its band
+    has alerts (and the points next to those), so lines never pile up along zero. */
+function withLines(rows) {
+  return rows.map((r, i) => {
+    const out = { ...r };
+    let base = 0;
+    for (const t of CHART_TYPES) {
+      const prev = i > 0 ? rows[i - 1][t] : 0;
+      const next = i < rows.length - 1 ? rows[i + 1][t] : 0;
+      const top = base + r[t];
+      out[t + "_line"] = r[t] > 0 || prev > 0 || next > 0 ? top : null;
+      base = top;
+    }
+    return out;
+  });
+}
 
-/** Tiny line of this period's counts, no axes. Decoration: the number next to it says the total. */
-function Sparkline({ values }) {
-  if (values.length < 2 || !values.some((v) => v > 0)) return null;
-  const w = 64;
-  const h = 24;
-  const pad = 2;
-  const max = Math.max(1, ...values);
-  const points = values
-    .map((v, i) => {
-      const x = pad + (i * (w - 2 * pad)) / (values.length - 1);
-      const y = h - pad - (v / max) * (h - 2 * pad);
-      return x.toFixed(1) + "," + y.toFixed(1);
-    })
-    .join(" ");
+/** The legend says how many of each type the range has. A type with none is faded: it has
+    no band or line in the chart, because there is nothing to draw. */
+function Legend({ period, totals }) {
   return (
-    <svg className="spark" width={w} height={h} viewBox={"0 0 " + w + " " + h} aria-hidden="true" focusable="false">
-      <polyline points={points} fill="none" stroke="var(--color-blue-bold)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/** One stat tile: icon and label, big number, a context line. A link when it goes somewhere. */
-function Tile({ icon, label, fullLabel, value, valueTone, muted, context, tone, href, extra }) {
-  const body = (
-    <>
-      <span className="tile-top" title={fullLabel}>
-        <Icon icon={icon} fixed />
-        <span className="tile-label">{label}</span>
-      </span>
-      <span className="tile-mid">
-        <span className={"tile-value num" + (valueTone ? " tone-" + valueTone : "") + (muted ? " is-muted" : "")}>{value}</span>
-        {extra}
-      </span>
-      <span className={"tile-context" + (tone ? " tone-" + tone : "")} title={context}>
-        {context}
-      </span>
-    </>
-  );
-  if (!href) return <div className="tile">{body}</div>;
-  const where = href === "#/live" ? "Live" : "Devices";
-  return (
-    <Tooltip label={"Go to " + where}>
-      <a className="tile tile--link" href={href} aria-label={label + ": " + value + ". " + context + ". Go to " + where}>
-        {body}
-      </a>
-    </Tooltip>
-  );
-}
-
-function changeLine(total, previous, days) {
-  if (previous === 0) return { tone: "flat", text: "No alerts in " + periodWord(days) };
-  if (total === previous) return { tone: "flat", text: "Same as " + periodWord(days) };
-  const pct = Math.round((Math.abs(total - previous) / previous) * 100);
-  // More alerts is worse, so up is red and down is green.
-  return total > previous
-    ? { tone: "up", text: "Up " + pct + "% vs " + periodWord(days) }
-    : { tone: "down", text: "Down " + pct + "% vs " + periodWord(days) };
-}
-
-function fastestType(byType) {
-  const entries = Object.entries(byType || {}).filter(([, s]) => s !== null && s !== undefined);
-  if (!entries.length) return null;
-  entries.sort((a, b) => a[1] - b[1]);
-  return { type: entries[0][0], seconds: entries[0][1] };
-}
-
-function StatTiles({ stats, rows }) {
-  const change = changeLine(stats.total, stats.previous_total, stats.days);
-  const median = stats.flow.median_ack_s;
-  const fastest = fastestType(stats.median_ack_by_type);
-  const stale = stats.stale_fobs || [];
-  const low = stats.low_battery_fobs || [];
-  const changeTone = { up: "red", down: "green", flat: null }[change.tone];
-
-  let fobsContext = { text: "All seen today", tone: "green" };
-  if (stats.fobs_total === 0) fobsContext = { text: "No Fobs registered", tone: null };
-  else if (stale.length) fobsContext = { text: stale.length + " not seen in 24 h", tone: "orange" };
-
-  let lowContext = "All above 20%";
-  if (low.length === 1) lowContext = low[0].name + ", " + low[0].pct + "%";
-  else if (low.length > 1) lowContext = low.length + " students";
-
-  return (
-    <div className="tiles" role="group" aria-label="Summary">
-      <Tile
-        icon={icons.alerts}
-        label="Alerts"
-        value={stats.total}
-        context={change.text}
-        tone={changeTone}
-        extra={<Sparkline values={rows.map((r) => r.current)} />}
-      />
-      <Tile
-        icon={icons.medianAck}
-        label="Time to acknowledge"
-        fullLabel="Median time to acknowledge"
-        value={median === null ? "No data" : formatDuration(median)}
-        muted={median === null}
-        extra={median === null ? null : <span className="tile-unit">median</span>}
-        context={fastest ? typeMeta(fastest.type).label + " fastest, " + formatDuration(fastest.seconds) : "No acknowledge times yet"}
-      />
-      <Tile
-        icon={icons.openNow}
-        label="Open now"
-        value={stats.open_now}
-        context={stats.open_medical_now > 0 ? stats.open_medical_now + " Medical" : "None urgent"}
-        tone={stats.open_medical_now > 0 ? "red" : null}
-        href="#/live"
-      />
-      <Tile
-        icon={icons.fobsActive}
-        label="Fobs active"
-        value={stats.fobs_active + " of " + stats.fobs_total}
-        context={fobsContext.text}
-        tone={fobsContext.tone}
-        href="#/devices"
-      />
-      <Tile
-        icon={icons.lowBattery}
-        label="Low battery"
-        value={stats.low_battery}
-        valueTone={stats.low_battery > 0 ? "orange" : null}
-        context={lowContext}
-        href="#/devices"
-      />
-    </div>
-  );
-}
-
-// ---------- Alerts over time ----------
-
-function TrendTip({ row }) {
-  return (
-    <div className="chart-tip">
-      <div className="chart-tip-title">{row.title}</div>
-      <div className="chart-tip-row">
-        <span className="chart-tip-key" style={{ "--key": "var(--color-blue-bold)" }} aria-hidden="true" />
-        <span className="chart-tip-label">This period</span>
-        <span className="chart-tip-value num">{row.current}</span>
-      </div>
-      <div className="chart-tip-types">
-        {TIP_TYPES.map((t) => (
-          <span key={t} className="chart-tip-type">
-            <Icon icon={typeMeta(t).icon} size={12} fixed />
-            {typeMeta(t).label} <span className="num">{row[t] || 0}</span>
-          </span>
-        ))}
-      </div>
-      <div className="chart-tip-row">
-        <span className="chart-tip-key is-dashed" style={{ "--key": "var(--color-gray-bold)" }} aria-hidden="true" />
-        <span className="chart-tip-label">{row.prevTitle}</span>
-        <span className="chart-tip-value num">{row.previous}</span>
-      </div>
-    </div>
-  );
-}
-
-function TrendPanel({ stats, rows, sub, animate }) {
-  const empty = stats.total === 0 && stats.previous_total === 0;
-  const unit = stats.per_hour ? "hour" : "day";
-  const label = "Alerts per " + unit + ", " + sub + ", " + stats.total + " total. Previous period: " + stats.previous_total + ".";
-  const legend = (
-    <ul className="mini-legend" aria-hidden="true">
-      <li>
-        <span className="legend-line" style={{ "--key": "var(--color-blue-bold)" }} />
-        This period
-      </li>
-      <li>
-        <span className="legend-line is-dashed" style={{ "--key": "var(--color-gray-bold)" }} />
-        {capital(periodWord(stats.days))}
+    <ul className="ov-legend" aria-hidden="true">
+      <li className="ov-legend-group">{period.now}:</li>
+      {CHART_TYPES.map((t) => (
+        <li key={t} className={totals[t] ? undefined : "is-zero"} title={totals[t] ? undefined : "No " + typeMeta(t).label + " alerts in this range"}>
+          <TypeIcon type={t} size={12} />
+          {typeMeta(t).label}
+          <span className="ov-legend-count num">{totals[t]}</span>
+        </li>
+      ))}
+      <li className="ov-legend-before">
+        <span className="legend-line is-dashed" />
+        {period.before}
       </li>
     </ul>
   );
+}
+
+/** Glides along with the hover: a guide line and one dot per type, drawn inside the chart.
+    They rest only on real data points (a day or an hour), never between them, and move from
+    one point to the next with a short eased slide instead of jumping. A dot fades out where its
+    type has no alerts. Uses the chart's own scale, so the dots sit exactly on the lines. */
+function GlideLayer({ row, x, wrapRef }) {
+  const plot = usePlotArea();
+  const yScale = useYAxisScale();
+  const [jump, setJump] = useState(true);
+  const shown = row !== null && x !== null && x !== undefined;
+  const last = useRef({ row: null, x: 0 });
+  if (shown) last.current = { row, x };
+
+  // Tell the CSS where the baseline is, so the chart grows up from it when it first appears.
+  useLayoutEffect(() => {
+    if (plot && wrapRef.current) wrapRef.current.style.setProperty("--baseline", plot.y + plot.height + "px");
+  }, [plot, wrapRef]);
+
+  // The first position after the pointer comes in is set without a slide.
+  useEffect(() => {
+    if (!shown) {
+      setJump(true);
+      return undefined;
+    }
+    const frame = requestAnimationFrame(() => setJump(false));
+    return () => cancelAnimationFrame(frame);
+  }, [shown]);
+
+  if (!plot || !yScale) return null;
+  const r = last.current.row;
+  const gx = last.current.x;
+  let base = 0;
+  const dots = CHART_TYPES.map((t) => {
+    const value = r ? r[t] : 0;
+    base += value;
+    return { t, y: yScale(base), on: shown && value > 0 };
+  });
   return (
-    <Panel id="ov-trend" icon={icons.overview} title="Alerts over time" tools={!empty && legend} className="ov-trend">
+    <g className={"glide-layer" + (shown ? " is-shown" : "") + (jump ? " is-jump" : "")} aria-hidden="true">
+      <line
+        className="glide-guide"
+        x1={0}
+        x2={0}
+        y1={plot.y}
+        y2={plot.y + plot.height}
+        style={{ transform: "translateX(" + gx + "px)" }}
+      />
+      {dots.map((d) => (
+        <circle
+          key={d.t}
+          className={"glide-dot" + (d.on ? " is-on" : "")}
+          r={4.5}
+          cx={0}
+          cy={0}
+          fill={typeColor(d.t)}
+          style={{ transform: "translate(" + gx + "px, " + (Number.isFinite(d.y) ? d.y : plot.y + plot.height) + "px)" }}
+        />
+      ))}
+    </g>
+  );
+}
+
+/** The tooltip card. It glides between days on the same eased slide as the dots, stays inside
+    the panel and flips to the left of the guide line near the right edge. */
+function GlideTip({ row, x, wrapRef }) {
+  const cardRef = useRef(null);
+  const [pos, setPos] = useState({ left: 0, jump: true });
+  const shown = row !== null && x !== null;
+  const wasShown = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!shown || !cardRef.current || !wrapRef.current) {
+      wasShown.current = false;
+      return;
+    }
+    const width = wrapRef.current.clientWidth;
+    const card = cardRef.current.offsetWidth;
+    let left = x + 16;
+    if (left + card > width - 4) left = x - 16 - card;
+    left = Math.max(4, Math.min(left, width - card - 4));
+    setPos({ left, jump: !wasShown.current });
+    wasShown.current = true;
+  }, [shown, x, row, wrapRef]);
+
+  return (
+    <div
+      ref={cardRef}
+      className={"glide-tip" + (shown ? " is-shown" : "") + (pos.jump ? " is-jump" : "")}
+      style={{ transform: "translate(" + Math.round(pos.left) + "px, 8px)" }}
+      aria-hidden="true"
+    >
+      {row && (
+        <>
+          <div className="glide-tip-title">{row.title}</div>
+          <div className="glide-tip-total">
+            <span>Total</span>
+            <span className="num">{row.total}</span>
+          </div>
+          {CHART_TYPES.map((t) => (
+            <div key={t} className="glide-tip-row">
+              <TypeIcon type={t} size={12} />
+              <span className="glide-tip-label">{typeMeta(t).label}</span>
+              <span className="num">{row[t]}</span>
+            </div>
+          ))}
+          <div className="glide-tip-row glide-tip-prev">
+            <span className="legend-line is-dashed" />
+            <span className="glide-tip-label">{row.prevTitle}</span>
+            <span className="num">{row.previous}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function AlertsChart({ stats, rows: plainRows, period, animate }) {
+  const gradId = useId().replace(/:/g, "");
+  const wrapRef = useRef(null);
+  const [hover, setHover] = useState(null); // { index, x }
+  const rows = useMemo(() => withLines(plainRows), [plainRows]);
+  const totals = useMemo(() => Object.fromEntries(CHART_TYPES.map((t) => [t, plainRows.reduce((s, r) => s + r[t], 0)])), [plainRows]);
+  const empty = stats.total === 0 && stats.previous_total === 0;
+  const unit = stats.per_hour ? "hour" : "day";
+  const sub = stats.total + " " + period.phrase;
+  const label = "Alerts per " + unit + ", " + sub + ". " + period.before + ": " + stats.previous_total + ".";
+
+  function onMove(state) {
+    if (!state || !state.isTooltipActive || state.activeTooltipIndex === undefined || state.activeTooltipIndex === null) {
+      setHover(null);
+      return;
+    }
+    const index = Number(state.activeTooltipIndex);
+    const x = state.activeCoordinate ? state.activeCoordinate.x : null;
+    setHover((h) => (h && h.index === index && h.x === x ? h : { index, x }));
+  }
+
+  return (
+    <Panel id="ov-chart" title="Alerts" sub={sub} tools={!empty && <Legend period={period} totals={totals} />} className="ov-chart">
       {empty ? (
         <PanelEmpty />
       ) : (
         <>
-          <div role="img" aria-label={label} className="chart-fill">
-            <div className="chart-abs">
+          <div role="img" aria-label={label} className={"chart-fill" + (animate ? " is-animated" : "")} ref={wrapRef}>
+            {/* Keyed by the range, so the chart grows in again when the range changes, but not on a poll. */}
+            <div className="chart-abs" key={stats.from + "/" + stats.to}>
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }} accessibilityLayer={false}>
-                  <CartesianGrid vertical={false} stroke="var(--color-border)" strokeWidth={1} />
-                  <XAxis dataKey="tick" {...AXIS} padding={{ left: 8, right: 8 }} interval={tickInterval(stats)} minTickGap={12} />
+                <AreaChart
+                  data={rows}
+                  margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+                  accessibilityLayer={false}
+                  onMouseMove={onMove}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <defs>
+                    {/* One vertical fade for every band, measured on the whole chart, so the bands
+                        fade together toward the baseline. */}
+                    {CHART_TYPES.map((t) => (
+                      <linearGradient key={t} id={gradId + t} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100%">
+                        <stop offset="0%" style={{ stopColor: typeColor(t), stopOpacity: 0.42 }} />
+                        <stop offset="100%" style={{ stopColor: typeColor(t), stopOpacity: 0.04 }} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="var(--color-border)" strokeWidth={1} strokeDasharray="3 4" />
+                  <XAxis dataKey="tick" {...AXIS} padding={{ left: 12, right: 12 }} interval={tickInterval(stats)} minTickGap={12} />
                   <YAxis {...AXIS} width={28} allowDecimals={false} tickCount={3} domain={[0, (max) => Math.max(2, Math.ceil(max / 2) * 2)]} />
                   <ChartTooltip
-                    cursor={CURSOR}
+                    cursor={false}
+                    content={() => null}
                     isAnimationActive={false}
-                    wrapperStyle={{ outline: "none" }}
-                    content={({ active, payload }) => (active && payload && payload.length ? <TrendTip row={payload[0].payload} /> : null)}
+                    animationDuration={0}
+                    wrapperStyle={{ display: "none" }}
                   />
+                  {CHART_TYPES.map((t) => (
+                    <Area
+                      key={t}
+                      type="bumpX"
+                      dataKey={t}
+                      name={typeMeta(t).label}
+                      stackId="types"
+                      stroke="none"
+                      fill={"url(#" + gradId + t + ")"}
+                      fillOpacity={1}
+                      dot={false}
+                      activeDot={false}
+                      isAnimationActive={false}
+                    />
+                  ))}
                   <Line
-                    type="monotone"
+                    type="bumpX"
                     dataKey="previous"
                     stroke="var(--color-gray-bold)"
+                    strokeOpacity={0.8}
                     strokeWidth={1.5}
-                    strokeDasharray="4 4"
+                    strokeDasharray="4 5"
+                    strokeLinecap="round"
                     dot={false}
                     activeDot={false}
-                    isAnimationActive={animate}
+                    isAnimationActive={false}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="current"
-                    stroke="var(--color-blue-bold)"
-                    strokeWidth={2}
-                    fill="var(--color-blue-bold)"
-                    fillOpacity={0.1}
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-panel)", fill: "var(--color-blue-bold)" }}
-                    isAnimationActive={animate}
-                  />
-                </ComposedChart>
+                  {CHART_TYPES.map((t) => (
+                    <Line
+                      key={t + "_line"}
+                      type="bumpX"
+                      dataKey={t + "_line"}
+                      name={typeMeta(t).label}
+                      stroke={typeColor(t)}
+                      strokeWidth={2.25}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      connectNulls={false}
+                      dot={false}
+                      activeDot={false}
+
+                      isAnimationActive={false}
+                    />
+                  ))}
+                  <GlideLayer row={hover ? rows[hover.index] || null : null} x={hover ? hover.x : null} wrapRef={wrapRef} />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
+            <GlideTip row={hover ? rows[hover.index] || null : null} x={hover ? hover.x : null} wrapRef={wrapRef} />
           </div>
           <div className="visually-hidden">
             <table>
@@ -385,21 +662,21 @@ function TrendPanel({ stats, rows, sub, animate }) {
                 <tr>
                   <th scope="col">{unit === "hour" ? "Hour" : "Day"}</th>
                   <th scope="col">Alerts</th>
-                  {TIP_TYPES.map((t) => (
+                  {CHART_TYPES.map((t) => (
                     <th key={t} scope="col">
                       {typeMeta(t).label}
                     </th>
                   ))}
-                  <th scope="col">Previous period</th>
+                  <th scope="col">{period.before}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.title}>
                     <th scope="row">{r.title}</th>
-                    <td>{r.current}</td>
-                    {TIP_TYPES.map((t) => (
-                      <td key={t}>{r[t] || 0}</td>
+                    <td>{r.total}</td>
+                    {CHART_TYPES.map((t) => (
+                      <td key={t}>{r[t]}</td>
                     ))}
                     <td>{r.previous}</td>
                   </tr>
@@ -413,172 +690,250 @@ function TrendPanel({ stats, rows, sub, animate }) {
   );
 }
 
-// ---------- Response flow ----------
+// ---------- Busy hours ----------
 
-function share(n, of) {
-  return of > 0 ? Math.round((n / of) * 100) + "%" : "0%";
+const HEAT_STEPS = 6;
+
+/** The shade of a bar, 1 (faint) to 6 (deep). Up to 6 alerts in the busiest hour, each count
+    has its own shade: 1 is the faintest, 2 a bit darker, and so on. Above that, the counts are
+    spread over the 6 shades, so the busiest hour is always the deepest. */
+function heatStep(n, max) {
+  if (n <= 0) return 0;
+  if (max <= HEAT_STEPS) return n;
+  return Math.max(1, Math.ceil((n / max) * HEAT_STEPS));
 }
 
-function FlowPanel({ stats }) {
-  const f = stats.flow;
-  const steps = [
-    { label: "Received", count: f.received, note: null },
-    {
-      label: "Acknowledged",
-      count: f.acknowledged,
-      note: f.median_ack_s === null ? "No acknowledge times yet" : "Median " + formatDuration(f.median_ack_s) + " after received",
-    },
-    {
-      label: "Resolved",
-      count: f.resolved,
-      note: f.median_resolve_s === null ? "No resolve times yet" : "Median " + formatDuration(f.median_resolve_s) + " after acknowledged",
-    },
-  ];
+function HeatScale() {
   return (
-    <Panel id="ov-flow" icon={icons.medianAck} title="Response flow" className="ov-flow">
-      <ol className="flow-list">
-        {steps.map((s, i) => (
-          <li key={s.label} className="flow-row">
-            <div className="flow-line">
-              <span className="flow-label">{s.label}</span>
-              <span className="flow-count num">{s.count}</span>
-              <span className="flow-share num">{share(s.count, f.received)}</span>
-            </div>
-            <span className="bar-slot" aria-hidden="true">
-              <span
-                className="bar"
-                style={{ width: (f.received > 0 ? (s.count / f.received) * 100 : 0) + "%", background: "var(--color-flow-" + (i + 1) + ")" }}
-              />
-            </span>
-            {s.note && <p className="flow-note">{s.note}</p>}
-          </li>
-        ))}
-      </ol>
-      <p className="panel-note panel-foot">STATUS check-ins not counted</p>
-    </Panel>
+    <span className="heat-scale" aria-hidden="true">
+      <span>Fewer</span>
+      {Array.from({ length: HEAT_STEPS }, (_, i) => (
+        <span key={i} className={"heat-swatch heat-" + (i + 1)} />
+      ))}
+      <span>More</span>
+    </span>
   );
 }
 
-// ---------- Hotspots ----------
-
-function HotspotsPanel({ stats }) {
-  const h = stats.hotspots || { places: [], more_count: 0 };
-  const located = h.places.filter((p) => p.kind !== "none");
-  const max = Math.max(1, ...h.places.map((p) => p.count));
+/** Alerts by hour of day over the range: 24 bars, shaded by how many alerts each hour had,
+    empty hours as short gray dashes. STATUS is left out (weekday_hour from /api/stats). */
+function BusyHours({ stats, timeFormat }) {
+  const hours = Array.from({ length: 24 }, (_, h) => (stats.weekday_hour || []).reduce((sum, day) => sum + (day[h] || 0), 0));
+  const max = Math.max(0, ...hours);
+  const total = hours.reduce((a, b) => a + b, 0);
+  const span = (h) => hourLong(h, timeFormat) + " to " + hourLong((h + 1) % 24, timeFormat);
+  const peaks = hours.map((n, h) => (n === max && max > 0 ? h : -1)).filter((h) => h >= 0);
+  const label =
+    "Alerts by hour of day. " + (peaks.length ? "Busiest: " + peaks.map(span).join(", ") + ", " + max + " alerts." : "No alerts.");
   return (
-    <Panel id="ov-hot" icon={icons.hotspots} title="Hotspots" className="ov-half">
-      {located.length === 0 ? (
-        <PanelEmpty text="No alerts with a location in this range." />
+    <Panel id="ov-busy" title="Busy hours" sub="Alerts by hour of day" tools={total > 0 && <HeatScale />} className="ov-busy">
+      {total === 0 ? (
+        <PanelEmpty text="No alerts in this range." />
       ) : (
-        <ol className="hot-list">
-          {h.places.map((p) => (
-            <li key={p.label} className="hot-row">
-              <span className="hot-label">
-                <Icon icon={PLACE_ICON[p.kind] || icons.place} size={14} fixed />
-                <span className="hot-name" title={p.label}>
-                  {p.label}
+        <>
+          <div className="busy" role="img" aria-label={label}>
+            <div className="busy-bars">
+              {hours.map((n, h) => (
+                <span
+                  key={h}
+                  className="busy-col"
+                  onMouseEnter={(e) =>
+                    showTooltip(e.currentTarget, { label: span(h), shortcut: n + (n === 1 ? " alert" : " alerts") + (n === max ? ", the busiest" : "") }, 0)
+                  }
+                  onMouseLeave={() => hideTooltip()}
+                >
+                  <span
+                    className={"busy-bar" + (n === 0 ? " is-empty" : " heat-" + heatStep(n, max))}
+                    style={n ? { height: Math.max(4, (n / max) * 92) + "%" } : undefined}
+                  />
                 </span>
-              </span>
-              <span className="bar-slot" aria-hidden="true">
-                <span className="bar" style={{ width: (p.count / max) * 100 + "%", background: "var(--color-blue-bold)" }} />
-              </span>
-              <span className="hot-count num">{p.count}</span>
-            </li>
-          ))}
-          {h.more_count > 0 && <li className="hot-more">and {plural(h.more_count, "more place")}</li>}
-        </ol>
+              ))}
+            </div>
+            <div className="busy-axis" aria-hidden="true">
+              {[0, 6, 12, 18].map((h) => (
+                <span key={h} style={{ left: ((h + 0.5) / 24) * 100 + "%" }}>
+                  {hourTick(h, timeFormat)}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="visually-hidden">
+            <table>
+              <caption>{label}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Hour</th>
+                  <th scope="col">Alerts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hours.map((n, h) => (
+                  <tr key={h}>
+                    <th scope="row">{span(h)}</th>
+                    <td>{n}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </Panel>
   );
 }
 
-// ---------- System health ----------
+// ---------- Where alerts happened ----------
 
-function HealthRow({ icon, label, children, sub, tone }) {
+/** Scroll-wheel zoom stays off until the map is clicked, and turns off again when the pointer leaves. */
+function WheelAfterClick() {
+  const map = useMap();
+  useEffect(() => {
+    const on = () => map.scrollWheelZoom.enable();
+    const off = () => map.scrollWheelZoom.disable();
+    map.on("click", on);
+    map.on("mouseout", off);
+    return () => {
+      map.off("click", on);
+      map.off("mouseout", off);
+    };
+  }, [map]);
+  return null;
+}
+
+/** One 8 px dot per alert with GPS, in its type color at 75%. No circles, no clustering.
+    Fits all dots when the range changes, not on every poll. */
+function DotLayer({ points, fitKey, onOpen, timeFormat }) {
+  const map = useMap();
+  const groupRef = useRef(null);
+  const fitted = useRef(null);
+  const handlers = useRef({ onOpen });
+  handlers.current = { onOpen };
+  const sig = points.map((p) => p.id + ":" + p.type).join(",");
+
+  useEffect(() => {
+    const group = L.featureGroup().addTo(map);
+    groupRef.current = group;
+    return () => {
+      map.removeLayer(group);
+      groupRef.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    group.clearLayers();
+    points.forEach((p) => {
+      const meta = typeMeta(p.type);
+      const dot = L.circleMarker([p.lat, p.lon], {
+        radius: 4,
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.75,
+        className: "ov-dot ov-dot--" + meta.key,
+        bubblingMouseEvents: false,
+      });
+      dot.on("mouseover", () => {
+        const el = dot.getElement();
+        const where = p.place ? p.place + ", " : "";
+        if (el) showTooltip(el, { label: meta.label + ", " + p.name, shortcut: where + formatDateTime(p.time, timeFormat, false) }, 0);
+      });
+      dot.on("mouseout", () => hideTooltip());
+      dot.on("click", () => {
+        hideTooltip();
+        handlers.current.onOpen(p.id);
+      });
+      dot.addTo(group);
+    });
+    if (fitted.current !== fitKey && points.length) {
+      fitted.current = fitKey;
+      map.fitBounds(L.latLngBounds(points.map((p) => [p.lat, p.lon])), { padding: [20, 20], maxZoom: 17, animate: false });
+    }
+    // sig stands for points: redraw only when the dots change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, fitKey, map, timeFormat]);
+
+  return null;
+}
+
+function PlacesPanel({ stats, fitKey, theme, settings, cartoKey, configLoaded, timeFormat, onOpenAlert }) {
+  const points = stats.points || [];
+  const indoor = stats.indoor_count || 0;
+  const reducedMotion = useReducedMotion();
   return (
-    <div className="health-row">
-      <dt>
-        <Icon icon={icon} size={14} fixed />
-        {label}
-      </dt>
-      <dd className={tone ? "tone-" + tone : undefined}>
-        <span className="health-value">{children}</span>
-        {sub && <span className="health-sub">{sub}</span>}
-      </dd>
-    </div>
+    <Panel id="ov-map" icon={icons.map} title="Where alerts happened" className="ov-map">
+      {points.length === 0 ? (
+        <PanelEmpty icon={icons.map} text="No alerts with GPS in this range." />
+      ) : (
+        <div className="map-wrap ov-map-wrap">
+          <MapContainer
+            center={DEFAULT_CENTER}
+            zoom={16}
+            maxZoom={MAX_ZOOM}
+            {...MAP_OPTIONS}
+            scrollWheelZoom={false}
+            className="map"
+            zoomAnimation={!reducedMotion}
+            fadeAnimation={!reducedMotion}
+            markerZoomAnimation={!reducedMotion}
+          >
+            {configLoaded && <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} />}
+            <AttributionPrefix />
+            <SizeWatcher />
+            <WheelAfterClick />
+            <DotLayer points={points} fitKey={fitKey} onOpen={onOpenAlert} timeFormat={timeFormat} />
+          </MapContainer>
+        </div>
+      )}
+      {indoor > 0 && (
+        <p className="panel-note panel-foot num">
+          {indoor} indoor {indoor === 1 ? "alert is" : "alerts are"} not on the map
+        </p>
+      )}
+    </Panel>
   );
 }
 
-function HealthPanel({ stats, refMaxAge }) {
-  const d = stats.delivery || { lora: 0, wifi: 0, unknown: 0 };
-  const rej = stats.rejected;
-  const stale = stats.stale_fobs || [];
-  const low = stats.low_battery_fobs || [];
-  const reasons = rej ? Object.entries(rej.by_reason).sort((a, b) => b[1] - a[1]) : [];
-  const attack = rej && ((rej.by_reason.bad_signature || 0) > 0 || (rej.by_reason.replay || 0) > 0);
-  const age = stats.reference_age_s;
-  const deliveryEmpty = d.lora + d.wifi + d.unknown === 0;
+// ---------- Recent activity ----------
 
+function eventText(e) {
+  const type = typeMeta(e.type).label;
+  if (e.kind === "acknowledged") return "Acknowledged, " + possessive(e.name) + " " + type + " alert";
+  if (e.kind === "resolved") return "Resolved, " + possessive(e.name) + " " + type + " alert";
+  return [type, e.name, e.place].filter(Boolean).join(", ");
+}
+
+function EventIcon({ e }) {
+  if (e.kind === "acknowledged") return <Icon icon={icons.acknowledged} size={14} fixed className="feed-ack" />;
+  if (e.kind === "resolved") return <Icon icon={icons.resolve} size={14} fixed className="feed-resolved" />;
+  return <TypeIcon type={e.type} size={14} />;
+}
+
+function ActivityPanel({ stats, now, timeFormat, onOpenAlert }) {
+  const events = stats.recent_events || [];
   return (
-    <Panel id="ov-health" icon={icons.health} title="System health" className="ov-half">
-      <dl className="health">
-        <HealthRow icon={icons.live} label="Delivery">
-          {deliveryEmpty ? (
-            <span className="muted">No messages in this range</span>
-          ) : (
-            <span className="health-tags">
-              <Tag color="gray" icon={icons.lora}>
-                LoRa <span className="num">{d.lora}</span>
-              </Tag>
-              <Tag color="teal" icon={icons.wifi}>
-                WiFi <span className="num">{d.wifi}</span>
-              </Tag>
-              {d.unknown > 0 && (
-                <Tag color="gray" icon={icons.unknownType}>
-                  Unknown <span className="num">{d.unknown}</span>
-                </Tag>
-              )}
-            </span>
-          )}
-        </HealthRow>
-        <HealthRow icon={icons.duplicates} label="Duplicates caught">
-          {stats.duplicates === null || stats.duplicates === undefined ? (
-            <Tooltip label="The server cannot tell a resend from a replay yet. Both count under Rejected messages as replay.">
-              <span className="muted" tabIndex={0}>
-                Not tracked
-              </span>
-            </Tooltip>
-          ) : (
-            <span className="num">{stats.duplicates}</span>
-          )}
-        </HealthRow>
-        <HealthRow
-          icon={icons.rejected}
-          label="Rejected messages"
-          tone={attack ? "red" : null}
-          sub={reasons.length ? reasons.map(([r, n]) => n + " " + (REASONS[r] || r.replaceAll("_", " "))).join(", ") : null}
-        >
-          {rej === null || rej === undefined ? (
-            <span className="muted">Not tracked</span>
-          ) : (
-            <>
-              {attack && <Icon icon={icons.warning} size={14} />}
-              <span className="num">{rej.total}</span>
-            </>
-          )}
-        </HealthRow>
-        <HealthRow icon={icons.time} label="Fobs not seen in 24 h" tone={stale.length ? "orange" : null}>
-          {stale.length > 0 && <span className="health-names">{stale.join(", ")}</span>}
-          <span className="num">{stale.length}</span>
-        </HealthRow>
-        <HealthRow icon={icons.lowBattery} label="Low battery" tone={low.length ? "orange" : null}>
-          {low.length > 0 && <span className="health-names">{low.map((f) => f.name + " " + f.pct + "%").join(", ")}</span>}
-          <span className="num">{low.length}</span>
-        </HealthRow>
-        <HealthRow icon={icons.pressure} label="Reference sensor" tone={age === null || age === undefined || age > refMaxAge ? "orange" : null}>
-          {age === null || age === undefined ? "No reading" : "Last reading " + ago(age)}
-        </HealthRow>
-      </dl>
+    <Panel id="ov-feed" icon={icons.activity} title="Recent activity" className="ov-feed">
+      {events.length === 0 ? (
+        <PanelEmpty icon={icons.activity} text="No activity in this range" />
+      ) : (
+        <ol className="feed">
+          {events.map((e) => {
+            const text = eventText(e);
+            const when = formatDateTime(e.time, timeFormat, false);
+            return (
+              <li key={e.kind + e.alert_id}>
+                <button type="button" className="feed-row" onClick={() => onOpenAlert(e.alert_id)} aria-label={text + ", " + when + ". Open the alert"}>
+                  <EventIcon e={e} />
+                  <span className="feed-text">{text}</span>
+                  <Tooltip label={when}>
+                    <span className="feed-time num">{ago(now - e.time)}</span>
+                  </Tooltip>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </Panel>
   );
 }
@@ -589,16 +944,16 @@ function LoadingPanels() {
   return (
     <>
       <div className="tiles" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <div key={i} className="tile">
-            <Skeleton height={14} width={96} />
-            <Skeleton height={28} width={56} />
-            <Skeleton height={12} width={120} />
+            <Skeleton height={16} width={96} />
+            <Skeleton height={32} width={64} />
+            <Skeleton height={16} width={140} />
           </div>
         ))}
       </div>
-      {["ov-trend", "ov-flow", "ov-half", "ov-half"].map((c, i) => (
-        <section key={i} className={"panel " + c} aria-hidden="true">
+      {["ov-chart", "ov-busy", "ov-map", "ov-feed"].map((c) => (
+        <section key={c} className={"panel " + c} aria-hidden="true">
           <Skeleton height={16} width={120} />
           <div className="panel-body skel-gap">
             <Skeleton height="100%" />
@@ -611,7 +966,7 @@ function LoadingPanels() {
 
 // ---------- page ----------
 
-export default function OverviewPage({ timeFormat, refMaxAge = 120 }) {
+export default function OverviewPage({ timeFormat, skew = 0, theme, settings, cartoKey, configLoaded, onOpenAlert, goLive }) {
   const [range, setRangeState] = useState(loadRange);
   const setRange = (next) => {
     setRangeState(next);
@@ -620,6 +975,7 @@ export default function OverviewPage({ timeFormat, refMaxAge = 120 }) {
   const error = rangeError(range);
   const key = range.from + "/" + range.to;
   const sub = error ? "" : rangeText(range.from, range.to);
+  const period = PERIODS[range.preset] || PERIODS.custom;
 
   const [result, setResult] = useState(null); // { key, stats }
   const [failed, setFailed] = useState(false);
@@ -641,7 +997,7 @@ export default function OverviewPage({ timeFormat, refMaxAge = 120 }) {
   );
 
   const reduced = useReducedMotion();
-  const animate = !reduced;
+  const now = useServerNow(skew);
   const stats = result && result.key === key ? result.stats : null;
   const rows = useMemo(() => (stats ? seriesRows(stats, timeFormat) : []), [stats, timeFormat]);
 
@@ -654,11 +1010,8 @@ export default function OverviewPage({ timeFormat, refMaxAge = 120 }) {
         </div>
         <div className="view-tools">
           <RangePicker range={range} setRange={setRange} />
-          {/* PDF reports come later. For now Export downloads every alert in the range as CSV. */}
-          <button type="button" className="btn btn-secondary" disabled={!!error} onClick={() => downloadCsv(range.from, range.to)}>
-            <Icon icon={icons.download} />
-            Export CSV
-          </button>
+          {/* PDF reports come later. Export downloads every alert in the range. */}
+          <ExportMenu from={range.from} to={range.to} disabled={!!error} timeFormat={timeFormat} />
         </div>
       </header>
       <div className="overview-scroll">
@@ -672,11 +1025,20 @@ export default function OverviewPage({ timeFormat, refMaxAge = 120 }) {
           <div className="overview">
             {stats ? (
               <>
-                <StatTiles stats={stats} rows={rows} />
-                <TrendPanel stats={stats} rows={rows} sub={sub} animate={animate} />
-                <FlowPanel stats={stats} />
-                <HotspotsPanel stats={stats} />
-                <HealthPanel stats={stats} refMaxAge={refMaxAge} />
+                <StatTiles stats={stats} now={now} timeFormat={timeFormat} onOpenAlert={onOpenAlert} goLive={goLive} />
+                <AlertsChart stats={stats} rows={rows} period={period} animate={!reduced} />
+                <BusyHours stats={stats} timeFormat={timeFormat} />
+                <PlacesPanel
+                  stats={stats}
+                  fitKey={key}
+                  theme={theme}
+                  settings={settings}
+                  cartoKey={cartoKey}
+                  configLoaded={configLoaded}
+                  timeFormat={timeFormat}
+                  onOpenAlert={onOpenAlert}
+                />
+                <ActivityPanel stats={stats} now={now} timeFormat={timeFormat} onOpenAlert={onOpenAlert} />
               </>
             ) : (
               <LoadingPanels />

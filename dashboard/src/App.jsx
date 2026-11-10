@@ -1,7 +1,8 @@
 import "./styles/app.css";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar, { PAGES } from "./components/Sidebar.jsx";
-import TopBar from "./components/TopBar.jsx";
+import TopBar, { PreviewBanner } from "./components/TopBar.jsx";
+import { isEmptyPreview, stopEmptyPreview } from "./lib/preview.js";
 import LivePage, { VIEWS } from "./components/LivePage.jsx";
 import DevicesPage from "./components/DevicesPage.jsx";
 
@@ -9,9 +10,10 @@ import DevicesPage from "./components/DevicesPage.jsx";
 const OverviewPage = lazy(() => import("./components/OverviewPage.jsx"));
 import AlertPeek from "./components/AlertPeek.jsx";
 import DevicePeek from "./components/DevicePeek.jsx";
+import SearchPalette from "./components/SearchPalette.jsx";
 import SettingsModal from "./components/SettingsModal.jsx";
 import { getJson, postJson } from "./lib/api.js";
-import { alertState, hasGps, isOpenMedical, sortAlerts } from "./lib/alertMeta.js";
+import { alertState, hasGps, isUrgentOpen, sortAlerts, URGENT_TYPES } from "./lib/alertMeta.js";
 import { effectiveSettings, loadBool, loadChoice, saveBool, saveChoice, useSettings } from "./lib/settings.js";
 import { playAlertTone, unlockAudio } from "./lib/sound.js";
 import { useEffectiveTheme } from "./lib/theme.js";
@@ -20,8 +22,11 @@ import { usePolling } from "./lib/usePolling.js";
 const ALERTS_MS = 3000;
 const STATUS_MS = 5000;
 const DEVICES_MS = 10000;
-const URGENT = new Set(["MEDICAL", "SUSPICIOUS"]);
+const PEEK_MS = 5000;
+const SOUND_TYPES = new Set(["MEDICAL", "SUSPICIOUS"]); // new alerts that play the tone and auto-zoom
 const STATE_FILTERS = { action: "open", acknowledged: "acknowledged" };
+const NARROW = "(max-width: 1279px)"; // the sidebar folds to icons below this width
+const EMPTY_PREVIEW = isEmptyPreview(); // Settings > About > Show an empty dashboard
 
 function readHash() {
   return window.location.hash.replace(/^#\/?/, "");
@@ -42,6 +47,18 @@ function usePage() {
   return page;
 }
 
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => !!(window.matchMedia && window.matchMedia(query).matches));
+  useEffect(() => {
+    if (!window.matchMedia) return undefined;
+    const list = window.matchMedia(query);
+    const onChange = () => setMatches(list.matches);
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  }, [query]);
+  return matches;
+}
+
 /** Remembers which element to focus for each id (a row, a panel row). */
 function useFocusRegistry() {
   const map = useRef(new Map());
@@ -60,24 +77,54 @@ function useFocusRegistry() {
   return [register, focus];
 }
 
+function focusIfThere(el) {
+  if (el && el.isConnected) {
+    el.focus();
+    return true;
+  }
+  return false;
+}
+
 export default function App() {
   const { settings, update, reset } = useSettings();
   const theme = useEffectiveTheme(settings.theme);
   const page = usePage();
 
-  const [collapsed, setCollapsed] = useState(() => loadBool("safeping.sidebarCollapsed", false));
+  // ---------- sidebar: the saved choice, but folded to icons under 1280 px unless opened ----------
+  const narrow = useMediaQuery(NARROW);
+  const [collapsedPref, setCollapsedPref] = useState(() => loadBool("safeping.sidebarCollapsed", false));
+  const [narrowOpen, setNarrowOpen] = useState(false);
+  useEffect(() => {
+    if (!narrow) setNarrowOpen(false);
+  }, [narrow]);
+  const collapsed = narrow ? !narrowOpen : collapsedPref;
   const toggleSidebar = useCallback(() => {
-    setCollapsed((c) => {
+    if (narrow) {
+      setNarrowOpen((o) => !o);
+      return;
+    }
+    setCollapsedPref((c) => {
       saveBool("safeping.sidebarCollapsed", !c);
       return !c;
     });
-  }, []);
+  }, [narrow]);
 
   const [view, setViewState] = useState(() => loadChoice("safeping.liveView", VIEWS.map((v) => v.id), "split"));
   const setView = useCallback((v) => {
     saveChoice("safeping.liveView", v);
     setViewState(v);
   }, []);
+  // Split view: how much of the width the list takes, in percent. Saved when a drag ends.
+  const [split, setSplit] = useState(() => {
+    let n = 50;
+    try {
+      n = Number(localStorage.getItem("safeping.splitPct") || 50);
+    } catch {
+      // storage blocked: start in the middle
+    }
+    return Number.isFinite(n) && n >= 10 && n <= 90 ? n : 50;
+  });
+  const saveSplit = useCallback((pct) => saveChoice("safeping.splitPct", String(pct)), []);
   const [panelCollapsed, setPanelCollapsed] = useState(() => loadBool("safeping.mapPanelCollapsed", false));
   const togglePanel = useCallback(() => {
     setPanelCollapsed((c) => {
@@ -127,8 +174,8 @@ export default function App() {
     };
   }, [settings.sound]);
 
-  // ---------- filters ----------
-  const [typeFilter, setTypeFilter] = useState("ALL");
+  // ---------- Live filters ----------
+  const [typeFilter, setTypeFilter] = useState("ALL"); // a type, "URGENT" (Medical and Silent) or "ALL"
   const [stateFilter, setStateFilter] = useState("action");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -138,6 +185,8 @@ export default function App() {
 
   // ---------- /api/alerts every 3 s ----------
   const [alerts, setAlerts] = useState(null);
+  const alertsRef = useRef(null);
+  alertsRef.current = alerts;
   const [skew, setSkew] = useState(0);
   const [alertsFailed, setAlertsFailed] = useState(false);
   const [flyTarget, setFlyTarget] = useState(null);
@@ -152,7 +201,7 @@ export default function App() {
     }
     const fresh = list.filter((a) => !seenIds.current.has(a.id));
     fresh.forEach((a) => seenIds.current.add(a.id));
-    const urgent = fresh.filter((a) => alertState(a) === "open" && URGENT.has(a.alert_type));
+    const urgent = fresh.filter((a) => alertState(a) === "open" && SOUND_TYPES.has(a.alert_type));
     if (!urgent.length) return;
     const s = effRef.current;
     if (s.sound) playAlertTone();
@@ -194,14 +243,21 @@ export default function App() {
   );
 
   // ---------- modals ----------
-  const [selectedId, setSelectedId] = useState(null);
-  const [deviceId, setDeviceId] = useState(null);
+  // peek: the open Alert Peek. live: opened from the Live list (it closes when the alert
+  // leaves that list, as before). Otherwise it was opened from Overview or search, and
+  // the alert is loaded from /api/alerts/<id> when it is not in the Live list.
+  const [peek, setPeek] = useState(null); // { id, live, from }
+  const [remoteAlert, setRemoteAlert] = useState(null);
+  const [deviceOpen, setDeviceOpen] = useState(null); // { id, from }
   const [settingsOpen, setSettingsOpen] = useState(() => readHash() === "settings");
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const settingsOpener = useRef(null);
+  const paletteOpener = useRef(null);
   const [registerAlertFocus, focusAlert] = useFocusRegistry();
   const [registerDeviceFocus, focusDevice] = useFocusRegistry();
+  const deviceId = deviceOpen ? deviceOpen.id : null;
 
-  // ---------- /api/devices every 10 s: Devices page, device peek or Settings ----------
+  // ---------- /api/devices every 10 s: Devices page, a device peek or Settings ----------
   const [devices, setDevices] = useState(null);
   const [devicesFailed, setDevicesFailed] = useState(false);
   usePolling(
@@ -213,7 +269,7 @@ export default function App() {
         })
         .catch(() => setDevicesFailed(true)),
     DEVICES_MS,
-    page === "devices" || settingsOpen,
+    page === "devices" || settingsOpen || deviceId !== null,
   );
 
   // ---------- one device's history while its peek is open ----------
@@ -233,17 +289,39 @@ export default function App() {
     [deviceId],
   );
 
+  // ---------- an older alert, while its peek is open ----------
+  const peekId = peek ? peek.id : null;
+  const remote = peek !== null && !peek.live;
+  const remoteRef = useRef(null);
+  remoteRef.current = remoteAlert;
+  const loadRemote = useCallback(() => {
+    if (peekId === null) return Promise.resolve();
+    return getJson("/api/alerts/" + peekId)
+      .then((d) => setRemoteAlert(d.alert))
+      .catch((error) => {
+        // No such alert, or it never loaded and Live does not have it either: nothing to show.
+        const loaded = remoteRef.current && remoteRef.current.id === peekId;
+        const inLive = alertsRef.current && alertsRef.current.some((a) => a.id === peekId);
+        if (String(error.message).includes("404") || (!loaded && !inLive)) setPeek(null);
+      });
+  }, [peekId]);
+  useEffect(() => setRemoteAlert(null), [peekId]);
+  usePolling(loadRemote, PEEK_MS, remote, [peekId]);
+
   const unreachable = alertsFailed || statusFailed || (page === "devices" && devicesFailed);
 
   // ---------- what the list and map show ----------
-  const [highlightedId, setHighlightedId] = useState(null);
+  // hover.from: "row" (a table or panel row) or "map" (a marker). A marker hover selects its row.
+  const [hover, setHover] = useState({ id: null, from: null });
+  const setRowHover = useCallback((id) => setHover({ id, from: id === null ? null : "row" }), []);
+  const setMarkerHover = useCallback((id) => setHover({ id, from: id === null ? null : "map" }), []);
   const visible = useMemo(() => {
     if (alerts === null) return null;
     const q = query.trim().toLowerCase();
     return sortAlerts(
       alerts.filter(
         (a) =>
-          (typeFilter === "ALL" || a.alert_type === typeFilter) &&
+          (typeFilter === "ALL" || a.alert_type === typeFilter || (typeFilter === "URGENT" && URGENT_TYPES.includes(a.alert_type))) &&
           (stateFilter === "all" || alertState(a) === STATE_FILTERS[stateFilter]) &&
           (!q || (a.student_name || "").toLowerCase().includes(q) || a.device_id.toLowerCase().includes(q)),
       ),
@@ -252,21 +330,29 @@ export default function App() {
 
   const openAlerts = alerts ? alerts.filter((a) => alertState(a) === "open" && a.alert_type !== "STATUS") : [];
   const openCount = openAlerts.length;
-  const hasOpenMedical = openAlerts.some(isOpenMedical);
+  const hasUrgentOpen = openAlerts.some(isUrgentOpen);
 
   useEffect(() => {
-    document.title = (openCount ? "(" + openCount + ") " : "") + "SafePing";
+    document.title = (EMPTY_PREVIEW ? "(Preview) " : "") + (openCount ? "(" + openCount + ") " : "") + "SafePing";
   }, [openCount]);
 
-  const openPeek = useCallback((id) => setSelectedId(id), []);
-  const closePeek = useCallback(() => setSelectedId(null), []);
-  const selectedAlert = alerts && selectedId !== null ? alerts.find((a) => a.id === selectedId) : null;
+  /** Opens the Alert Peek. from names the place it was opened from, for the breadcrumb. */
+  const openAlert = useCallback((id, from) => {
+    const live = !from && !!alertsRef.current && alertsRef.current.some((a) => a.id === id);
+    setPeek({ id, live, from: from || null });
+  }, []);
+  const openLivePeek = useCallback((id) => openAlert(id), [openAlert]);
+  const closePeek = useCallback(() => setPeek(null), []);
 
-  // The alert left the data (resolved in a view without resolved alerts): close the peek.
+  const liveAlert = alerts && peek ? alerts.find((a) => a.id === peek.id) : null;
+  const selectedAlert = liveAlert || (remoteAlert && peek && remoteAlert.id === peek.id ? remoteAlert : null);
+
+  // An alert opened from Live left the list (resolved in a view without resolved alerts): close the peek.
   useEffect(() => {
-    if (selectedId !== null && alerts && !alerts.some((a) => a.id === selectedId)) setSelectedId(null);
-  }, [alerts, selectedId]);
+    if (peek && peek.live && alerts && !alerts.some((a) => a.id === peek.id)) setPeek(null);
+  }, [alerts, peek]);
 
+  const openDevice = useCallback((id, from) => setDeviceOpen({ id, from: from || null }), []);
   const selectedDevice = devices && deviceId !== null ? devices.find((d) => d.device_id === deviceId) : null;
 
   const openSettings = useCallback((from) => {
@@ -278,59 +364,77 @@ export default function App() {
     async (id) => {
       await postJson("/api/ack", { id });
       await refreshAlerts();
+      if (remote) await loadRemote();
     },
-    [refreshAlerts],
+    [refreshAlerts, remote, loadRemote],
   );
   const resolve = useCallback(
     async (id) => {
       await postJson("/api/resolve", { id });
       await refreshAlerts();
+      if (remote) await loadRemote();
     },
-    [refreshAlerts],
+    [refreshAlerts, remote, loadRemote],
   );
 
-  // ---------- keyboard: Ctrl+\ sidebar, Ctrl+K search ----------
-  const openSearch = useCallback(() => {
-    if (page !== "live") window.location.hash = "#/live";
-    setSearchOpen(true);
-    setTimeout(() => searchInputRef.current && searchInputRef.current.focus(), 0);
-  }, [page]);
+  /** Overview tiles: go to Live with these filters. */
+  const goLive = useCallback(({ state = "action", type = "ALL" } = {}) => {
+    setStateFilter(state);
+    setTypeFilter(type);
+    setQuery("");
+    setSearchOpen(false);
+    window.location.hash = "#/live";
+  }, []);
+
+  // ---------- Find a student (Ctrl+K) ----------
+  const openPalette = useCallback((from) => {
+    paletteOpener.current = from || document.activeElement;
+    setPaletteOpen(true);
+  }, []);
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false);
+    requestAnimationFrame(() => focusIfThere(paletteOpener.current));
+  }, []);
+
+  const modalOpen = !!selectedAlert || !!selectedDevice || settingsOpen;
 
   useEffect(() => {
     function onKey(event) {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
-      const modalOpen = selectedId !== null || deviceId !== null || settingsOpen;
       if (event.key === "\\") {
         event.preventDefault();
-        if (!modalOpen) toggleSidebar();
+        if (!modalOpen && !paletteOpen) toggleSidebar();
       } else if (event.key === "k" || event.key === "K") {
         event.preventDefault();
-        if (!modalOpen) openSearch();
+        if (!modalOpen && !paletteOpen) openPalette();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggleSidebar, openSearch, selectedId, deviceId, settingsOpen]);
+  }, [toggleSidebar, openPalette, modalOpen, paletteOpen]);
 
   const nowServer = Date.now() / 1000 + skew;
-  const modalOpen = !!selectedAlert || !!selectedDevice || settingsOpen;
+  const pageLabel = PAGES.find((p) => p.id === page).label;
+  const peekFrom = peek && peek.from ? peek.from : pageLabel;
+  const selectedRowId = (hover.from === "map" ? hover.id : null) ?? (peek ? peek.id : null);
 
   return (
     <>
-      <div className={"app" + (collapsed ? " is-collapsed" : "")} inert={modalOpen ? true : undefined}>
+      <div className={"app" + (collapsed ? " is-collapsed" : "")} inert={modalOpen || paletteOpen ? true : undefined}>
         <Sidebar
           page={page}
           collapsed={collapsed}
           onToggle={toggleSidebar}
           openCount={openCount}
-          hasOpenMedical={hasOpenMedical}
+          hasUrgentOpen={hasUrgentOpen}
           serverOk={!alertsFailed && !statusFailed}
-          onSearch={openSearch}
+          onFind={openPalette}
           onOpenSettings={openSettings}
         />
         <div className="main">
+          {EMPTY_PREVIEW && <PreviewBanner onExit={stopEmptyPreview} />}
           <TopBar
-            crumb={PAGES.find((p) => p.id === page).label}
+            crumb={pageLabel}
             status={status}
             unreachable={unreachable}
             skew={skew}
@@ -340,7 +444,16 @@ export default function App() {
           <main className="content">
             {page === "overview" && (
               <Suspense fallback={null}>
-                <OverviewPage timeFormat={settings.timeFormat} refMaxAge={(config && config.ref_max_age_s) || 120} />
+                <OverviewPage
+                  timeFormat={settings.timeFormat}
+                  skew={skew}
+                  theme={theme}
+                  settings={eff}
+                  cartoKey={config && config.carto_key}
+                  configLoaded={configLoaded}
+                  onOpenAlert={(id) => openAlert(id, "Overview")}
+                  goLive={goLive}
+                />
               </Suspense>
             )}
             {page === "live" && (
@@ -364,13 +477,20 @@ export default function App() {
                 config={config}
                 configLoaded={configLoaded}
                 nowServer={nowServer}
-                highlightedId={highlightedId}
-                setHighlightedId={setHighlightedId}
-                onOpen={openPeek}
+                highlightedId={hover.id}
+                selectedRowId={selectedRowId}
+                selectedId={peek ? peek.id : null}
+                onRowHover={setRowHover}
+                onMarkerHover={setMarkerHover}
+                onOpen={openLivePeek}
+                onAck={acknowledge}
                 flyTarget={flyTarget}
                 panelCollapsed={panelCollapsed}
                 togglePanel={togglePanel}
                 registerFocus={registerAlertFocus}
+                split={split}
+                setSplit={setSplit}
+                saveSplit={saveSplit}
               />
             )}
             {page === "devices" && (
@@ -379,7 +499,8 @@ export default function App() {
                 loadFailed={devicesFailed}
                 nowServer={nowServer}
                 timeFormat={settings.timeFormat}
-                onOpen={setDeviceId}
+                onOpen={openDevice}
+                selectedId={deviceId}
                 registerFocus={registerDeviceFocus}
               />
             )}
@@ -387,10 +508,27 @@ export default function App() {
         </div>
       </div>
 
+      {paletteOpen && (
+        <SearchPalette
+          onClose={closePalette}
+          onOpenAlert={(id) => {
+            setPaletteOpen(false);
+            openAlert(id, "Search");
+          }}
+          onOpenDevice={(id) => {
+            setPaletteOpen(false);
+            openDevice(id, "Search");
+          }}
+          showStatus={settings.showStatus}
+          nowServer={nowServer}
+          timeFormat={settings.timeFormat}
+        />
+      )}
       {selectedAlert && (
         <AlertPeek
           key={selectedAlert.id}
           alert={selectedAlert}
+          crumb={peekFrom}
           settings={eff}
           update={update}
           theme={theme}
@@ -399,19 +537,22 @@ export default function App() {
           onClose={closePeek}
           onAck={acknowledge}
           onResolve={resolve}
-          returnFocus={() => focusAlert(selectedAlert.id)}
+          returnFocus={() => (peek && peek.from === "Search" ? focusIfThere(paletteOpener.current) : focusAlert(selectedAlert.id))}
         />
       )}
       {selectedDevice && (
         <DevicePeek
           key={selectedDevice.device_id}
           device={selectedDevice}
+          crumb={deviceOpen && deviceOpen.from ? deviceOpen.from : "Devices"}
           history={history}
           historyFailed={historyFailed}
           nowServer={nowServer}
           timeFormat={settings.timeFormat}
-          onClose={() => setDeviceId(null)}
-          returnFocus={() => focusDevice(selectedDevice.device_id)}
+          onClose={() => setDeviceOpen(null)}
+          returnFocus={() =>
+            deviceOpen && deviceOpen.from === "Search" ? focusIfThere(paletteOpener.current) : focusDevice(selectedDevice.device_id)
+          }
         />
       )}
       {settingsOpen && (
@@ -422,18 +563,12 @@ export default function App() {
           reset={reset}
           config={config}
           devices={devices}
+          refMaxAge={(config && config.ref_max_age_s) || 120}
           onClose={() => {
             setSettingsOpen(false);
             if (readHash() === "settings") window.location.hash = "#/" + page;
           }}
-          returnFocus={() => {
-            const el = settingsOpener.current;
-            if (el && el.isConnected) {
-              el.focus();
-              return true;
-            }
-            return false;
-          }}
+          returnFocus={() => focusIfThere(settingsOpener.current)}
         />
       )}
     </>
