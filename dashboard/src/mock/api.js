@@ -5,8 +5,10 @@ import {
   MOCK_ALERTS,
   MOCK_CONFIG,
   MOCK_DEVICES,
+  MOCK_DUPLICATES,
   MOCK_PLACES,
   MOCK_PLACES_MAX_DISTANCE_M,
+  MOCK_REJECTIONS,
   MOCK_STATUS,
 } from "./data.js";
 import { addDays, dayCount, isoDay, parseDay } from "../lib/dates.js";
@@ -322,6 +324,24 @@ function getStats(params) {
   const open = alerts.filter((a) => !a.acknowledged && !a.resolved && notStatus(a));
   const t = now();
   const fobs = getDevices().devices.filter((d) => d.role !== "REF");
+  const seen = fobs.filter((d) => d.last_seen !== null && t - d.last_seen <= 86400);
+  const low = fobs.filter((d) => d.battery !== null && d.battery < 20).sort((x, y) => x.battery - y.battery);
+  const name = (d) => d.student_name || d.device_id;
+
+  const ackByType = {};
+  counted
+    .filter((a) => a.acknowledged && a.acknowledged_at !== null)
+    .forEach((a) => (ackByType[a.alert_type] = ackByType[a.alert_type] || []).push(Math.max(0, a.acknowledged_at - a.timestamp)));
+
+  const inRange = (minAgo) => {
+    const ts = start - minAgo * 60;
+    return ts >= startS && ts < endS;
+  };
+  const byReason = {};
+  MOCK_REJECTIONS.filter((r) => inRange(r.minAgo)).forEach((r) => (byReason[r.reason] = (byReason[r.reason] || 0) + 1));
+
+  const delivery = { lora: 0, wifi: 0, unknown: 0 };
+  cur.forEach((a) => (delivery[a.link === "lora" || a.link === "wifi" ? a.link : "unknown"] += 1));
 
   return {
     server_time: t,
@@ -348,10 +368,35 @@ function getStats(params) {
     },
     open_now: open.length,
     open_medical_now: open.filter((a) => a.alert_type === "MEDICAL").length,
-    fobs_active: fobs.filter((d) => d.last_seen !== null && t - d.last_seen <= 86400).length,
+    fobs_active: seen.length,
     fobs_total: fobs.length,
-    low_battery: fobs.filter((d) => d.battery !== null && d.battery < 20).length,
+    low_battery: low.length,
+    median_ack_by_type: Object.fromEntries(Object.entries(ackByType).map(([type, s]) => [type, median(s)])),
+    hotspots: hotspots(counted),
+    delivery,
+    duplicates: MOCK_DUPLICATES.filter((d) => inRange(d.minAgo)).length,
+    rejected: { total: Object.values(byReason).reduce((s, n) => s + n, 0), by_reason: byReason },
+    stale_fobs: fobs.filter((d) => !seen.includes(d)).map(name).sort(),
+    low_battery_fobs: low.map((d) => ({ name: name(d), pct: d.battery })),
+    reference_age_s: MOCK_STATUS.reference_age_s,
   };
+}
+
+/** Same rules as _hotspots in server/stats.py. */
+function hotspots(list) {
+  const counts = new Map();
+  list.forEach((a) => {
+    let key;
+    if (a.latitude !== null) key = a.place_name ? [a.place_name.charAt(0).toUpperCase() + a.place_name.slice(1), "place"] : ["GPS, no named place", "gps"];
+    else if (a.floor !== null) key = ["Indoors, floor " + a.floor, "floor"];
+    else key = ["No location", "none"];
+    const id = key.join("|");
+    const row = counts.get(id) || { label: key[0], kind: key[1], count: 0 };
+    row.count += 1;
+    counts.set(id, row);
+  });
+  const ranked = [...counts.values()].sort((x, y) => y.count - x.count || x.label.localeCompare(y.label));
+  return { places: ranked.slice(0, 5), more_count: Math.max(0, ranked.length - 5) };
 }
 
 const CSV_COLUMNS = [

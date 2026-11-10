@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
 import { copyText } from "../lib/clipboard.js";
+import { icons } from "../lib/icons.js";
+import Icon from "./Icon.jsx";
 
 /** Button that copies text and says "Copied" in place for a moment. */
 export default function CopyButton({ getText, label = "Copy", variant = "secondary" }) {
@@ -22,11 +23,7 @@ export default function CopyButton({ getText, label = "Copy", variant = "seconda
 
   return (
     <button type="button" className={"btn btn-" + variant} onClick={onClick}>
-      {state === "copied" ? (
-        <Check size={16} strokeWidth={1.75} aria-hidden="true" className="copy-ok" />
-      ) : (
-        <Copy size={16} strokeWidth={1.75} aria-hidden="true" />
-      )}
+      {state === "copied" ? <Icon icon={icons.acknowledged} className="copy-ok" /> : <Icon icon={icons.copy} />}
       <span aria-live="polite">{state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : label}</span>
     </button>
   );

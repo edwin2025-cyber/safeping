@@ -147,7 +147,7 @@
   margin-top: 16px;
 }
 .places-table thead th {
-  background: var(--color-surface-raised);
+  background: var(--color-surface-overlay);
 }
 
 @media (max-width: 800px) {

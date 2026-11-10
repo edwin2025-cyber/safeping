@@ -1,14 +1,13 @@
 import { useRef, useState } from "react";
-import { Activity, Cpu, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck } from "lucide-react";
+import { icons } from "../lib/icons.js";
+import Icon from "./Icon.jsx";
 import Popover from "./Popover.jsx";
 import Tooltip from "./Tooltip.jsx";
 
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
-
 export const PAGES = [
-  { id: "overview", label: "Overview", Icon: LayoutDashboard },
-  { id: "live", label: "Live", Icon: Activity },
-  { id: "devices", label: "Devices", Icon: Cpu },
+  { id: "overview", label: "Overview", icon: icons.overview },
+  { id: "live", label: "Live", icon: icons.live },
+  { id: "devices", label: "Devices", icon: icons.devices },
 ];
 
 /** Wraps a sidebar control in a tooltip only when the sidebar is icon-only. */
@@ -32,7 +31,7 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
       <div className="sb-top">
         <div className="sb-brand">
           <span className="app-mark" aria-hidden="true">
-            <ShieldCheck size={16} strokeWidth={1.75} />
+            <Icon icon={icons.app} size={14} />
           </span>
           <span className="sb-label sb-brand-name">SafePing</span>
         </div>
@@ -44,14 +43,14 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
             aria-label={collapsed ? "Open sidebar" : "Close sidebar"}
             aria-keyshortcuts="Control+\"
           >
-            {collapsed ? <PanelLeftOpen {...ICON} /> : <PanelLeftClose {...ICON} />}
+            <Icon icon={collapsed ? icons.expand : icons.collapse} />
           </button>
         </Tooltip>
       </div>
 
       <MaybeTip show={collapsed} label="Search" shortcut="Ctrl+K">
         <button type="button" className="sb-search" onClick={onSearch} aria-label="Search alerts" aria-keyshortcuts="Control+K">
-          <Search {...ICON} />
+          <Icon icon={icons.search} fixed />
           <span className="sb-label sb-search-text">Search</span>
           <kbd className="sb-label">Ctrl+K</kbd>
         </button>
@@ -60,7 +59,7 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
       <div className="sb-section">
         <div className="sb-section-label sb-label">Monitor</div>
         <ul>
-          {PAGES.map(({ id, label, Icon }) => {
+          {PAGES.map(({ id, label, icon }) => {
             const count = id === "live" ? openCount : 0;
             return (
               <li key={id}>
@@ -71,7 +70,7 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
                     aria-current={page === id ? "page" : undefined}
                     aria-label={count ? label + ", " + count + " open" : label}
                   >
-                    <Icon {...ICON} />
+                    <Icon icon={icon} fixed />
                     <span className="sb-label nav-text">{label}</span>
                     {count > 0 && (
                       <span className={"nav-count num" + (hasOpenMedical ? " is-urgent" : "")} aria-hidden="true">
@@ -99,7 +98,7 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
                 aria-haspopup="dialog"
                 onClick={() => onOpenSettings(settingsRef.current)}
               >
-                <Settings {...ICON} />
+                <Icon icon={icons.settings} fixed />
                 <span className="sb-label nav-text">Settings</span>
               </button>
             </MaybeTip>
@@ -144,13 +143,13 @@ export default function Sidebar({ page, collapsed, onToggle, openCount, hasOpenM
               onOpenSettings(accountRef.current);
             }}
           >
-            <Settings {...ICON} />
+            <Icon icon={icons.settings} fixed />
             Settings
           </button>
           <div className="menu-divider" role="separator" />
           <Tooltip label="Login coming soon">
             <button type="button" role="menuitem" className="menu-item" aria-disabled="true">
-              <LogOut {...ICON} />
+              <Icon icon={icons.logOut} fixed />
               Log out
             </button>
           </Tooltip>

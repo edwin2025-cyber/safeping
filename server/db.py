@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS rejected (
 
 CREATE INDEX IF NOT EXISTS idx_alerts_time ON alerts (timestamp);
 CREATE INDEX IF NOT EXISTS idx_ref_time ON reference_readings (timestamp);
+CREATE INDEX IF NOT EXISTS idx_rejected_time ON rejected (timestamp);
 """
 
 # Columns added after the first version. Each one is added only if it is missing,
@@ -299,6 +300,47 @@ def resolve_seconds(start, end):
     return [max(0.0, r[0]) for r in rows]
 
 
+def ack_seconds_by_type(start, end):
+    """{"MEDICAL": [seconds, ...], ...}: received to acknowledged, per type, STATUS left out."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT alert_type, acknowledged_at - timestamp FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? AND alert_type != 'STATUS'
+                 AND acknowledged = 1 AND acknowledged_at IS NOT NULL""",
+            (start, end),
+        ).fetchall()
+    out = {}
+    for alert_type, seconds in rows:
+        out.setdefault(alert_type, []).append(max(0.0, seconds))
+    return out
+
+
+def alert_locations(start, end):
+    """(latitude, longitude, floor) of every alert other than STATUS received in the range."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT latitude, longitude, floor FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? AND alert_type != 'STATUS'""",
+            (start, end),
+        ).fetchall()
+    return [(r[0], r[1], r[2]) for r in rows]
+
+
+def count_by_link(start, end):
+    """{"lora": 12, "wifi": 5, "unknown": 2} for every alert received in the range, STATUS included."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT link, COUNT(*) FROM alerts
+               WHERE timestamp >= ? AND timestamp < ? GROUP BY link""",
+            (start, end),
+        ).fetchall()
+    out = {"lora": 0, "wifi": 0, "unknown": 0}
+    for link, n in rows:
+        key = link if link in ("lora", "wifi") else "unknown"
+        out[key] += n
+    return out
+
+
 def count_open():
     """(open alerts, open MEDICAL alerts) right now. STATUS is never counted, like the Live page."""
     with connect() as c:
@@ -353,3 +395,14 @@ def log_rejected(received_at, device_id, reason, payload_text):
 def count_rejected():
     with connect() as c:
         return c.execute("SELECT COUNT(*) FROM rejected").fetchone()[0]
+
+
+def rejected_by_reason(start, end):
+    """{"bad_signature": 2, "replay": 1, ...} for messages rejected in the range."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT reason, COUNT(*) FROM rejected
+               WHERE timestamp >= ? AND timestamp < ? GROUP BY reason""",
+            (start, end),
+        ).fetchall()
+    return {reason: n for reason, n in rows}

@@ -43,7 +43,7 @@
 .alert-table .col-student { width: 32%; }
 .alert-table .col-time { width: 112px; }
 .alert-table .col-status { width: 148px; }
-.alert-table.is-compact .col-type { width: 108px; }
+.alert-table.is-compact .col-type { width: 120px; }
 .alert-table.is-compact .col-student { width: auto; }
 .alert-table.is-compact .col-time { width: 88px; }
 .alert-table.is-compact .col-status { width: 128px; }

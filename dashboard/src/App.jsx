@@ -340,7 +340,7 @@ export default function App() {
           <main className="content">
             {page === "overview" && (
               <Suspense fallback={null}>
-                <OverviewPage timeFormat={settings.timeFormat} />
+                <OverviewPage timeFormat={settings.timeFormat} refMaxAge={(config && config.ref_max_age_s) || 120} />
               </Suspense>
             )}
             {page === "live" && (

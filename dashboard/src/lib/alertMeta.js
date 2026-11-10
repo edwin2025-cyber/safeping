@@ -1,18 +1,18 @@
-import { BellOff, CircleCheck, CircleHelp, Eye, HeartPulse, RadioTower, Wifi } from "lucide-react";
+import { icons } from "./icons.js";
 
 // Short words for tags, long words for copied text. Color is never the only
 // signal: each type also has an icon and a word.
 export const TYPES = {
-  MEDICAL: { label: "Medical", long: "Medical emergency", color: "red", Icon: HeartPulse },
-  SUSPICIOUS: { label: "Suspicious", long: "Suspicious person", color: "yellow", Icon: Eye },
-  SILENT: { label: "Silent", long: "Silent alert", color: "purple", Icon: BellOff },
-  STATUS: { label: "Status", long: "Status check", color: "gray", Icon: CircleCheck },
+  MEDICAL: { label: "Medical", long: "Medical emergency", color: "red", icon: icons.medical },
+  SUSPICIOUS: { label: "Suspicious", long: "Suspicious person", color: "yellow", icon: icons.suspicious },
+  SILENT: { label: "Silent", long: "Silent alert", color: "purple", icon: icons.silent },
+  STATUS: { label: "Status", long: "Status check", color: "gray", icon: icons.status },
 };
 
 export const TYPE_ORDER = ["MEDICAL", "SUSPICIOUS", "SILENT", "STATUS"];
 
 export function typeMeta(type) {
-  return TYPES[type] || { label: type, long: type, color: "gray", Icon: CircleHelp };
+  return TYPES[type] || { label: type, long: type, color: "gray", icon: icons.unknownType };
 }
 
 export const STATES = {
@@ -28,8 +28,8 @@ export function alertState(alert) {
 
 // Only known links are shown. Older alerts and test tools have no link.
 export const LINKS = {
-  lora: { label: "LoRa", color: "gray", Icon: RadioTower },
-  wifi: { label: "WiFi", color: "teal", Icon: Wifi },
+  lora: { label: "LoRa", color: "gray", icon: icons.lora },
+  wifi: { label: "WiFi", color: "teal", icon: icons.wifi },
 };
 
 export function linkMeta(link) {

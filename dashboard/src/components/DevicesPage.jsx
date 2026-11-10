@@ -1,5 +1,6 @@
-import { Cpu } from "lucide-react";
 import { ago, formatDateTime } from "../lib/format.js";
+import { icons } from "../lib/icons.js";
+import Icon from "./Icon.jsx";
 import { LinkTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
@@ -30,7 +31,7 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
   } else if (!devices.length) {
     body = (
       <div className="empty">
-        <Cpu size={24} strokeWidth={1.75} aria-hidden="true" />
+        <Icon icon={icons.devices} size={24} />
         <p className="empty-title">No devices yet</p>
         <p className="empty-text">Register a Fob with add_device.py in the server folder.</p>
       </div>

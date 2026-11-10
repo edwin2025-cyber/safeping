@@ -32,8 +32,21 @@ export const MOCK_DEVICES = [
 export const MOCK_STATUS = {
   reference_pressure: 101300,
   reference_age_s: 20,
-  rejected_total: 0,
+  rejected_total: 4,
 };
+
+// Messages the server turned away, for System health on Overview. Minutes before the page loaded.
+export const MOCK_REJECTIONS = [
+  { minAgo: 95, reason: "replay" },
+  { minAgo: 60 * 26, reason: "bad_signature" },
+  { minAgo: 60 * 24 * 3 + 40, reason: "unknown_device" },
+  { minAgo: 60 * 24 * 12, reason: "bad_json" },
+];
+
+// Resends the server noticed and ignored. The real server does not track these yet
+// (it returns null and Overview says "Not tracked"); mock mode shows a number so the
+// tile can be checked with data.
+export const MOCK_DUPLICATES = [{ minAgo: 50 }, { minAgo: 60 * 30 }];
 
 // The two at 34.7317, -86.5843 sit on the same spot, so the map shows a cluster.
 // state: "open", "acknowledged" or "resolved".

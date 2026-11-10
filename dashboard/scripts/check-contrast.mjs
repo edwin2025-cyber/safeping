@@ -43,11 +43,15 @@ function ratio(a, b) {
 // - The SUSPICIOUS dashed circle uses yellow-text in light, not yellow-border (1.91:1 on tiles).
 // - The app mark uses a fixed brand blue, so the white shield reads in dark mode too.
 // - Cluster rings use text-subtlest, not border-bold (2.82:1 on light OpenStreetMap tiles).
-// - SUSPICIOUS chart lines use chart-yellow (179,134,0 in light), not yellow-bold (1.5:1 on white).
+// - The Midnight dark values (version 4) passed as given; none had to change.
 const PAIRS = [];
-for (const bg of ["page", "sidebar", "surface", "surface-raised", "surface-hover", "panel"]) {
+for (const bg of ["page", "sidebar", "surface", "surface-raised", "surface-overlay", "surface-hover", "panel"]) {
   for (const fg of ["text", "text-subtle", "text-subtlest"]) PAIRS.push([fg, bg, "text", "neutral text"]);
 }
+// Raised and overlay surfaces are told apart from the page by their 1 px border.
+// Borders are decoration, so they are listed as info, not pass or fail.
+PAIRS.push(["border-raised", "page", "info", "border of tiles, chart panels, map controls"]);
+PAIRS.push(["border-overlay", "page", "info", "border of Peek, Settings, menus"]);
 PAIRS.push(["text", "surface-selected", "text", "selected nav item, view tab, segment"]);
 PAIRS.push(["text", "surface-hover-strong", "text", "pressed icon button"]);
 PAIRS.push(["text", "surface-pressed", "text", "pressed button"]);
@@ -61,22 +65,21 @@ PAIRS.push(["sb-placeholder", "sb-hover", "text", "sidebar search placeholder, h
 PAIRS.push(["sb-text", "sb-selected", "text", "Ctrl+K hint"]);
 PAIRS.push(["sb-count-text", "sb-count", "text", "Live count pill"]);
 PAIRS.push(["sb-text-strong", "sb-selected", "text", "avatar initials"]);
+PAIRS.push(["sb-label", "sb-hover", "text", "section label next to a hovered row"]);
 for (const dot of ["green-bold", "orange-bold"]) PAIRS.push([dot, "sb-bg", "ui", "server status dot"]);
 PAIRS.push(["focus-ring", "sb-bg", "ui", "focus ring in the sidebar"]);
-// Overview panels
-PAIRS.push(["red-text", "panel", "text", "change line up, Open now with a MEDICAL"]);
-PAIRS.push(["green-text", "panel", "text", "change line down"]);
-PAIRS.push(["orange-text", "panel", "text", "Low battery count"]);
-PAIRS.push(["blue-bold", "panel", "ui", "Alerts line, accent underline"]);
-PAIRS.push(["gray-bold", "panel", "ui", "previous period line, STATUS line"]);
-PAIRS.push(["red-bold", "panel", "ui", "MEDICAL line"]);
-PAIRS.push(["chart-yellow", "panel", "ui", "SUSPICIOUS line"]);
-PAIRS.push(["purple-bold", "panel", "ui", "SILENT line"]);
-PAIRS.push(["heat-4", "panel", "ui", "busiest heat cell"]);
-PAIRS.push(["text-subtle", "surface-hover", "text", "stat label on hover"]);
-for (const c of ["red", "yellow", "purple", "gray"]) PAIRS.push([`${c}-text`, `${c}-subtler`, "text", "legend tag"]);
-for (const n of [1, 2, 3]) PAIRS.push([`flow-${n}`, "panel", "info", "Response flow block (count written above it)"]);
-for (const n of [1, 2, 3]) PAIRS.push([`heat-${n}`, "panel", "info", "heat cell, lower steps"]);
+PAIRS.push(["brand", "sb-bg", "ui", "app mark on the sidebar"]);
+// Overview: stat tiles and panels
+PAIRS.push(["red-text", "panel", "text", "Alerts tile up, Open now Medical, rejected attack count"]);
+PAIRS.push(["green-text", "panel", "text", "Alerts tile down, All seen today"]);
+PAIRS.push(["orange-text", "panel", "text", "Low battery count, not seen, no reference reading"]);
+for (const fg of ["text", "text-subtle", "text-subtlest", "red-text", "green-text", "orange-text"]) {
+  PAIRS.push([fg, "surface-hover", "text", "tile text on hover"]);
+}
+PAIRS.push(["blue-bold", "panel", "ui", "Alerts line, sparkline, Hotspots bars"]);
+PAIRS.push(["gray-bold", "panel", "ui", "previous period line"]);
+for (const n of [1, 2, 3]) PAIRS.push([`flow-${n}`, "panel", "info", "Response flow bar (count written next to it)"]);
+for (const c of ["gray", "teal"]) PAIRS.push([`${c}-text`, `${c}-subtler`, "text", "delivery tag in System health"]);
 // Open MEDICAL row (and its hover)
 for (const bg of ["red-subtlest", "red-subtler"]) {
   for (const fg of ["text", "text-subtle"]) PAIRS.push([fg, bg, "text", "open MEDICAL row"]);
@@ -88,36 +91,38 @@ PAIRS.push(["blue-on-bold", "blue-bold", "text", "primary button"]);
 PAIRS.push(["blue-on-bold", "blue-bold-hovered", "text", "primary button hover"]);
 PAIRS.push(["blue-on-bold", "blue-bold-pressed", "text", "primary button pressed"]);
 // Links
-PAIRS.push(["blue-text", "surface-raised", "text", "Open in Google Maps, attribution"]);
+PAIRS.push(["blue-text", "surface-raised", "text", "attribution link on the map"]);
+PAIRS.push(["blue-text", "surface-overlay", "text", "Open in Google Maps in the Peek"]);
 PAIRS.push(["blue-text", "surface-hover", "text", "docs link in the empty places note"]);
 // SUSPICIOUS camera callout
 for (const fg of ["text", "text-subtle", "yellow-text"]) PAIRS.push([fg, "yellow-subtlest", "text", "Review cameras callout"]);
 PAIRS.push(["text", "yellow-subtler", "text", "Copy for security button hover"]);
 // Colored words
-PAIRS.push(["orange-text", "surface-raised", "text", "error message in the peek"]);
+PAIRS.push(["orange-text", "surface-overlay", "text", "error message in the peek"]);
 PAIRS.push(["orange-text", "page", "text", "Low battery word"]);
 PAIRS.push(["red-text", "page", "text", "Very low battery word"]);
-PAIRS.push(["orange-text", "surface-raised", "text", "Low battery word in the device peek"]);
-PAIRS.push(["red-text", "surface-raised", "text", "Very low battery word in the device peek"]);
+PAIRS.push(["orange-text", "surface-overlay", "text", "Low battery word in the device peek"]);
+PAIRS.push(["red-text", "surface-overlay", "text", "Very low battery word in the device peek"]);
+PAIRS.push(["text", "surface-selected", "text", "selected nav item in Settings"]);
 PAIRS.push(["red-on-bold", "red-bold", "text", "Live count when an open MEDICAL exists"]);
 // Tooltips
 PAIRS.push(["tooltip-text", "tooltip-bg", "text", "tooltip"]);
 PAIRS.push(["tooltip-subtle", "tooltip-bg", "text", "tooltip shortcut hint"]);
 // Icons and shapes that carry meaning
 PAIRS.push(["brand-on", "brand", "ui", "app mark shield"]);
-PAIRS.push(["green-text", "surface-raised", "ui", "Copied check icon"]);
+PAIRS.push(["green-text", "surface-overlay", "ui", "Copied check icon"]);
 for (const c of ["red", "yellow", "purple", "gray"]) PAIRS.push([`${c}-on-bold`, `${c}-bold`, "ui", "map marker icon"]);
-for (const bg of ["page", "sidebar", "surface", "surface-raised"]) PAIRS.push(["focus-ring", bg, "ui", "focus ring"]);
-for (const bg of ["page", "surface-raised"]) {
+for (const bg of ["page", "sidebar", "surface", "surface-raised", "surface-overlay"]) PAIRS.push(["focus-ring", bg, "ui", "focus ring"]);
+for (const bg of ["page", "surface-overlay"]) {
   PAIRS.push(["text-subtlest", bg, "ui", "switch track (off)"]);
   PAIRS.push(["blue-bold", bg, "ui", "switch track (on)"]);
 }
 // Status dots next to their word
-for (const bg of ["page", "surface-hover", "surface-raised", "red-subtlest", "red-subtler", "sb-bg"]) {
+for (const bg of ["page", "surface-hover", "surface-overlay", "red-subtlest", "red-subtler", "sb-bg"]) {
   for (const dot of ["orange-bold", "green-bold", "gray-bold"]) PAIRS.push([dot, bg, "ui", "status dot"]);
 }
 // Battery bars
-for (const bg of ["page", "surface-raised"]) {
+for (const bg of ["page", "surface-overlay"]) {
   for (const fill of ["gray-bold", "orange-bold", "red-bold"]) PAIRS.push([fill, bg, "ui", "battery bar"]);
 }
 

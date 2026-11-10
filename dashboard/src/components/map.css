@@ -35,11 +35,20 @@
   filter: var(--tile-filter);
 }
 
-/* ---------- markers ---------- */
+/* ---------- markers ----------
+   Leaflet moves .leaflet-marker-icon (the wrap) with a CSS transform. Never put a
+   transition or transform on the wrap: the marker would lag behind its circle.
+   Hover and highlight effects live on the inner span only. */
 .alert-marker-wrap,
 .cluster-wrap {
   background: none;
   border: 0;
+}
+.alert-marker svg {
+  font-size: 14px;
+}
+.alert-marker.is-quiet svg {
+  font-size: 12px;
 }
 .alert-marker {
   display: flex;

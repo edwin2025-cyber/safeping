@@ -1,9 +1,10 @@
 """Numbers for the Overview page (/api/stats) and the CSV export (/api/export.csv).
 
 Days and hours are in the time zone of the machine the server runs on.
-STATUS check-ins are left out of every count except the per-type numbers,
-the same way the Live page leaves them out of its open count. The CSV export
-has every alert, STATUS included, with a Type column."""
+STATUS check-ins are left out of every count except the per-type numbers and
+the delivery counts (System health is about the radio path, and check-ins use it
+too), the same way the Live page leaves them out of its open count. The CSV
+export has every alert, STATUS included, with a Type column."""
 import csv
 import io
 import re
@@ -20,6 +21,7 @@ TYPES = ("MEDICAL", "SUSPICIOUS", "SILENT", "STATUS")
 LOW_BATTERY = 20              # percent; under this counts as low, like the Devices page
 ACTIVE_S = 24 * 3600          # a Fob seen this recently counts as active
 NEAR_M = 40                   # same rule as the dashboard: closer than this reads "Near ..."
+HOTSPOT_TOP = 5               # Hotspots lists this many places, then "and N more places"
 
 
 class BadRange(ValueError):
@@ -65,6 +67,27 @@ def _by_type(counts, key):
     return {t: counts.get((key, t), 0) for t in TYPES}
 
 
+def _hotspots(start, end):
+    """Where alerts happen, STATUS left out. Alerts with GPS count for the nearest named
+    place within 200 m (the same rule as the dashboard). The rest are grouped as
+    "GPS, no named place", "Indoors, floor N" or "No location"."""
+    counts = {}
+    for lat, lon, floor in db.alert_locations(start, end):
+        if lat is not None and lon is not None:
+            found = places.nearest(lat, lon)
+            key = (found[0][:1].upper() + found[0][1:], "place") if found else ("GPS, no named place", "gps")
+        elif floor is not None:
+            key = ("Indoors, floor {}".format(floor), "floor")
+        else:
+            key = ("No location", "none")
+        counts[key] = counts.get(key, 0) + 1
+    ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0][0]))
+    return {
+        "places": [{"label": label, "kind": kind, "count": n} for (label, kind), n in ranked[:HOTSPOT_TOP]],
+        "more_count": max(0, len(ranked) - HOTSPOT_TOP),
+    }
+
+
 def build(first, last, now=None):
     """Everything the Overview page shows, in one answer."""
     now = time.time() if now is None else now
@@ -108,9 +131,15 @@ def build(first, last, now=None):
     resolve_s = db.resolve_seconds(start, end)
     open_now, open_medical = db.count_open()
 
+    ack_by_type = db.ack_seconds_by_type(start, end)
+
     fobs = [d for d in db.list_devices() if d["role"] != "REF"]
-    active = sum(1 for d in fobs if d["last_seen"] is not None and now - d["last_seen"] <= ACTIVE_S)
-    low = sum(1 for d in fobs if d["battery"] is not None and d["battery"] < LOW_BATTERY)
+    seen = [d for d in fobs if d["last_seen"] is not None and now - d["last_seen"] <= ACTIVE_S]
+    stale = [d for d in fobs if d not in seen]
+    low = sorted((d for d in fobs if d["battery"] is not None and d["battery"] < LOW_BATTERY),
+                 key=lambda d: d["battery"])
+    by_reason = db.rejected_by_reason(start, end)
+    ref = db.latest_reference()
 
     local_now = datetime.now().astimezone()
     return {
@@ -138,10 +167,26 @@ def build(first, last, now=None):
         },
         "open_now": open_now,
         "open_medical_now": open_medical,
-        "fobs_active": active,
+        "fobs_active": len(seen),
         "fobs_total": len(fobs),
-        "low_battery": low,
+        "low_battery": len(low),
+        # Added in dashboard v4. The per-day breakdown by type for the tooltip is per_day[].by_type.
+        "median_ack_by_type": {t: _median(s) for t, s in ack_by_type.items() if s},
+        "hotspots": _hotspots(start, end),
+        "delivery": db.count_by_link(start, end),
+        # The server cannot tell a Fob resending the same message from someone replaying it:
+        # both fail the counter check and are counted under rejected as "replay". So
+        # duplicates are not tracked on their own.
+        "duplicates": None,
+        "rejected": {"total": sum(by_reason.values()), "by_reason": by_reason},
+        "stale_fobs": sorted(_device_name(d) for d in stale),
+        "low_battery_fobs": [{"name": _device_name(d), "pct": d["battery"]} for d in low],
+        "reference_age_s": None if ref is None else round(now - ref["timestamp"]),
     }
+
+
+def _device_name(device):
+    return device["student_name"] or device["device_id"]
 
 
 # ---------- CSV export ----------

@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
-import { Bell, Info, MapPin, Map as MapIcon, Palette, Search, Video, Volume2, X } from "lucide-react";
 import { getJson } from "../lib/api.js";
+import { icons } from "../lib/icons.js";
 import { playAlertTone, unlockAudio } from "../lib/sound.js";
 import { Segmented, Select, Switch } from "./Controls.jsx";
+import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
 import Tooltip from "./Tooltip.jsx";
 
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
 const DOCS_URL = "https://github.com/edwin2025-cyber/safeping/blob/main/docs/dashboard.md#campus-places";
 
 export const SECTIONS = [
-  { id: "appearance", group: "Preferences", label: "Appearance", Icon: Palette, description: "How SafePing looks in this browser." },
-  { id: "alerts", group: "Preferences", label: "Alerts", Icon: Bell, description: "What happens when a new alert arrives." },
-  { id: "map", group: "Preferences", label: "Map", Icon: MapIcon, description: "How the map shows alerts." },
-  { id: "camera", group: "Safety", label: "Camera review", Icon: Video, description: "The area and time window for SUSPICIOUS alerts." },
-  { id: "places", group: "Safety", label: "Campus places", Icon: MapPin, description: "Named places that turn GPS points into words staff know." },
-  { id: "about", group: "System", label: "About", Icon: Info, description: "Facts about this SafePing server." },
+  { id: "appearance", group: "Preferences", label: "Appearance", icon: icons.theme, description: "How SafePing looks in this browser." },
+  { id: "alerts", group: "Preferences", label: "Alerts", icon: icons.bell, description: "What happens when a new alert arrives." },
+  { id: "map", group: "Preferences", label: "Map", icon: icons.map, description: "How the map shows alerts." },
+  { id: "camera", group: "Safety", label: "Camera review", icon: icons.camera, description: "The area and time window for SUSPICIOUS alerts." },
+  { id: "places", group: "Safety", label: "Campus places", icon: icons.place, description: "Named places that turn GPS points into words staff know." },
+  { id: "about", group: "System", label: "About", icon: icons.info, description: "Facts about this SafePing server." },
 ];
 
 function Minutes({ value, onChange, labelledBy }) {
@@ -65,7 +65,7 @@ function buildRows({ settings, effective, update, reset, config, devices, soundN
       control: (id) => (
         <span className="set-inline">
           <button type="button" className="btn btn-secondary" onClick={testSound}>
-            <Volume2 {...ICON} />
+            <Icon icon={icons.sound} />
             Test sound
           </button>
           <Switch labelledBy={id} checked={settings.sound} onChange={setSound} />
@@ -271,7 +271,7 @@ export default function SettingsModal({ settings, effective, update, reset, conf
     <Modal onClose={onClose} labelledBy="settings-title" className="settings" returnFocus={returnFocus}>
       <aside className="set-nav" aria-label="Settings sections">
         <span className="input-icon set-search">
-          <Search {...ICON} />
+          <Icon icon={icons.search} size={14} />
           <input
             type="search"
             className="input"
@@ -296,7 +296,7 @@ export default function SettingsModal({ settings, effective, update, reset, conf
                   setSection(s.id);
                 }}
               >
-                <s.Icon {...ICON} />
+                <Icon icon={s.icon} fixed />
                 <span className="nav-text">{s.label}</span>
               </button>
             </div>
@@ -307,7 +307,7 @@ export default function SettingsModal({ settings, effective, update, reset, conf
         <div className="set-close">
           <Tooltip label="Close" shortcut="Esc">
             <button type="button" className="icon-btn" aria-label="Close settings" onClick={onClose}>
-              <X {...ICON} />
+              <Icon icon={icons.close} />
             </button>
           </Tooltip>
         </div>

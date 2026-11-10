@@ -1,32 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import { Building2, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { MapContainer, useMap } from "react-leaflet";
+import L from "../lib/leafletSetup.js";
 import { alertState, hasGps } from "../lib/alertMeta.js";
 import { ago, placeText, studentName } from "../lib/format.js";
+import { icons } from "../lib/icons.js";
 import { useReducedMotion } from "../lib/theme.js";
+import Icon from "./Icon.jsx";
 import Popover from "./Popover.jsx";
 import { StatusDot, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
-import {
-  AlertZones,
-  AttributionPrefix,
-  BaseTiles,
-  ClusterLayer,
-  DEFAULT_CENTER,
-  MAX_ZOOM,
-  MapControls,
-  SizeWatcher,
-} from "./mapParts.jsx";
+import { AlertLayer, AttributionPrefix, BaseTiles, DEFAULT_CENTER, MAP_OPTIONS, MAX_ZOOM, MapControls, SizeWatcher, fitView } from "./mapParts.jsx";
 
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
+const FIT = { maxZoom: 18, padding: [64, 64] };
 
+/** Fits the map to these alerts. No animation for the first fit; Fit all flies for 0.5 s. */
 function fitTo(map, alerts, reducedMotion) {
   const points = alerts.filter(hasGps).map((a) => [a.latitude, a.longitude]);
   if (!map || !points.length) return;
-  map.fitBounds(points, { maxZoom: 18, padding: [64, 64], animate: !reducedMotion });
+  fitView(map, L.latLngBounds(points), FIT, reducedMotion);
 }
 
-/** Fits the open alerts once, on first load. Then flies to new urgent alerts when auto-zoom is on. */
+/** Fits the open alerts once, on first load. Then flies to new urgent alerts when auto-zoom is on.
+    A poll never moves the map. */
 function MapController({ alerts, flyTarget, reducedMotion }) {
   const map = useMap();
   const fitted = useRef(false);
@@ -64,11 +59,11 @@ function IndoorNote({ alerts, onOpen }) {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        <Building2 {...ICON} />
+        <Icon icon={icons.floor} />
         <span>
           {n} {n === 1 ? "alert has" : "alerts have"} no GPS
         </span>
-        <ChevronDown {...ICON} />
+        <Icon icon={icons.chevronDown} size={12} />
       </button>
       <Popover anchor={ref.current} open={open} onClose={() => setOpen(false)} label="Alerts with no GPS" className="popover--alerts">
         <div className="popover-title">No GPS fix</div>
@@ -99,7 +94,7 @@ function ListPanel({ alerts, collapsed, onToggle, nowServer, highlightedId, onOp
     return (
       <Tooltip label="Show list">
         <button type="button" className="map-chip" onClick={onToggle} aria-label={"Show list, " + alerts.length + " alerts"}>
-          <PanelLeftOpen {...ICON} />
+          <Icon icon={icons.expand} />
           <span>Alerts</span>
           <span className="map-chip-count num">{alerts.length}</span>
         </button>
@@ -113,7 +108,7 @@ function ListPanel({ alerts, collapsed, onToggle, nowServer, highlightedId, onOp
         <span className="map-panel-count num">{alerts.length}</span>
         <Tooltip label="Hide list">
           <button type="button" className="icon-btn icon-btn-sm" aria-label="Hide list" onClick={onToggle}>
-            <PanelLeftClose {...ICON} />
+            <Icon icon={icons.collapse} />
           </button>
         </Tooltip>
       </header>
@@ -175,8 +170,6 @@ export default function AlertMap({
   const reducedMotion = useReducedMotion();
   const list = alerts || [];
   const noGps = list.filter((a) => !hasGps(a));
-  // Quiet alerts first, so open ones draw on top.
-  const zones = list.filter(hasGps).sort((a, b) => Number(alertState(b) === "open") - Number(alertState(a) === "open"));
 
   return (
     <div className="map-wrap">
@@ -185,7 +178,7 @@ export default function AlertMap({
         center={DEFAULT_CENTER}
         zoom={16}
         maxZoom={MAX_ZOOM}
-        zoomControl={false}
+        {...MAP_OPTIONS}
         className="map"
         zoomAnimation={!reducedMotion}
         fadeAnimation={!reducedMotion}
@@ -195,10 +188,7 @@ export default function AlertMap({
         <AttributionPrefix />
         <SizeWatcher />
         <MapController alerts={alerts} flyTarget={flyTarget} reducedMotion={reducedMotion} />
-        {zones.map((a) => (
-          <AlertZones key={a.id} alert={a} sightRadius={settings.sightRadius} />
-        ))}
-        <ClusterLayer alerts={list} highlightedId={highlightedId} onOpen={onOpen} onHover={onHover} />
+        <AlertLayer alerts={list} sightRadius={settings.sightRadius} highlightedId={highlightedId} onOpen={onOpen} onHover={onHover} />
       </MapContainer>
 
       <div className="map-overlay-tl">

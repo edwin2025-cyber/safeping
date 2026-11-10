@@ -1,18 +1,17 @@
 import { useRef, useState } from "react";
-import { Check, Columns2, Inbox, ListFilter, Map as MapIcon, Rows3, Search, SearchX, X } from "lucide-react";
 import AlertMap from "./AlertMap.jsx";
 import AlertTable from "./AlertTable.jsx";
 import { Segmented } from "./Controls.jsx";
+import Icon from "./Icon.jsx";
 import Popover from "./Popover.jsx";
 import Tooltip from "./Tooltip.jsx";
 import { TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
-
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
+import { icons } from "../lib/icons.js";
 
 export const VIEWS = [
-  { id: "split", label: "Split", Icon: Columns2 },
-  { id: "list", label: "List", Icon: Rows3 },
-  { id: "map", label: "Map", Icon: MapIcon },
+  { id: "split", label: "Split", icon: icons.split },
+  { id: "list", label: "List", icon: icons.list },
+  { id: "map", label: "Map", icon: icons.map },
 ];
 
 const STATE_OPTIONS = [
@@ -32,7 +31,7 @@ function ViewTabs({ view, setView }) {
   }
   return (
     <div className="view-tabs" role="tablist" aria-label="Live view" onKeyDown={onKeyDown}>
-      {VIEWS.map(({ id, label, Icon }) => (
+      {VIEWS.map(({ id, label, icon }) => (
         <button
           key={id}
           type="button"
@@ -45,7 +44,7 @@ function ViewTabs({ view, setView }) {
           className="view-tab"
           onClick={() => setView(id)}
         >
-          <Icon {...ICON} />
+          <Icon icon={icon} />
           {label}
         </button>
       ))}
@@ -58,7 +57,7 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
   const ref = useRef(null);
   const active = typeFilter !== "ALL";
   const label = active ? "Filter: " + typeMeta(typeFilter).label : "Filter by type";
-  const options = [{ value: "ALL", label: "All types" }, ...TYPE_ORDER.map((t) => ({ value: t, label: typeMeta(t).label, Icon: typeMeta(t).Icon }))];
+  const options = [{ value: "ALL", label: "All types" }, ...TYPE_ORDER.map((t) => ({ value: t, label: typeMeta(t).label, icon: typeMeta(t).icon }))];
   return (
     <>
       <Tooltip label={label}>
@@ -71,7 +70,7 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
-          <ListFilter {...ICON} />
+          <Icon icon={icons.filter} />
         </button>
       </Tooltip>
       <Popover anchor={ref.current} open={open} onClose={() => setOpen(false)} label="Filter by type" placement="bottom-end">
@@ -88,9 +87,9 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
               setOpen(false);
             }}
           >
-            {o.Icon ? <o.Icon {...ICON} /> : <span className="menu-icon-space" aria-hidden="true" />}
+            {o.icon ? <Icon icon={o.icon} fixed /> : <span className="menu-icon-space" aria-hidden="true" />}
             {o.label}
-            {typeFilter === o.value && <Check {...ICON} className="menu-check" />}
+            {typeFilter === o.value && <Icon icon={icons.acknowledged} className="menu-check" />}
           </button>
         ))}
       </Popover>
@@ -103,14 +102,14 @@ function SearchBox({ query, setQuery, searchOpen, setSearchOpen, inputRef }) {
     return (
       <Tooltip label="Search" shortcut="Ctrl+K">
         <button type="button" className="icon-btn" aria-label="Search alerts" aria-keyshortcuts="Control+K" onClick={() => setSearchOpen(true)}>
-          <Search {...ICON} />
+          <Icon icon={icons.search} />
         </button>
       </Tooltip>
     );
   }
   return (
     <span className="input-icon search-box">
-      <Search {...ICON} />
+      <Icon icon={icons.search} size={14} />
       <input
         ref={inputRef}
         type="search"
@@ -142,7 +141,7 @@ function SearchBox({ query, setQuery, searchOpen, setSearchOpen, inputRef }) {
               inputRef.current && inputRef.current.focus();
             }}
           >
-            <X {...ICON} />
+            <Icon icon={icons.close} />
           </button>
         </Tooltip>
       )}
@@ -154,7 +153,7 @@ function EmptyState({ stateFilter, filtered, onClear }) {
   if (filtered) {
     return (
       <div className="empty">
-        <SearchX size={24} strokeWidth={1.75} aria-hidden="true" />
+        <Icon icon={icons.search} size={24} />
         <p className="empty-title">No matching alerts</p>
         <p className="empty-text">Try another type or search.</p>
         <button type="button" className="btn btn-secondary" onClick={onClear}>
@@ -170,7 +169,7 @@ function EmptyState({ stateFilter, filtered, onClear }) {
   }[stateFilter];
   return (
     <div className="empty">
-      <Inbox size={24} strokeWidth={1.75} aria-hidden="true" />
+      <Icon icon={icons.inbox} size={24} />
       <p className="empty-title">{text[0]}</p>
       <p className="empty-text">{text[1]}</p>
     </div>

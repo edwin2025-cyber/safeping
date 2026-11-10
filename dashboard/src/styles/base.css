@@ -404,6 +404,7 @@ kbd,
   font-size: var(--text-12);
   font-weight: 500;
   line-height: 1.4;
+  box-shadow: var(--shadow-menu);
   pointer-events: none;
   opacity: 0;
   transition: opacity 80ms ease;
@@ -425,10 +426,10 @@ kbd,
   max-height: 60vh;
   overflow-y: auto;
   padding: 4px;
-  border: 1px solid var(--color-border-raised);
+  border: 1px solid var(--color-border-overlay);
   border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-  box-shadow: var(--shadow-raised);
+  background: var(--color-surface-overlay);
+  box-shadow: var(--shadow-menu);
 }
 .popover-title {
   padding: 8px 8px 4px;
@@ -494,9 +495,9 @@ kbd,
   position: relative;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--color-border-raised);
+  border: 1px solid var(--color-border-overlay);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
+  background: var(--color-surface-overlay);
   box-shadow: var(--shadow-overlay);
   overflow: hidden;
   animation: modal-in 150ms ease-out;

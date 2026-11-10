@@ -195,7 +195,7 @@
   font-weight: 400;
 }
 .history-table thead th {
-  background: var(--color-surface-raised);
+  background: var(--color-surface-overlay);
 }
 .history-table .col-type { width: 128px; }
 .history-table .col-pressed { width: 36%; }

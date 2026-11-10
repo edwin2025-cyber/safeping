@@ -1,8 +1,10 @@
-# SafePing Dashboard (version 3)
+# SafePing Dashboard (version 4)
 
 The staff dashboard is a React app in `dashboard/`. Flask in `server/` serves it and its API.
 
-Screenshots of every screen, in light and dark, are in [docs/screenshots/](screenshots/). They use a demo database with made-up students.
+Screenshots of every screen, in light and dark, are in [docs/screenshots/](screenshots/). They use a demo database with made-up students. The Overview ones come in two sizes: `overview-7d-light.png` is 1440 x 900, and `overview-7d-laptop-light.png` is 1280 x 650 (a laptop at 100% zoom).
+
+Icons by Font Awesome Free (fontawesome.com), CC BY 4.0.
 
 ## What it does
 
@@ -10,29 +12,56 @@ The sidebar has three pages under Monitor (Overview, Live and Devices), plus Set
 
 ### Overview
 
-Big numbers and charts for a date range. Pick the range in the dropdown at the top right: Today, Last 7 days (the default), Last 30 days, This month, or Custom (two date inputs). The range shows under the title. Export CSV downloads every alert in the range (PDF reports come later).
+Big numbers and charts for a date range, all on one screen with no scrolling at 1280 x 650 and larger. Only a window under about 600 px tall (or under 1100 px wide) scrolls. Pick the range in the dropdown at the top right: Today, Last 7 days (the default), Last 30 days, This month, or Custom (two date inputs). The range shows next to the title. Export CSV downloads every alert in the range (PDF reports come later).
 
-| Section | What it shows |
+The page has three rows:
+
+| Row | What it shows |
 |---|---|
-| Alerts | The total for the range, the change against the previous period of the same length, and a line chart per day: this period solid blue, the previous period dashed gray. Today shows hours instead of days |
-| Summary | Median time to acknowledge, Open now, Fobs active, Low battery. Click Open now to go to Live, or Fobs active or Low battery to go to Devices |
-| Response flow | Received, Acknowledged and Resolved, with the share of Received and the median time between steps |
-| Alerts by type | A line per type per day. STATUS is off until you turn on "Include STATUS" |
-| When alerts happen | Weekday (rows) by hour (columns). Darker blue means more alerts. Hover a cell for the count |
+| 1 | Five stat tiles: Alerts, Time to acknowledge, Open now, Fobs active, Low battery |
+| 2 | Alerts over time (two thirds) and Response flow (one third) |
+| 3 | Hotspots and System health, side by side |
+
+**Stat tiles.** Each has an icon and a label, a big number and a context line. The context line has a color only when it means something. Open now goes to Live, and Fobs active and Low battery go to Devices.
+
+| Tile | Number | Context line |
+|---|---|---|
+| Alerts | Alerts in the range, with a small line of this period per day (per hour for Today) | "Up 12% vs previous 7 days" in red, "Down ..." in green, gray when the same or when the previous period had none |
+| Time to acknowledge | The median, like "1.0 min median", or "No data" | The type with the lowest median: "Medical fastest, 0.6 min" |
+| Open now | Open alerts right now | "2 Medical" in red when any open alert is MEDICAL, else "None urgent" |
+| Fobs active | "3 of 4" | "All seen today" in green, or "1 not seen in 24 h" in orange |
+| Low battery | Fobs under 20%, orange when more than 0 | The student and percent when there is one, "2 students" when more, "All above 20%" when none |
+
+**Alerts over time.** This period is a solid blue line with a soft area, the previous period of the same length a dashed gray line. Hover a day for its total, the count per type (Medical, Suspicious, Silent, with their icons) and the previous period. Today shows hours instead of days.
+
+**Response flow.** Received, Acknowledged and Resolved, each with its count, its share of Received, and a bar as long as that share. Under Acknowledged and Resolved is the median time for that step. STATUS check-ins are not counted.
+
+**Hotspots.** Where alerts happen: the 5 places with the most alerts in the range, with a bar scaled to the top place. "and N more places" counts the rest. Rows are not links, because Live only shows current alerts and the range is usually in the past.
+
+**System health.** Whether the system itself is working:
+
+| Row | How it is worked out |
+|---|---|
+| Delivery | Alerts received in the range by link: LoRa, WiFi, and Unknown (older alerts and test tools). STATUS check-ins are included here, because this row is about the radio path and check-ins use it too |
+| Duplicates caught | "Not tracked". The server cannot tell a Fob sending the same message again from someone replaying a captured message: both fail the counter check and are counted under Rejected messages as "replay". The Relay already drops LoRa resends before they reach the server |
+| Rejected messages | Messages the server turned away in the range, from the `rejected` table, with the count per reason under it ("3 bad signature, 1 replay"). Red with a warning icon when any are bad signature or replay |
+| Fobs not seen in 24 h | Fobs with no message of any type, STATUS included, in the last 24 hours, with their names. Orange when any |
+| Low battery | Fobs whose newest battery reading is under 20%, with names and percents. Orange when any |
+| Reference sensor | "Last reading 2 min ago". Orange when there is no reading, or the reading is older than `REF_MAX_AGE_S` (then floors cannot be worked out) |
 
 How each number is worked out:
 
 - Days and hours use the time zone of the computer the server runs on. `/api/stats` says which one in `tz`.
-- STATUS check-ins are left out of every number except "Alerts by type" with Include STATUS on, the same way Live leaves them out of its open count. The CSV export has every alert, STATUS included.
+- STATUS check-ins are left out of every number except Delivery and Fobs active, the same way Live leaves them out of its open count. The CSV export has every alert, STATUS included.
 - An alert belongs to the range by the time the server received it. Both ends of the range count: Nov 2 to Nov 8 is 7 days.
-- Change line: (this total minus previous total) divided by the previous total. Up is red and down is green, because more alerts is worse. When the previous period had none, it says "No alerts in the previous period".
+- Change line: (this total minus previous total) divided by the previous total. Up is red and down is green, because more alerts is worse.
 - Received, Acknowledged, Resolved: alerts received in the range, and how many of those have been acknowledged or resolved so far.
-- Median time to acknowledge: the middle value of (acknowledged time minus received time), for alerts in the range that have an acknowledged time. Alerts with no acknowledged time are left out, never guessed. "No data" means none had one.
+- Median time to acknowledge: the middle value of (acknowledged time minus received time), for alerts in the range that have an acknowledged time. Alerts with no acknowledged time are left out, never guessed. "No data" means none had one. The per-type medians work the same way, one type at a time.
 - Median after acknowledged (Resolved step): the middle value of (resolved time minus acknowledged time), for resolved alerts that have both times. Resolving an alert nobody acknowledged sets both times at once, so it counts as 0 minutes here.
-- Open now: alerts that are not acknowledged and not resolved, right now, whatever the range. Red when one of them is MEDICAL.
+- Open now: alerts that are not acknowledged and not resolved, right now, whatever the range.
 - Fobs active: Fobs (not Reference boards) whose newest alert of any type, STATUS included, arrived in the last 24 hours, out of all registered Fobs.
 - Low battery: Fobs whose newest battery reading is under 20%, like the Low word on the Devices page.
-- Heat grid colors: no alerts is gray, then four steps of blue up to the busiest hour. Under 7 days the full week still shows, with the note "Based on the selected range".
+- Hotspots: an alert with GPS counts for the nearest campus place within 200 m (the same rule as "Near ..." on Live). GPS alerts with no place that close are grouped as "GPS, no named place". Alerts with no GPS are grouped by floor ("Indoors, floor 2") or as "No location". When no alert in the range has a location, the panel says "No alerts with a location in this range."
 
 Every chart has a text summary for screen readers and a hidden table of its numbers. Charts do not animate when the computer asks for reduced motion. The charts use recharts (MIT license). The Overview code loads only when the page is opened, so Live stays fast.
 
@@ -116,6 +145,7 @@ This runs `vite --mode mock`. The dashboard then answers every `/api` call from 
 
 - The fake data is in `dashboard/src/mock/data.js`: 8 current alerts (all 4 types, all 3 states), 4 devices, 4 places. All names are made up.
 - `dashboard/src/mock/api.js` adds about 60 days of history so Overview looks real: 0 to 6 alerts a day, more on weekdays between 7 AM and 4 PM, mostly STATUS. It is seeded by the date, so a given day always has the same alerts. History alerts are resolved and have acknowledge and resolve times.
+- `data.js` also has 4 fake rejected messages and 2 fake duplicates for System health. Mock mode shows a number for Duplicates caught so the row can be checked with data. The real server says "Not tracked" (see Overview above).
 - The fake routes are in `dashboard/src/mock/api.js`, including `/api/stats`. Export CSV builds the file in the browser from the mock rows. Acknowledge and Resolve work, but only in memory. A page reload starts over.
 - A new random alert arrives every 45 seconds, so the sound and auto-zoom can be tested.
 - Without a CARTO key the map uses OpenStreetMap tiles (see below to add one).
@@ -204,8 +234,24 @@ The attribution (OpenStreetMap contributors, and CARTO when used) is always show
 
 - Each alert with GPS gets a 28 px marker in its type color with the type icon. Acknowledged and resolved markers are smaller and faded.
 - Markers close together merge into a cluster with a count (leaflet.markercluster, MIT license). The ring turns red when an open MEDICAL alert is inside. Click a cluster to zoom in; at the closest zoom it spreads the markers out.
+- A clustered alert hides its circle. The circle comes back when the cluster splits (after the split animation) or is spread out by a click, so a circle never floats without its marker in the middle.
 - The control group in the bottom right: zoom in, zoom out, fit all alerts (in the alert panel: center on the alert), and map labels.
+- Zoom moves in half steps, and the mouse wheel is a little gentler (`zoomSnap` 0.5, `wheelPxPerZoomLevel` 90). Fit all flies there in 0.5 s, or jumps when the computer asks for reduced motion.
+- A poll (every 3 s) never moves the map. The map fits the open alerts once when Live opens, and flies to a new MEDICAL or SUSPICIOUS alert only when Auto-zoom is on.
 - "2 alerts have no GPS" in the top left lists the alerts the map cannot show. Click one to open it.
+
+### Markers and circles move together (fixed in version 4)
+
+Before version 4, markers seemed to stay put while their circles moved, then jumped. The cause was the clustering, not Leaflet's own zoom:
+
+- Circles were drawn on their own, outside the cluster group. A clustered alert still showed its circle, with no marker in the middle (62 of 66 circles in the busiest mock view).
+- When zooming changed the clusters, markercluster slid markers into or out of the cluster point for 0.3 s while their circles stayed still. Measured offsets reached 40 to 165 px, then snapped to 0.
+
+Checked and ruled out: no transition or transform on the marker element Leaflet moves (hover effects are on the inner span), no layers recreated on a poll, and markers and circles both follow Leaflet's zoom animation (under 1 px apart for markers that stay on their own).
+
+The fix, in `AlertLayer` (`dashboard/src/components/mapParts.jsx`): one marker and its circles per alert id, kept together and updated in place. Circles live in the overlay pane with the default SVG renderer, markers in the cluster group with `animate: true`. A circle shows only while its marker stands on its own. The Peek map uses the same code for its one alert.
+
+A headless Edge script panned, zoomed (buttons and wheel), used Fit all and waited through polls, and measured every animation frame. After the fix every marker sat within 1 px of its circle's center (2 px on the Peek map) and no frame had a circle without its marker, with and without reduced motion.
 
 ### Circles
 
@@ -289,6 +335,16 @@ Both new routes are behind `require_login`, like the others. `from` and `to` are
 | `open_now`, `open_medical_now` | Open alerts right now, whatever the range |
 | `fobs_active`, `fobs_total` | Fobs seen in the last 24 hours, and all registered Fobs |
 | `low_battery` | Fobs whose newest battery reading is under 20% |
+| `median_ack_by_type` | Median seconds to acknowledge per type, only types that have times. STATUS never appears |
+| `hotspots` | `places`: up to 5 rows of `label`, `kind` (`place`, `gps`, `floor` or `none`) and `count`, most first. `more_count`: how many more places there are |
+| `delivery` | `lora`, `wifi`, `unknown`: alerts received in the range by link, STATUS included |
+| `duplicates` | `null`: not tracked (see System health) |
+| `rejected` | `total` and `by_reason` (like `{"bad_signature": 2, "replay": 1}`) for messages rejected in the range |
+| `stale_fobs` | Names of Fobs not seen in 24 hours |
+| `low_battery_fobs` | `name` and `pct` for each Fob under 20%, lowest first |
+| `reference_age_s` | Seconds since the newest Reference reading, or `null` |
+
+The per-day count by type for the tooltip was already there, in `per_day[].by_type` (and `per_hour[].by_type` for one day). `weekday_hour` is no longer used by the dashboard but is still returned.
 
 `/api/export.csv` has one row per alert, oldest first, all types: Received, Type, Student, Fob ID, Status, Place, Floor, Latitude, Longitude, Accuracy (m), Battery (%), Link, Acknowledged, Resolved. Times are `YYYY-MM-DD HH:MM:SS` in the server's time zone. Place is the named place ("Near the bus loop"), empty when there is none. The file is named like `safeping-alerts-2026-11-02-to-2026-11-08.csv`. It starts with a byte order mark so Excel reads names correctly, and a cell that starts with `=`, `+`, `-` or `@` gets a leading `'` so a spreadsheet never runs it as a formula.
 
@@ -296,7 +352,9 @@ The Relay item in the top bar uses `last_lora_age_s`. The Relay sends no heartbe
 
 ## Database columns
 
-`server/db.py` adds these to the `alerts` table when they are missing (`ALTER TABLE ... ADD COLUMN`). Existing rows keep their data. Versions 2 and 3 added no columns. The acknowledge time Overview needs was already stored in `acknowledged_at`: Acknowledge sets it, and Resolve sets it too when it is empty.
+`server/db.py` adds these to the `alerts` table when they are missing (`ALTER TABLE ... ADD COLUMN`). Existing rows keep their data. Versions 2, 3 and 4 added no columns. The acknowledge time Overview needs was already stored in `acknowledged_at`: Acknowledge sets it, and Resolve sets it too when it is empty.
+
+Rejected messages were already stored: `processor.process()` writes a row to the `rejected` table (`timestamp`, `device_id` when known, `reason`, and the first 300 characters of the message) every time it turns a message away. Version 4 only reads it, and adds an index on its `timestamp` (`CREATE INDEX IF NOT EXISTS`, safe on an old database). No accept or reject decision changed.
 
 | Column | Meaning |
 |---|---|
@@ -313,12 +371,32 @@ When the Relay starts republishing over MQTT (planned), its alerts will show as 
 
 ## Look and colors
 
-Design tokens are in `dashboard/src/styles/tokens.css`, with a light and a dark block. The app uses only these font sizes: 12, 13, 14, 16, 20, 24, 28, 32 px. Panel and section spacing uses 4, 8, 12, 16, 20, 24 and 32 px (tags use 6 px side padding, heat grid cells 2 px gaps). Numbers use tabular figures everywhere, and big numbers are semibold (600).
+Design tokens are in `dashboard/src/styles/tokens.css`, with a light and a dark block. The app uses only these font sizes: 12, 13, 14, 16, 20, 24, 28, 32 px. Panel and section spacing uses 4, 8, 12, 16, 20, 24 and 32 px (tags use 6 px side padding). Numbers use tabular figures everywhere, and big numbers are semibold (600).
 
-- Dark theme: solid charcoal (page 31,31,33). Raised surfaces (Peek, Settings, menus, popovers, chart panels) are lighter (43,44,47) and always have a 1 px border (61,63,67). The backdrop is black at 55% with a blur.
-- Sidebar: charcoal in both themes, with its own `--color-sb-*` tokens. The light theme keeps a white content area.
-- Chart panels use `--color-panel` (white in light, 43,44,47 in dark) with a 1 px border and 8 px corners. Lists never get boxes.
-- Chart colors: MEDICAL red bold, SUSPICIOUS `--color-chart-yellow` (179,134,0 in light), SILENT purple bold, STATUS gray bold, this period blue bold, previous period gray bold dashed. Response flow and the heat grid use `--color-flow-*` and `--color-heat-*`, one blue family.
+Dark theme, "Midnight": deep and crisp. Thin, visible borders separate the layers, not big jumps in shade. Every raised and overlay surface has its 1 px border, and overlays also get a shadow, so nothing looks see-through.
+
+| Token | Dark (rgb) | Used for |
+|---|---|---|
+| `page`, `surface` | 15,16,18 | Page, tables, inputs |
+| `sidebar` | 11,12,14 | Sidebar |
+| `surface-raised` | 22,23,26 | Chart panels, stat tiles, map controls |
+| `surface-overlay` | 22,23,26 | Peek, Settings, menus, popovers, tooltips |
+| `border-raised` | 38,40,45 | 1 px border on every raised surface |
+| `border-overlay` | 44,46,52 | 1 px border on every overlay |
+| `surface-hover` | 26,27,31 | Hover |
+| `surface-selected` | 36,38,43 | Selected nav item, tab, segment |
+| `border` | 30,32,36 | Dividers in tables and lists, chart gridlines |
+| `border-bold` | 52,55,61 | Chart cursor |
+| `text`, `text-subtle`, `text-subtlest` | 237,237,239 / 180,183,190 / 138,143,152 | Text |
+| `backdrop` | black at 60%, with a blur | Behind Peek and Settings |
+| `shadow-overlay` | 0 16px 48px black at 60%, plus a 1 px white ring at 4% | Overlays |
+
+Tag backgrounds in dark (the `subtler` tokens) are deep tints, so tags glow a little: red 58,29,26, yellow 58,50,20, purple 46,30,64, green 22,52,40, orange 58,38,16, blue 22,36,64, teal 18,44,52, gray 36,38,43. The open MEDICAL row tint is 40,22,20. The Dark Matter map tiles are unchanged.
+
+- Sidebar: Midnight in both themes (background 15,16,18 in light and 11,12,14 in dark), with its own `--color-sb-*` tokens, so the brand looks the same in both. The light theme keeps a white content area.
+- Chart panels and stat tiles use `--color-panel` (white in light, 22,23,26 in dark) with a 1 px border and 8 px corners. Lists never get boxes.
+- Chart colors: this period blue bold, previous period gray bold dashed, Hotspots bars and the sparkline blue bold. Response flow uses `--color-flow-1` to `-3`, one blue family: darker for later steps in light, brighter for later steps in dark.
+- Icons: Font Awesome 6 Free, solid style. All of them are named in one map, `dashboard/src/lib/icons.js`, so changing an icon is a one-line edit. Icons take the color of the text around them: 14 px in tags, table cells and System health rows, 16 px in nav, buttons and tile labels, with fixed width in the nav and property lists so labels line up.
 
 Check contrast after any color change:
 
@@ -335,7 +413,7 @@ It checks every text and background pair the dashboard uses, in both themes (tex
 - Cluster rings use text subtlest, not border bold (2.82:1 on light OpenStreetMap tiles).
 - The app mark uses the same blue in both themes, so the white shield always reads.
 - The account note under "Safety office" brightens to the sidebar text color on hover (the muted label color is 4.02:1 on the hover gray in light).
-- SUSPICIOUS chart lines use 179,134,0 in light (3.32:1 on white), not the yellow bold of the tags and markers.
-- Lines and the busiest heat cell pass 3:1 against their panel. The script lists the lower heat steps and the Response flow blocks as "info", not pass or fail: a light-to-dark scale has to start near the background, and every flow block has its count written above it. Hover a heat cell, or use the hidden table, for the exact count.
+- Chart lines, the sparkline and Hotspots bars pass 3:1 against their panel. The script lists the Response flow bars as "info", not pass or fail: a light-to-dark scale has to start near the background, and every bar has its count written next to it.
+- The Midnight values passed as given in version 4. No color had to change for contrast. Panel and overlay borders are listed as "info": they separate layers and carry no meaning on their own.
 
 Inputs and dropdowns use the quiet 1 px border, as specified. Their placeholder or label identifies them, so they do not need a 3:1 border. Map tile colors in the script are approximate.

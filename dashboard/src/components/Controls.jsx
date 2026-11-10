@@ -1,4 +1,5 @@
-import { ChevronDown } from "lucide-react";
+import { icons } from "../lib/icons.js";
+import Icon from "./Icon.jsx";
 
 /** On and off switch. Name it with labelledBy (the id of its label). */
 export function Switch({ checked, onChange, labelledBy, disabled = false }) {
@@ -61,7 +62,7 @@ export function Select({ value, options, onChange, labelledBy, label, id }) {
           </option>
         ))}
       </select>
-      <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" />
+      <Icon icon={icons.chevronDown} size={12} />
     </span>
   );
 }

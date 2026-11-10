@@ -1,20 +1,19 @@
 import { useState } from "react";
-import { Activity, BatteryMedium, CircleDot, Clock, Cpu, Hash, History, RadioTower, X } from "lucide-react";
 import { TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
 import { ago, formatDateTime, placeText } from "../lib/format.js";
+import { batteryIcon, icons } from "../lib/icons.js";
 import { Select } from "./Controls.jsx";
 import { Battery, deviceName } from "./DevicesPage.jsx";
+import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
 import { LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
-
-function Prop({ Icon, label, children }) {
+function Prop({ icon, label, children }) {
   return (
     <div className="prop">
       <dt>
-        <Icon {...ICON} />
+        <Icon icon={icon} fixed />
         {label}
       </dt>
       <dd className="num">{children}</dd>
@@ -40,7 +39,7 @@ export default function DevicePeek({ device, history, historyFailed, nowServer, 
         <div className="peek-strip-actions">
           <Tooltip label="Close" shortcut="Esc">
             <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
-              <X {...ICON} />
+              <Icon icon={icons.close} />
             </button>
           </Tooltip>
         </div>
@@ -54,11 +53,11 @@ export default function DevicePeek({ device, history, historyFailed, nowServer, 
           </div>
 
           <dl className="props">
-            <Prop Icon={Cpu} label={isRef ? "Board" : "Fob ID"}>
+            <Prop icon={icons.devices} label={isRef ? "Board" : "Fob ID"}>
               {device.device_id}
               {isRef && <span className="muted"> (ground floor pressure)</span>}
             </Prop>
-            <Prop Icon={Clock} label="Last seen">
+            <Prop icon={icons.time} label="Last seen">
               {device.last_seen ? (
                 <>
                   {formatDateTime(device.last_seen, timeFormat)} <span className="muted">({ago(nowServer - device.last_seen)})</span>
@@ -68,20 +67,20 @@ export default function DevicePeek({ device, history, historyFailed, nowServer, 
               )}
             </Prop>
             {!isRef && (
-              <Prop Icon={BatteryMedium} label="Battery">
+              <Prop icon={batteryIcon(device.battery)} label="Battery">
                 <Battery value={device.battery} />
               </Prop>
             )}
             {device.link && device.link !== "unknown" && (
-              <Prop Icon={RadioTower} label="Link">
+              <Prop icon={device.link === "wifi" ? icons.wifi : icons.lora} label="Link">
                 <LinkTag link={device.link} />
               </Prop>
             )}
-            <Prop Icon={Hash} label="Message number">
+            <Prop icon={icons.messageNumber} label="Message number">
               {device.last_counter !== null ? device.last_counter : <span className="muted">None yet</span>}
             </Prop>
             {!isRef && (
-              <Prop Icon={CircleDot} label="Open alerts">
+              <Prop icon={icons.open} label="Open alerts">
                 {device.open_alerts}
               </Prop>
             )}
@@ -91,7 +90,7 @@ export default function DevicePeek({ device, history, historyFailed, nowServer, 
             <section className="history" aria-labelledby="history-title">
               <div className="history-head">
                 <h3 id="history-title">
-                  <History {...ICON} />
+                  <Icon icon={icons.history} />
                   Alert history
                   {history && <span className="history-count num">{history.length}</span>}
                 </h3>
@@ -106,7 +105,7 @@ export default function DevicePeek({ device, history, historyFailed, nowServer, 
                 <p className="loading">{historyFailed ? "Waiting for the server." : "Loading history."}</p>
               ) : rows.length === 0 ? (
                 <div className="empty">
-                  <Activity size={24} strokeWidth={1.75} aria-hidden="true" />
+                  <Icon icon={icons.inbox} size={24} />
                   <p className="empty-title">{typeFilter === "ALL" ? "No alerts from this Fob yet" : "No alerts of this type"}</p>
                 </div>
               ) : (

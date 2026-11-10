@@ -1,26 +1,8 @@
 import { useState } from "react";
 import L from "../lib/leafletSetup.js";
-import {
-  BatteryMedium,
-  Building2,
-  Check,
-  CircleCheckBig,
-  Clock,
-  Crosshair,
-  ExternalLink,
-  Gauge,
-  Hash,
-  Layers,
-  MapPin,
-  Maximize2,
-  MessageSquare,
-  RadioTower,
-  Thermometer,
-  Video,
-  X,
-} from "lucide-react";
 import { MapContainer } from "react-leaflet";
 import { alertState, hasGps, linkMeta, zoneRadius } from "../lib/alertMeta.js";
+import { batteryIcon, icons } from "../lib/icons.js";
 import {
   ago,
   areaLine,
@@ -38,18 +20,17 @@ import {
 } from "../lib/format.js";
 import { useReducedMotion } from "../lib/theme.js";
 import CopyButton from "./CopyButton.jsx";
+import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
 import { LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
-import { AlertZones, AttributionPrefix, BaseTiles, LocateFixed, MAX_ZOOM, MapControls, SizeWatcher, StaticMarker } from "./mapParts.jsx";
+import { AttributionPrefix, BaseTiles, MAP_OPTIONS, MAX_ZOOM, MapControls, SingleAlertLayer, SizeWatcher, fitView } from "./mapParts.jsx";
 
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
-
-function Prop({ Icon, label, children }) {
+function Prop({ icon, label, children }) {
   return (
     <div className="prop">
       <dt>
-        <Icon {...ICON} />
+        <Icon icon={icon} fixed />
         {label}
       </dt>
       <dd className="num">{children}</dd>
@@ -73,24 +54,23 @@ function PeekMap({ alert, settings, update, theme, cartoKey }) {
         bounds={boundsFor(alert, settings.sightRadius)}
         boundsOptions={{ maxZoom: 18 }}
         maxZoom={MAX_ZOOM}
-        zoomSnap={0.5}
-        zoomControl={false}
+        {...MAP_OPTIONS}
         scrollWheelZoom={false}
         className="map"
         zoomAnimation={!reducedMotion}
         fadeAnimation={!reducedMotion}
+        markerZoomAnimation={!reducedMotion}
       >
         <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} />
         <AttributionPrefix />
         <SizeWatcher />
-        <AlertZones alert={alert} sightRadius={settings.sightRadius} />
-        <StaticMarker alert={alert} />
+        <SingleAlertLayer alert={alert} sightRadius={settings.sightRadius} />
       </MapContainer>
       <MapControls
         map={map}
-        onFit={() => map && map.fitBounds(boundsFor(alert, settings.sightRadius), { maxZoom: 18, animate: !reducedMotion })}
+        onFit={() => fitView(map, boundsFor(alert, settings.sightRadius), { maxZoom: 18 }, reducedMotion)}
         fitLabel="Center on the alert"
-        FitIcon={LocateFixed}
+        fitIcon={icons.center}
         labels={settings.mapLabels}
         onToggleLabels={() => update({ mapLabels: !settings.mapLabels })}
         hasKey={!!cartoKey}
@@ -106,7 +86,7 @@ function CameraCallout({ alert, settings }) {
   return (
     <section className="callout callout--yellow" aria-labelledby="camera-title">
       <div className="callout-head">
-        <Video {...ICON} className="callout-icon" />
+        <Icon icon={icons.camera} className="callout-icon" />
         <h3 id="camera-title">Review cameras</h3>
       </div>
       <p className="callout-window num">
@@ -162,12 +142,12 @@ export default function AlertPeek({ alert, settings, update, theme, cartoKey, no
           <CopyButton getText={() => detailsText(alert, settings)} label="Copy details" variant="ghost" />
           <Tooltip label="Open full page" shortcut="Coming soon">
             <button type="button" className="icon-btn" aria-label="Open full page (coming soon)" aria-disabled="true">
-              <Maximize2 {...ICON} />
+              <Icon icon={icons.openFullPage} />
             </button>
           </Tooltip>
           <Tooltip label="Close" shortcut="Esc">
             <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
-              <X {...ICON} />
+              <Icon icon={icons.close} />
             </button>
           </Tooltip>
         </div>
@@ -186,12 +166,12 @@ export default function AlertPeek({ alert, settings, update, theme, cartoKey, no
             <div className="peek-actions">
               {state === "open" && (
                 <button type="button" className="btn btn-primary" disabled={busy !== null} onClick={() => run("ack", onAck)}>
-                  <Check {...ICON} />
+                  <Icon icon={icons.acknowledged} />
                   {busy === "ack" ? "Acknowledging" : "Acknowledge"}
                 </button>
               )}
               <button type="button" className="btn btn-secondary" disabled={busy !== null} onClick={() => run("resolve", onResolve)}>
-                <CircleCheckBig {...ICON} />
+                <Icon icon={icons.resolve} />
                 {busy === "resolve" ? "Resolving" : "Resolve"}
               </button>
               {error && (
@@ -203,16 +183,16 @@ export default function AlertPeek({ alert, settings, update, theme, cartoKey, no
           )}
 
           <dl className="props">
-            <Prop Icon={Clock} label="Pressed">
+            <Prop icon={icons.time} label="Pressed">
               {formatDateTime(alert.timestamp, settings.timeFormat)} <span className="muted">({ago(nowServer - alert.timestamp)})</span>
             </Prop>
-            <Prop Icon={MapPin} label="Place">
+            <Prop icon={icons.place} label="Place">
               {place || <span className="muted">Unknown</span>}
             </Prop>
-            <Prop Icon={Building2} label="Floor">
+            <Prop icon={icons.floor} label="Floor">
               {alert.floor !== null ? alert.floor : <span className="muted">{gps ? "Not needed, GPS fix" : "Not worked out"}</span>}
             </Prop>
-            <Prop Icon={Crosshair} label="GPS">
+            <Prop icon={icons.gps} label="GPS">
               {gps ? (
                 <span className="prop-gps">
                   <span>
@@ -221,32 +201,32 @@ export default function AlertPeek({ alert, settings, update, theme, cartoKey, no
                   </span>
                   <a href={googleMapsUrl(alert)} target="_blank" rel="noopener noreferrer">
                     Open in Google Maps
-                    <ExternalLink size={12} strokeWidth={1.75} aria-hidden="true" />
+                    <Icon icon={icons.externalLink} size={12} />
                   </a>
                 </span>
               ) : (
                 <span className="muted">No fix</span>
               )}
             </Prop>
-            <Prop Icon={BatteryMedium} label="Battery">
+            <Prop icon={batteryIcon(alert.battery)} label="Battery">
               {alert.battery !== null ? alert.battery + "%" : <span className="muted">Not sent</span>}
             </Prop>
-            <Prop Icon={Thermometer} label="Temperature">
+            <Prop icon={icons.temperature} label="Temperature">
               {temperatureText(alert.temperature) || <span className="muted">Not recorded</span>}
             </Prop>
-            <Prop Icon={Gauge} label="Pressure">
+            <Prop icon={icons.pressure} label="Pressure">
               {alert.pressure !== null ? formatNumber(alert.pressure) + " Pa" : <span className="muted">Not sent</span>}
             </Prop>
             {link && (
-              <Prop Icon={RadioTower} label="Link">
+              <Prop icon={link.icon} label="Link">
                 <LinkTag link={alert.link} />
               </Prop>
             )}
-            <Prop Icon={Hash} label="Message number">
+            <Prop icon={icons.messageNumber} label="Message number">
               {alert.counter !== null && alert.counter !== undefined ? alert.counter : <span className="muted">Not recorded</span>}
             </Prop>
             {alert.alert_type !== "STATUS" && (
-              <Prop Icon={MessageSquare} label="Text to duty phone">
+              <Prop icon={icons.text} label="Text to duty phone">
                 {alert.sms_sent ? "Sent" : "Not sent"}
               </Prop>
             )}
@@ -259,14 +239,14 @@ export default function AlertPeek({ alert, settings, update, theme, cartoKey, no
               <PeekMap alert={alert} settings={settings} update={update} theme={theme} cartoKey={cartoKey} />
               {area && (
                 <p className="peek-area num">
-                  <Layers size={16} strokeWidth={1.75} aria-hidden="true" />
+                  <Icon icon={icons.area} />
                   {area}
                 </p>
               )}
             </section>
           ) : (
             <div className="peek-nomap">
-              <Building2 {...ICON} />
+              <Icon icon={icons.floor} />
               <span>No GPS fix, so there is no map. {place ? place + "." : "Location unknown."}</span>
             </div>
           )}

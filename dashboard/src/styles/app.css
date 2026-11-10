@@ -19,7 +19,7 @@
   background: var(--color-page);
 }
 
-/* ---------- sidebar: charcoal in both themes (sb tokens) ---------- */
+/* ---------- sidebar: Midnight in both themes (sb tokens) ---------- */
 .sidebar {
   display: flex;
   flex-direction: column;

@@ -1,29 +1,31 @@
 import { useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, BarChart3, Download } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ComposedChart, Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import { downloadCsv, getJson } from "../lib/api.js";
-import { TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
+import { typeMeta } from "../lib/alertMeta.js";
 import { dayCount, dayLong, dayTick, hourLong, hourTick, isoDay, parseDay, presetRange, RANGE_PRESETS, rangeText } from "../lib/dates.js";
-import { formatDuration } from "../lib/format.js";
+import { ago, formatDuration } from "../lib/format.js";
+import { icons } from "../lib/icons.js";
 import { useReducedMotion } from "../lib/theme.js";
-import { hideTooltip, showTooltip } from "../lib/tooltip.js";
 import { usePolling } from "../lib/usePolling.js";
-import { Select, Switch } from "./Controls.jsx";
-import { TypeTag } from "./Tags.jsx";
+import { Select } from "./Controls.jsx";
+import Icon from "./Icon.jsx";
+import { Tag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
-const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
 const STATS_MS = 30000;
 const RANGE_KEY = "safeping.overviewRange";
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const LINE_COLOR = {
-  MEDICAL: "var(--color-red-bold)",
-  SUSPICIOUS: "var(--color-chart-yellow)",
-  SILENT: "var(--color-purple-bold)",
-  STATUS: "var(--color-gray-bold)",
-};
+const TIP_TYPES = ["MEDICAL", "SUSPICIOUS", "SILENT"]; // STATUS is never in the counts
 const AXIS = { tickLine: false, axisLine: false, tickMargin: 8, tick: { fontSize: 12, fill: "var(--color-text-subtlest)" } };
 const CURSOR = { stroke: "var(--color-border-bold)", strokeWidth: 1 };
+const REASONS = {
+  bad_signature: "bad signature",
+  replay: "replay",
+  unknown_device: "unknown device",
+  wrong_role: "wrong role",
+  bad_format: "bad format",
+  bad_json: "bad JSON",
+};
+const PLACE_ICON = { place: icons.place, gps: icons.gps, floor: icons.floor, none: icons.unknownType };
 
 // ---------- range ----------
 
@@ -90,27 +92,37 @@ function RangePicker({ range, setRange }) {
 
 // ---------- small parts ----------
 
-function Panel({ id, title, sub, tools, className = "", children }) {
+function plural(n, word) {
+  return n + " " + word + (n === 1 ? "" : "s");
+}
+
+function periodWord(days) {
+  return days === 1 ? "the day before" : "previous " + days + " days";
+}
+
+function capital(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function Panel({ id, icon, title, tools, className = "", children }) {
   return (
     <section className={"panel " + className} aria-labelledby={id + "-title"}>
       <div className="panel-head">
-        <div className="panel-head-text">
-          <h2 id={id + "-title"} className="panel-title">
-            {title}
-          </h2>
-          {sub && <p className="panel-sub">{sub}</p>}
-        </div>
+        <h2 id={id + "-title"} className="panel-title">
+          {icon && <Icon icon={icon} className="panel-icon" />}
+          {title}
+        </h2>
         {tools}
       </div>
-      {children}
+      <div className="panel-body">{children}</div>
     </section>
   );
 }
 
-function PanelEmpty({ text = "No alerts in this range" }) {
+function PanelEmpty({ text = "No alerts in this range." }) {
   return (
     <div className="panel-empty">
-      <BarChart3 {...ICON} />
+      <Icon icon={icons.chart} />
       <span>{text}</span>
     </div>
   );
@@ -120,27 +132,7 @@ function Skeleton({ height, width = "100%" }) {
   return <span className="skel" style={{ height, width }} aria-hidden="true" />;
 }
 
-/** Tooltip box for the charts, styled like the app tooltip. */
-function TipBox({ title, rows }) {
-  return (
-    <div className="chart-tip">
-      <div className="chart-tip-title">{title}</div>
-      {rows.map((r) => (
-        <div key={r.label} className="chart-tip-row">
-          <span className={"chart-tip-key" + (r.dashed ? " is-dashed" : "")} style={{ "--key": r.color }} aria-hidden="true" />
-          <span className="chart-tip-label">{r.label}</span>
-          <span className="chart-tip-value">{r.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function plural(n, word) {
-  return n + " " + word + (n === 1 ? "" : "s");
-}
-
-/** Per-day rows (or per-hour rows for a single day) for the line charts. */
+/** Per-day rows (or per-hour rows for a single day) for the trend chart and the sparkline. */
 function seriesRows(stats, timeFormat) {
   if (stats.per_hour) {
     return stats.per_hour.map((h) => ({
@@ -167,74 +159,199 @@ function tickInterval(stats) {
   return stats.days <= 7 ? 0 : "preserveStartEnd";
 }
 
-function periodWord(days) {
-  return days === 1 ? "the day before" : "previous " + days + " days";
+// ---------- stat tiles ----------
+
+/** Tiny line of this period's counts, no axes. Decoration: the number next to it says the total. */
+function Sparkline({ values }) {
+  if (values.length < 2 || !values.some((v) => v > 0)) return null;
+  const w = 64;
+  const h = 24;
+  const pad = 2;
+  const max = Math.max(1, ...values);
+  const points = values
+    .map((v, i) => {
+      const x = pad + (i * (w - 2 * pad)) / (values.length - 1);
+      const y = h - pad - (v / max) * (h - 2 * pad);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    })
+    .join(" ");
+  return (
+    <svg className="spark" width={w} height={h} viewBox={"0 0 " + w + " " + h} aria-hidden="true" focusable="false">
+      <polyline points={points} fill="none" stroke="var(--color-blue-bold)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
 }
 
-// ---------- Alerts ----------
+/** One stat tile: icon and label, big number, a context line. A link when it goes somewhere. */
+function Tile({ icon, label, fullLabel, value, valueTone, muted, context, tone, href, extra }) {
+  const body = (
+    <>
+      <span className="tile-top" title={fullLabel}>
+        <Icon icon={icon} fixed />
+        <span className="tile-label">{label}</span>
+      </span>
+      <span className="tile-mid">
+        <span className={"tile-value num" + (valueTone ? " tone-" + valueTone : "") + (muted ? " is-muted" : "")}>{value}</span>
+        {extra}
+      </span>
+      <span className={"tile-context" + (tone ? " tone-" + tone : "")} title={context}>
+        {context}
+      </span>
+    </>
+  );
+  if (!href) return <div className="tile">{body}</div>;
+  const where = href === "#/live" ? "Live" : "Devices";
+  return (
+    <Tooltip label={"Go to " + where}>
+      <a className="tile tile--link" href={href} aria-label={label + ": " + value + ". " + context + ". Go to " + where}>
+        {body}
+      </a>
+    </Tooltip>
+  );
+}
 
 function changeLine(total, previous, days) {
-  if (previous === 0) return { tone: "flat", text: "No alerts in the previous period" };
+  if (previous === 0) return { tone: "flat", text: "No alerts in " + periodWord(days) };
   if (total === previous) return { tone: "flat", text: "Same as " + periodWord(days) };
   const pct = Math.round((Math.abs(total - previous) / previous) * 100);
   // More alerts is worse, so up is red and down is green.
   return total > previous
-    ? { tone: "up", Icon: ArrowUp, text: "Up " + pct + "% vs " + periodWord(days) }
-    : { tone: "down", Icon: ArrowDown, text: "Down " + pct + "% vs " + periodWord(days) };
+    ? { tone: "up", text: "Up " + pct + "% vs " + periodWord(days) }
+    : { tone: "down", text: "Down " + pct + "% vs " + periodWord(days) };
 }
 
-function AlertsPanel({ stats, rows, sub, animate }) {
+function fastestType(byType) {
+  const entries = Object.entries(byType || {}).filter(([, s]) => s !== null && s !== undefined);
+  if (!entries.length) return null;
+  entries.sort((a, b) => a[1] - b[1]);
+  return { type: entries[0][0], seconds: entries[0][1] };
+}
+
+function StatTiles({ stats, rows }) {
   const change = changeLine(stats.total, stats.previous_total, stats.days);
+  const median = stats.flow.median_ack_s;
+  const fastest = fastestType(stats.median_ack_by_type);
+  const stale = stats.stale_fobs || [];
+  const low = stats.low_battery_fobs || [];
+  const changeTone = { up: "red", down: "green", flat: null }[change.tone];
+
+  let fobsContext = { text: "All seen today", tone: "green" };
+  if (stats.fobs_total === 0) fobsContext = { text: "No Fobs registered", tone: null };
+  else if (stale.length) fobsContext = { text: stale.length + " not seen in 24 h", tone: "orange" };
+
+  let lowContext = "All above 20%";
+  if (low.length === 1) lowContext = low[0].name + ", " + low[0].pct + "%";
+  else if (low.length > 1) lowContext = low.length + " students";
+
+  return (
+    <div className="tiles" role="group" aria-label="Summary">
+      <Tile
+        icon={icons.alerts}
+        label="Alerts"
+        value={stats.total}
+        context={change.text}
+        tone={changeTone}
+        extra={<Sparkline values={rows.map((r) => r.current)} />}
+      />
+      <Tile
+        icon={icons.medianAck}
+        label="Time to acknowledge"
+        fullLabel="Median time to acknowledge"
+        value={median === null ? "No data" : formatDuration(median)}
+        muted={median === null}
+        extra={median === null ? null : <span className="tile-unit">median</span>}
+        context={fastest ? typeMeta(fastest.type).label + " fastest, " + formatDuration(fastest.seconds) : "No acknowledge times yet"}
+      />
+      <Tile
+        icon={icons.openNow}
+        label="Open now"
+        value={stats.open_now}
+        context={stats.open_medical_now > 0 ? stats.open_medical_now + " Medical" : "None urgent"}
+        tone={stats.open_medical_now > 0 ? "red" : null}
+        href="#/live"
+      />
+      <Tile
+        icon={icons.fobsActive}
+        label="Fobs active"
+        value={stats.fobs_active + " of " + stats.fobs_total}
+        context={fobsContext.text}
+        tone={fobsContext.tone}
+        href="#/devices"
+      />
+      <Tile
+        icon={icons.lowBattery}
+        label="Low battery"
+        value={stats.low_battery}
+        valueTone={stats.low_battery > 0 ? "orange" : null}
+        context={lowContext}
+        href="#/devices"
+      />
+    </div>
+  );
+}
+
+// ---------- Alerts over time ----------
+
+function TrendTip({ row }) {
+  return (
+    <div className="chart-tip">
+      <div className="chart-tip-title">{row.title}</div>
+      <div className="chart-tip-row">
+        <span className="chart-tip-key" style={{ "--key": "var(--color-blue-bold)" }} aria-hidden="true" />
+        <span className="chart-tip-label">This period</span>
+        <span className="chart-tip-value num">{row.current}</span>
+      </div>
+      <div className="chart-tip-types">
+        {TIP_TYPES.map((t) => (
+          <span key={t} className="chart-tip-type">
+            <Icon icon={typeMeta(t).icon} size={12} fixed />
+            {typeMeta(t).label} <span className="num">{row[t] || 0}</span>
+          </span>
+        ))}
+      </div>
+      <div className="chart-tip-row">
+        <span className="chart-tip-key is-dashed" style={{ "--key": "var(--color-gray-bold)" }} aria-hidden="true" />
+        <span className="chart-tip-label">{row.prevTitle}</span>
+        <span className="chart-tip-value num">{row.previous}</span>
+      </div>
+    </div>
+  );
+}
+
+function TrendPanel({ stats, rows, sub, animate }) {
   const empty = stats.total === 0 && stats.previous_total === 0;
   const unit = stats.per_hour ? "hour" : "day";
-  const label =
-    "Alerts per " + unit + ", " + sub + ", " + stats.total + " total. " + "Previous period: " + stats.previous_total + ".";
+  const label = "Alerts per " + unit + ", " + sub + ", " + stats.total + " total. Previous period: " + stats.previous_total + ".";
+  const legend = (
+    <ul className="mini-legend" aria-hidden="true">
+      <li>
+        <span className="legend-line" style={{ "--key": "var(--color-blue-bold)" }} />
+        This period
+      </li>
+      <li>
+        <span className="legend-line is-dashed" style={{ "--key": "var(--color-gray-bold)" }} />
+        {capital(periodWord(stats.days))}
+      </li>
+    </ul>
+  );
   return (
-    <Panel id="ov-alerts" title="Alerts" sub={sub} className="ov-span-7">
-      <div className="alerts-body">
-        <div className="alerts-figure">
-          <p className="big-number">{stats.total}</p>
-          <p className={"change change--" + change.tone}>
-            {change.Icon && <change.Icon size={14} strokeWidth={2} aria-hidden="true" />}
-            {change.text}
-          </p>
-          {!empty && (
-            <ul className="mini-legend" aria-hidden="true">
-              <li>
-                <span className="legend-line" style={{ "--key": "var(--color-blue-bold)" }} />
-                This period
-              </li>
-              <li>
-                <span className="legend-line is-dashed" style={{ "--key": "var(--color-gray-bold)" }} />
-                {periodWord(stats.days).replace(/^./, (c) => c.toUpperCase())}
-              </li>
-            </ul>
-          )}
-        </div>
-        {empty ? (
-          <PanelEmpty />
-        ) : (
-          <div className="alerts-chart">
-            <div role="img" aria-label={label} className="chart-box">
-              <ResponsiveContainer width="100%" height={168}>
-                <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 8 }} accessibilityLayer={false}>
-                  <XAxis dataKey="tick" {...AXIS} padding={{ left: 12, right: 12 }} interval={tickInterval(stats)} minTickGap={12} />
-                  <YAxis hide allowDecimals={false} domain={[0, (max) => Math.max(1, max)]} />
+    <Panel id="ov-trend" icon={icons.overview} title="Alerts over time" tools={!empty && legend} className="ov-trend">
+      {empty ? (
+        <PanelEmpty />
+      ) : (
+        <>
+          <div role="img" aria-label={label} className="chart-fill">
+            <div className="chart-abs">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }} accessibilityLayer={false}>
+                  <CartesianGrid vertical={false} stroke="var(--color-border)" strokeWidth={1} />
+                  <XAxis dataKey="tick" {...AXIS} padding={{ left: 8, right: 8 }} interval={tickInterval(stats)} minTickGap={12} />
+                  <YAxis {...AXIS} width={28} allowDecimals={false} tickCount={3} domain={[0, (max) => Math.max(2, Math.ceil(max / 2) * 2)]} />
                   <ChartTooltip
                     cursor={CURSOR}
                     isAnimationActive={false}
                     wrapperStyle={{ outline: "none" }}
-                    content={({ active, payload }) =>
-                      active && payload && payload.length ? (
-                        <TipBox
-                          title={payload[0].payload.title}
-                          rows={[
-                            { label: "This period", value: payload[0].payload.current, color: "var(--color-blue-bold)" },
-                            { label: payload[0].payload.prevTitle, value: payload[0].payload.previous, color: "var(--color-gray-bold)", dashed: true },
-                          ]}
-                        />
-                      ) : null
-                    }
+                    content={({ active, payload }) => (active && payload && payload.length ? <TrendTip row={payload[0].payload} /> : null)}
                   />
                   <Line
                     type="monotone"
@@ -260,12 +377,19 @@ function AlertsPanel({ stats, rows, sub, animate }) {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            <div className="visually-hidden"><table>
+          </div>
+          <div className="visually-hidden">
+            <table>
               <caption>{label}</caption>
               <thead>
                 <tr>
                   <th scope="col">{unit === "hour" ? "Hour" : "Day"}</th>
                   <th scope="col">Alerts</th>
+                  {TIP_TYPES.map((t) => (
+                    <th key={t} scope="col">
+                      {typeMeta(t).label}
+                    </th>
+                  ))}
                   <th scope="col">Previous period</th>
                 </tr>
               </thead>
@@ -274,348 +398,187 @@ function AlertsPanel({ stats, rows, sub, animate }) {
                   <tr key={r.title}>
                     <th scope="row">{r.title}</th>
                     <td>{r.current}</td>
+                    {TIP_TYPES.map((t) => (
+                      <td key={t}>{r[t] || 0}</td>
+                    ))}
                     <td>{r.previous}</td>
                   </tr>
                 ))}
               </tbody>
-            </table></div>
+            </table>
           </div>
-        )}
-      </div>
-    </Panel>
-  );
-}
-
-// ---------- Summary ----------
-
-function Stat({ value, label, tone, href, accent, muted }) {
-  const body = (
-    <>
-      <span className={"stat-value" + (tone ? " stat-value--" + tone : "") + (muted ? " stat-value--muted" : "")}>{value}</span>
-      <span className={"stat-bar" + (accent ? " is-accent" : "")} aria-hidden="true" />
-      <span className="stat-label">{label}</span>
-    </>
-  );
-  if (!href) return <div className="stat">{body}</div>;
-  const where = href === "#/live" ? "Live" : "Devices";
-  return (
-    <Tooltip label={"Go to " + where}>
-      <a className="stat stat--link" href={href} aria-label={label + ": " + value + ". Go to " + where}>
-        {body}
-      </a>
-    </Tooltip>
-  );
-}
-
-function SummaryPanel({ stats, sub }) {
-  const median = stats.flow.median_ack_s;
-  return (
-    <Panel id="ov-summary" title="Summary" sub={sub} className="ov-span-5">
-      <div className="stats">
-        <Stat value={median === null ? "No data" : formatDuration(median)} muted={median === null} label="Median time to acknowledge" accent />
-        <Stat value={stats.open_now} label="Open now" tone={stats.open_medical_now > 0 ? "red" : null} href="#/live" />
-        <Stat value={stats.fobs_active + " of " + stats.fobs_total} label="Fobs active" href="#/devices" />
-        <Stat value={stats.low_battery} label="Low battery" tone={stats.low_battery > 0 ? "orange" : null} href="#/devices" />
-      </div>
+        </>
+      )}
     </Panel>
   );
 }
 
 // ---------- Response flow ----------
 
-const FLOW_W = 0.16; // half the width of the curve between two steps
-const smooth = (t) => t * t * (3 - 2 * t);
-
-/** Points for three flat blocks joined by smooth curves. x runs 0 to 3, one unit per step.
-    Each step is its own series so each block gets its own color. */
-function flowPoints(counts) {
-  const xs = [0];
-  for (const b of [1, 2]) {
-    for (let i = 0; i <= 12; i++) xs.push(b - FLOW_W + (2 * FLOW_W * i) / 12);
-  }
-  xs.push(3);
-  const value = (x) => {
-    for (const b of [1, 2]) {
-      if (Math.abs(x - b) <= FLOW_W) return counts[b - 1] + (counts[b] - counts[b - 1]) * smooth((x - (b - FLOW_W)) / (2 * FLOW_W));
-    }
-    return counts[Math.min(2, Math.floor(x))];
-  };
-  return xs.map((x) => {
-    const v = value(x);
-    return {
-      x,
-      s0: x <= 1 ? v : null,
-      s1: x >= 1 && x <= 2 ? v : null,
-      s2: x >= 2 ? v : null,
-    };
-  });
-}
-
-function pct(n, of) {
+function share(n, of) {
   return of > 0 ? Math.round((n / of) * 100) + "%" : "0%";
 }
 
-function FlowPanel({ stats, sub, animate }) {
+function FlowPanel({ stats }) {
   const f = stats.flow;
   const steps = [
-    { label: "Received", count: f.received, share: f.received > 0 ? "100%" : "0%", note: "STATUS check-ins left out" },
+    { label: "Received", count: f.received, note: null },
     {
       label: "Acknowledged",
       count: f.acknowledged,
-      share: pct(f.acknowledged, f.received),
       note: f.median_ack_s === null ? "No acknowledge times yet" : "Median " + formatDuration(f.median_ack_s) + " after received",
     },
     {
       label: "Resolved",
       count: f.resolved,
-      share: pct(f.resolved, f.received),
       note: f.median_resolve_s === null ? "No resolve times yet" : "Median " + formatDuration(f.median_resolve_s) + " after acknowledged",
     },
   ];
-  const points = useMemo(() => flowPoints([f.received, f.acknowledged, f.resolved]), [f.received, f.acknowledged, f.resolved]);
-  const label = "Response flow, " + sub + ": " + f.received + " received, " + f.acknowledged + " acknowledged, " + f.resolved + " resolved.";
   return (
-    <Panel id="ov-flow" title="Response flow" sub={sub} className="ov-span-12">
-      <div className="flow">
-        <div className="flow-steps">
-          {steps.map((s) => (
-            <div key={s.label} className="flow-step">
-              <p className="flow-label">{s.label}</p>
-              <p className="flow-count">
-                <span className="flow-number">{s.count}</span>
-                <span className="flow-share">{s.share}</span>
-              </p>
-              <p className="flow-note">{s.note}</p>
+    <Panel id="ov-flow" icon={icons.medianAck} title="Response flow" className="ov-flow">
+      <ol className="flow-list">
+        {steps.map((s, i) => (
+          <li key={s.label} className="flow-row">
+            <div className="flow-line">
+              <span className="flow-label">{s.label}</span>
+              <span className="flow-count num">{s.count}</span>
+              <span className="flow-share num">{share(s.count, f.received)}</span>
             </div>
-          ))}
-        </div>
-        {f.received > 0 && (
-          <div role="img" aria-label={label} className="flow-chart">
-            <ResponsiveContainer width="100%" height={96}>
-              <AreaChart data={points} margin={{ top: 4, right: 0, bottom: 0, left: 0 }} accessibilityLayer={false}>
-                <XAxis dataKey="x" type="number" domain={[0, 3]} hide />
-                <YAxis hide domain={[0, f.received]} />
-                <ChartTooltip
-                  cursor={false}
-                  isAnimationActive={false}
-                  wrapperStyle={{ outline: "none" }}
-                  content={({ active, payload }) => {
-                    if (!active || !payload || !payload.length) return null;
-                    const s = steps[Math.min(2, Math.floor(payload[0].payload.x))];
-                    return <TipBox title={s.label} rows={[{ label: "Alerts", value: s.count + " (" + s.share + ")", color: "var(--color-flow-" + (steps.indexOf(s) + 1) + ")" }]} />;
-                  }}
-                />
-                {["s0", "s1", "s2"].map((key, i) => (
-                  <Area
-                    key={key}
-                    type="linear"
-                    dataKey={key}
-                    stroke="none"
-                    fill={"var(--color-flow-" + (i + 1) + ")"}
-                    fillOpacity={1}
-                    connectNulls={false}
-                    activeDot={false}
-                    isAnimationActive={animate}
-                  />
-                ))}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-        <span className="flow-divider" style={{ left: "33.333%" }} aria-hidden="true" />
-        <span className="flow-divider" style={{ left: "66.667%" }} aria-hidden="true" />
-      </div>
-      {f.received === 0 && <PanelEmpty />}
-    </Panel>
-  );
-}
-
-// ---------- Alerts by type ----------
-
-function TypesPanel({ stats, rows, sub, animate }) {
-  const [withStatus, setWithStatus] = useState(false);
-  const types = TYPE_ORDER.filter((t) => withStatus || t !== "STATUS");
-  const totals = Object.fromEntries(types.map((t) => [t, rows.reduce((s, r) => s + r[t], 0)]));
-  const any = types.some((t) => totals[t] > 0);
-  const unit = stats.per_hour ? "hour" : "day";
-  const label =
-    "Alerts per " + unit + " by type, " + sub + ": " + types.map((t) => totals[t] + " " + typeMeta(t).label.toLowerCase()).join(", ") + ".";
-  return (
-    <Panel
-      id="ov-types"
-      title="Alerts by type"
-      sub={sub}
-      className="ov-span-7"
-      tools={
-        <span className="toggle-row">
-          <span id="ov-status-toggle" className="toggle-label">
-            Include STATUS
-          </span>
-          <Switch labelledBy="ov-status-toggle" checked={withStatus} onChange={setWithStatus} />
-        </span>
-      }
-    >
-      <ul className="legend" aria-label="Legend">
-        {types.map((t) => (
-          <li key={t} className="legend-item">
-            <span className="legend-line" style={{ "--key": LINE_COLOR[t] }} aria-hidden="true" />
-            <TypeTag type={t} />
+            <span className="bar-slot" aria-hidden="true">
+              <span
+                className="bar"
+                style={{ width: (f.received > 0 ? (s.count / f.received) * 100 : 0) + "%", background: "var(--color-flow-" + (i + 1) + ")" }}
+              />
+            </span>
+            {s.note && <p className="flow-note">{s.note}</p>}
           </li>
         ))}
-      </ul>
-      {!any ? (
-        <PanelEmpty />
+      </ol>
+      <p className="panel-note panel-foot">STATUS check-ins not counted</p>
+    </Panel>
+  );
+}
+
+// ---------- Hotspots ----------
+
+function HotspotsPanel({ stats }) {
+  const h = stats.hotspots || { places: [], more_count: 0 };
+  const located = h.places.filter((p) => p.kind !== "none");
+  const max = Math.max(1, ...h.places.map((p) => p.count));
+  return (
+    <Panel id="ov-hot" icon={icons.hotspots} title="Hotspots" className="ov-half">
+      {located.length === 0 ? (
+        <PanelEmpty text="No alerts with a location in this range." />
       ) : (
-        <>
-          <div role="img" aria-label={label} className="chart-box">
-            <ResponsiveContainer width="100%" height={208}>
-              <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} accessibilityLayer={false}>
-                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeWidth={1} />
-                <XAxis dataKey="tick" {...AXIS} padding={{ left: 12, right: 12 }} interval={tickInterval(stats)} minTickGap={12} />
-                <YAxis {...AXIS} width={32} allowDecimals={false} domain={[0, (max) => Math.max(2, max)]} />
-                <ChartTooltip
-                  cursor={CURSOR}
-                  isAnimationActive={false}
-                  wrapperStyle={{ outline: "none" }}
-                  content={({ active, payload }) =>
-                    active && payload && payload.length ? (
-                      <TipBox
-                        title={payload[0].payload.title}
-                        rows={types.map((t) => ({ label: typeMeta(t).label, value: payload[0].payload[t], color: LINE_COLOR[t] }))}
-                      />
-                    ) : null
-                  }
-                />
-                {types.map((t) => (
-                  <Line
-                    key={t}
-                    type="monotone"
-                    dataKey={t}
-                    stroke={LINE_COLOR[t]}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-panel)", fill: LINE_COLOR[t] }}
-                    isAnimationActive={animate}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="visually-hidden"><table>
-            <caption>{label}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{unit === "hour" ? "Hour" : "Day"}</th>
-                {types.map((t) => (
-                  <th key={t} scope="col">
-                    {typeMeta(t).label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.title}>
-                  <th scope="row">{r.title}</th>
-                  {types.map((t) => (
-                    <td key={t}>{r[t]}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        </>
+        <ol className="hot-list">
+          {h.places.map((p) => (
+            <li key={p.label} className="hot-row">
+              <span className="hot-label">
+                <Icon icon={PLACE_ICON[p.kind] || icons.place} size={14} fixed />
+                <span className="hot-name" title={p.label}>
+                  {p.label}
+                </span>
+              </span>
+              <span className="bar-slot" aria-hidden="true">
+                <span className="bar" style={{ width: (p.count / max) * 100 + "%", background: "var(--color-blue-bold)" }} />
+              </span>
+              <span className="hot-count num">{p.count}</span>
+            </li>
+          ))}
+          {h.more_count > 0 && <li className="hot-more">and {plural(h.more_count, "more place")}</li>}
+        </ol>
       )}
     </Panel>
   );
 }
 
-// ---------- When alerts happen ----------
+// ---------- System health ----------
 
-function heatLevel(n, max) {
-  if (n === 0 || max === 0) return 0;
-  return Math.min(4, Math.ceil((n / max) * 4));
+function HealthRow({ icon, label, children, sub, tone }) {
+  return (
+    <div className="health-row">
+      <dt>
+        <Icon icon={icon} size={14} fixed />
+        {label}
+      </dt>
+      <dd className={tone ? "tone-" + tone : undefined}>
+        <span className="health-value">{children}</span>
+        {sub && <span className="health-sub">{sub}</span>}
+      </dd>
+    </div>
+  );
 }
 
-function HeatPanel({ stats, sub, timeFormat }) {
-  const grid = stats.weekday_hour;
-  const max = Math.max(0, ...grid.flat());
-  let busiest = null;
-  grid.forEach((row, d) =>
-    row.forEach((n, h) => {
-      if (n > 0 && (!busiest || n > busiest.n)) busiest = { d, h, n };
-    }),
-  );
-  const label =
-    "Alerts by weekday and hour, " +
-    sub +
-    (busiest ? ". Busiest: " + WEEKDAYS[busiest.d] + " " + hourLong(busiest.h, timeFormat) + ", " + plural(busiest.n, "alert") + "." : ".");
-  const tip = (d, h, n) => WEEKDAYS[d] + " " + hourLong(h, timeFormat) + ": " + plural(n, "alert");
+function HealthPanel({ stats, refMaxAge }) {
+  const d = stats.delivery || { lora: 0, wifi: 0, unknown: 0 };
+  const rej = stats.rejected;
+  const stale = stats.stale_fobs || [];
+  const low = stats.low_battery_fobs || [];
+  const reasons = rej ? Object.entries(rej.by_reason).sort((a, b) => b[1] - a[1]) : [];
+  const attack = rej && ((rej.by_reason.bad_signature || 0) > 0 || (rej.by_reason.replay || 0) > 0);
+  const age = stats.reference_age_s;
+  const deliveryEmpty = d.lora + d.wifi + d.unknown === 0;
+
   return (
-    <Panel id="ov-heat" title="When alerts happen" sub={sub} className="ov-span-5">
-      {max === 0 ? (
-        <PanelEmpty />
-      ) : (
-        <>
-          <div role="img" aria-label={label} className="heat">
-            {grid.map((row, d) => (
-              <div key={d} className="heat-row">
-                <span className="heat-day">{WEEKDAYS[d]}</span>
-                {row.map((n, h) => (
-                  <span
-                    key={h}
-                    className="heat-cell"
-                    style={{ background: "var(--color-heat-" + heatLevel(n, max) + ")" }}
-                    onMouseEnter={(e) => showTooltip(e.currentTarget, { label: tip(d, h, n) }, 0)}
-                    onMouseLeave={(e) => hideTooltip(e.currentTarget)}
-                  />
-                ))}
-              </div>
-            ))}
-            <div className="heat-row heat-hours" aria-hidden="true">
-              <span className="heat-day" />
-              {grid[0].map((_, h) => (
-                <span key={h} className="heat-hour">
-                  {h % 6 === 0 ? hourTick(h, timeFormat) : ""}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="heat-foot">
-            <span className="heat-scale" aria-hidden="true">
-              Fewer
-              {[0, 1, 2, 3, 4].map((l) => (
-                <span key={l} className="heat-cell heat-key" style={{ background: "var(--color-heat-" + l + ")" }} />
-              ))}
-              More
+    <Panel id="ov-health" icon={icons.health} title="System health" className="ov-half">
+      <dl className="health">
+        <HealthRow icon={icons.live} label="Delivery">
+          {deliveryEmpty ? (
+            <span className="muted">No messages in this range</span>
+          ) : (
+            <span className="health-tags">
+              <Tag color="gray" icon={icons.lora}>
+                LoRa <span className="num">{d.lora}</span>
+              </Tag>
+              <Tag color="teal" icon={icons.wifi}>
+                WiFi <span className="num">{d.wifi}</span>
+              </Tag>
+              {d.unknown > 0 && (
+                <Tag color="gray" icon={icons.unknownType}>
+                  Unknown <span className="num">{d.unknown}</span>
+                </Tag>
+              )}
             </span>
-            {stats.days < 7 && <span className="heat-note">Based on the selected range</span>}
-          </div>
-          <div className="visually-hidden"><table>
-            <caption>{label}</caption>
-            <thead>
-              <tr>
-                <th scope="col">Day</th>
-                {grid[0].map((_, h) => (
-                  <th key={h} scope="col">
-                    {hourLong(h, timeFormat)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {grid.map((row, d) => (
-                <tr key={d}>
-                  <th scope="row">{WEEKDAYS[d]}</th>
-                  {row.map((n, h) => (
-                    <td key={h}>{n}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        </>
-      )}
+          )}
+        </HealthRow>
+        <HealthRow icon={icons.duplicates} label="Duplicates caught">
+          {stats.duplicates === null || stats.duplicates === undefined ? (
+            <Tooltip label="The server cannot tell a resend from a replay yet. Both count under Rejected messages as replay.">
+              <span className="muted" tabIndex={0}>
+                Not tracked
+              </span>
+            </Tooltip>
+          ) : (
+            <span className="num">{stats.duplicates}</span>
+          )}
+        </HealthRow>
+        <HealthRow
+          icon={icons.rejected}
+          label="Rejected messages"
+          tone={attack ? "red" : null}
+          sub={reasons.length ? reasons.map(([r, n]) => n + " " + (REASONS[r] || r.replaceAll("_", " "))).join(", ") : null}
+        >
+          {rej === null || rej === undefined ? (
+            <span className="muted">Not tracked</span>
+          ) : (
+            <>
+              {attack && <Icon icon={icons.warning} size={14} />}
+              <span className="num">{rej.total}</span>
+            </>
+          )}
+        </HealthRow>
+        <HealthRow icon={icons.time} label="Fobs not seen in 24 h" tone={stale.length ? "orange" : null}>
+          {stale.length > 0 && <span className="health-names">{stale.join(", ")}</span>}
+          <span className="num">{stale.length}</span>
+        </HealthRow>
+        <HealthRow icon={icons.lowBattery} label="Low battery" tone={low.length ? "orange" : null}>
+          {low.length > 0 && <span className="health-names">{low.map((f) => f.name + " " + f.pct + "%").join(", ")}</span>}
+          <span className="num">{low.length}</span>
+        </HealthRow>
+        <HealthRow icon={icons.pressure} label="Reference sensor" tone={age === null || age === undefined || age > refMaxAge ? "orange" : null}>
+          {age === null || age === undefined ? "No reading" : "Last reading " + ago(age)}
+        </HealthRow>
+      </dl>
     </Panel>
   );
 }
@@ -625,52 +588,30 @@ function HeatPanel({ stats, sub, timeFormat }) {
 function LoadingPanels() {
   return (
     <>
-      <section className="panel ov-span-7" aria-hidden="true">
-        <Skeleton height={16} width={96} />
-        <div className="alerts-body skel-gap">
-          <div className="skel-stack">
-            <Skeleton height={36} width={72} />
-            <Skeleton height={14} width={160} />
+      <div className="tiles" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="tile">
+            <Skeleton height={14} width={96} />
+            <Skeleton height={28} width={56} />
+            <Skeleton height={12} width={120} />
           </div>
-          <Skeleton height={168} />
-        </div>
-      </section>
-      <section className="panel ov-span-5" aria-hidden="true">
-        <Skeleton height={16} width={96} />
-        <div className="stats skel-gap">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="skel-stack">
-              <Skeleton height={32} width={64} />
-              <Skeleton height={12} width={80} />
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="panel ov-span-12" aria-hidden="true">
-        <Skeleton height={16} width={120} />
-        <div className="skel-gap">
-          <Skeleton height={176} />
-        </div>
-      </section>
-      <section className="panel ov-span-7" aria-hidden="true">
-        <Skeleton height={16} width={120} />
-        <div className="skel-gap">
-          <Skeleton height={240} />
-        </div>
-      </section>
-      <section className="panel ov-span-5" aria-hidden="true">
-        <Skeleton height={16} width={140} />
-        <div className="skel-gap">
-          <Skeleton height={176} />
-        </div>
-      </section>
+        ))}
+      </div>
+      {["ov-trend", "ov-flow", "ov-half", "ov-half"].map((c, i) => (
+        <section key={i} className={"panel " + c} aria-hidden="true">
+          <Skeleton height={16} width={120} />
+          <div className="panel-body skel-gap">
+            <Skeleton height="100%" />
+          </div>
+        </section>
+      ))}
     </>
   );
 }
 
 // ---------- page ----------
 
-export default function OverviewPage({ timeFormat }) {
+export default function OverviewPage({ timeFormat, refMaxAge = 120 }) {
   const [range, setRangeState] = useState(loadRange);
   const setRange = (next) => {
     setRangeState(next);
@@ -706,8 +647,8 @@ export default function OverviewPage({ timeFormat }) {
 
   return (
     <div className="page page--overview">
-      <header className="page-header">
-        <div className="page-head-stack">
+      <header className="page-header ov-header">
+        <div className="ov-head-text">
           <h1 className="page-title">Overview</h1>
           <p className="page-sub num">{error ? "No range picked" : sub}</p>
         </div>
@@ -715,7 +656,7 @@ export default function OverviewPage({ timeFormat }) {
           <RangePicker range={range} setRange={setRange} />
           {/* PDF reports come later. For now Export downloads every alert in the range as CSV. */}
           <button type="button" className="btn btn-secondary" disabled={!!error} onClick={() => downloadCsv(range.from, range.to)}>
-            <Download {...ICON} />
+            <Icon icon={icons.download} />
             Export CSV
           </button>
         </div>
@@ -731,11 +672,11 @@ export default function OverviewPage({ timeFormat }) {
           <div className="overview">
             {stats ? (
               <>
-                <AlertsPanel stats={stats} rows={rows} sub={sub} animate={animate} />
-                <SummaryPanel stats={stats} sub={sub} />
-                <FlowPanel stats={stats} sub={sub} animate={animate} />
-                <TypesPanel stats={stats} rows={rows} sub={sub} animate={animate} />
-                <HeatPanel stats={stats} sub={sub} timeFormat={timeFormat} />
+                <StatTiles stats={stats} rows={rows} />
+                <TrendPanel stats={stats} rows={rows} sub={sub} animate={animate} />
+                <FlowPanel stats={stats} />
+                <HotspotsPanel stats={stats} />
+                <HealthPanel stats={stats} refMaxAge={refMaxAge} />
               </>
             ) : (
               <LoadingPanels />

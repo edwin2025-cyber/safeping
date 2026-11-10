@@ -11,9 +11,11 @@
     "contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^3.5.0",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
-    "lucide-react": "^1.70.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-is": "^19.3.1",

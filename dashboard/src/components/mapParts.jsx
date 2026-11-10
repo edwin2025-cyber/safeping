@@ -1,35 +1,37 @@
 import { useEffect, useRef } from "react";
-import { flushSync } from "react-dom";
-import { createRoot } from "react-dom/client";
-import { LocateFixed, Maximize, Minus, Plus, Type } from "lucide-react";
-import { Circle, TileLayer, useMap } from "react-leaflet";
+import { icon as faIcon } from "@fortawesome/fontawesome-svg-core";
+import { TileLayer, useMap } from "react-leaflet";
 import L from "../lib/leafletSetup.js";
 import "leaflet.markercluster";
 import { alertState, hasGps, isOpenMedical, TYPES, typeMeta, zoneRadius } from "../lib/alertMeta.js";
 import { placeText, studentName } from "../lib/format.js";
+import { icons } from "../lib/icons.js";
 import { hideTooltip, showTooltip } from "../lib/tooltip.js";
+import Icon from "./Icon.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 export const DEFAULT_CENTER = [34.7304, -86.5861]; // Huntsville, until an alert has GPS
 export const MAX_ZOOM = 20; // set on every map: clustering needs it before the tiles load
+
+/** Shared by the Live map and the Peek map: half-step zoom and a gentler mouse wheel. */
+export const MAP_OPTIONS = { zoomSnap: 0.5, wheelPxPerZoomLevel: 90, zoomControl: false };
 
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>';
 const CARTO_ATTRIBUTION =
   OSM_ATTRIBUTION + ' &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
 
-// Markers take an HTML string, so the type icons are drawn to SVG text once,
-// when this file loads (never during a React render).
+// Markers take an HTML string, so each type icon is turned into SVG text once, when this file loads.
 const ICON_SVG = new Map();
 for (const type of [...Object.keys(TYPES), "OTHER"]) {
-  for (const small of [false, true]) {
-    const { Icon } = typeMeta(type);
-    const holder = document.createElement("div");
-    const root = createRoot(holder);
-    flushSync(() => root.render(<Icon size={small ? 12 : 16} strokeWidth={1.75} aria-hidden="true" focusable="false" />));
-    ICON_SVG.set(type + "|" + small, holder.innerHTML);
-    root.unmount();
-  }
+  ICON_SVG.set(type, faIcon(typeMeta(type).icon, { attributes: { "aria-hidden": "true", focusable: "false" } }).html.join(""));
+}
+
+/** Fits the map to some bounds. A short flight, or a jump when the computer asks for reduced motion. */
+export function fitView(map, bounds, options, reducedMotion) {
+  if (!map) return;
+  if (reducedMotion) map.fitBounds(bounds, { ...options, animate: false });
+  else map.flyToBounds(bounds, { ...options, duration: 0.5 });
 }
 
 /** CARTO raster basemaps when a key is set, otherwise OpenStreetMap (dimmed in dark mode). */
@@ -73,7 +75,9 @@ function markerLabel(alert) {
 }
 
 /** 28 px circle in the type's bold color, white ring, type icon inside.
-    Acknowledged and resolved markers are smaller and faded. */
+    Acknowledged and resolved markers are smaller and faded. Leaflet moves the
+    outer element with a CSS transform, so every visual effect (hover scale, fade)
+    sits on the inner span, never on the element Leaflet moves. */
 function markerIcon(alert, highlighted) {
   const type = TYPES[alert.alert_type] ? alert.alert_type : "OTHER";
   const quiet = alertState(alert) !== "open";
@@ -83,7 +87,7 @@ function markerIcon(alert, highlighted) {
   if (highlighted) classes.push("is-highlighted");
   return L.divIcon({
     className: "alert-marker-wrap",
-    html: '<span class="' + classes.join(" ") + '">' + ICON_SVG.get(type + "|" + quiet) + "</span>",
+    html: '<span class="' + classes.join(" ") + '" data-alert-id="' + alert.id + '">' + ICON_SVG.get(type) + "</span>",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -109,18 +113,92 @@ function labelElement(marker) {
   if (el && marker.alert) el.setAttribute("aria-label", markerLabel(marker.alert) + ". Open details");
 }
 
-/** Markers in a cluster layer. Managed by hand (not one React component per
-    marker) so clusters update cleanly when alerts change. */
-export function ClusterLayer({ alerts, highlightedId, onOpen, onHover }) {
+// ---------- circles ----------
+
+/** The circles for one alert, radius in meters. Colors come from CSS classes in map.css.
+    MEDICAL, SILENT, STATUS: one circle of radius acc. SUSPICIOUS: a dashed circle of
+    acc + sight radius, and a solid circle of acc inside it. */
+function zoneSpecs(alert, sightRadius) {
+  const faded = alertState(alert) === "open" ? 1 : 0.5;
+  const acc = alert.accuracy || 0;
+  const tag = " zone-id-" + alert.id; // lets the map test match each circle to its marker
+  if (alert.alert_type === "SUSPICIOUS") {
+    const specs = [
+      { radius: zoneRadius(alert, sightRadius), style: { className: "zone zone--sight" + tag, weight: 2, dashArray: "6 6", opacity: faded, fillOpacity: 0.12 * faded } },
+    ];
+    if (acc > 0) specs.push({ radius: acc, style: { className: "zone zone--yellow-inner" + tag, weight: 1.5, opacity: faded, fillOpacity: 0 } });
+    return specs;
+  }
+  if (acc <= 0) return [];
+  const color = typeMeta(alert.alert_type).color;
+  return [{ radius: acc, style: { className: "zone zone--" + color + tag, weight: 2, opacity: faded, fillOpacity: 0.12 * faded } }];
+}
+
+/** Creates or updates the circles of one entry in place. Circles are only rebuilt
+    when their kind changes (a new type, or accuracy appearing). */
+function syncCircles(entry, alert, sightRadius, holder) {
+  const specs = zoneSpecs(alert, sightRadius);
+  const shape = specs.map((s) => s.style.className).join("|");
+  const look = [alert.latitude, alert.longitude, ...specs.map((s) => s.radius + "/" + s.style.opacity)].join("|");
+  if (entry.shape !== shape) {
+    entry.circles.forEach((c) => holder.removeLayer(c));
+    entry.circles = specs.map((s) => L.circle([alert.latitude, alert.longitude], { radius: s.radius, interactive: false, ...s.style }));
+    entry.shape = shape;
+    entry.look = look;
+    entry.drawn = false;
+    return;
+  }
+  if (entry.look === look) return; // nothing changed: no redraw
+  entry.look = look;
+  specs.forEach((s, i) => {
+    const c = entry.circles[i];
+    c.setLatLng([alert.latitude, alert.longitude]);
+    c.setRadius(s.radius);
+    c.setStyle({ opacity: s.style.opacity, fillOpacity: s.style.fillOpacity });
+  });
+}
+
+function showCircles(entry, holder, show) {
+  if (show === entry.drawn) return;
+  entry.drawn = show;
+  entry.circles.forEach((c) => {
+    if (show) {
+      holder.addLayer(c);
+      if (alertState(entry.marker.alert) !== "open") c.bringToBack(); // open alerts draw on top
+    } else {
+      holder.removeLayer(c);
+    }
+  });
+}
+
+// markercluster keeps each marker's deepest cluster in __parent. The marker stands on its
+// own at every zoom above that cluster's zoom. group._zoom is the zoom the clusters are drawn for.
+function standsAlone(group, marker) {
+  const parent = marker.__parent;
+  return !parent || parent._zoom < group._zoom;
+}
+
+/** Every alert with GPS: one marker (in the cluster group) and its circles, kept per alert id.
+    Positions, styles and radii are updated in place; layers are only added or removed when
+    alerts appear or disappear, so a poll never redraws the map.
+
+    A circle shows only while its marker stands on its own. When markers join a cluster their
+    circles hide at once; when a cluster splits, the circles come back after the split animation
+    ends, so a circle never floats without its marker in the middle. */
+export function AlertLayer({ alerts, sightRadius, highlightedId, onOpen, onHover }) {
   const map = useMap();
   const groupRef = useRef(null);
-  const markers = useRef(new Map()); // alert id -> { marker, key }
+  const holderRef = useRef(null);
+  const entries = useRef(new Map()); // alert id -> { marker, key, circles, shape, drawn }
+  const spread = useRef(new Set()); // ids of markers spread out by a click on a cluster
+  const syncRef = useRef(() => {});
   const handlers = useRef({ onOpen, onHover });
   handlers.current = { onOpen, onHover };
   const lit = useRef({ id: null, parent: null });
 
   useEffect(() => {
     const group = L.markerClusterGroup({
+      animate: true,
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       zoomToBoundsOnClick: true,
@@ -128,37 +206,78 @@ export function ClusterLayer({ alerts, highlightedId, onOpen, onHover }) {
       iconCreateFunction: clusterIcon,
       spiderLegPolylineOptions: { weight: 1.5, color: "rgb(107, 110, 118)", opacity: 0.6 },
     });
+    const holder = L.layerGroup(); // circles: overlay pane, default SVG renderer
+    holder.addTo(map);
+    map.addLayer(group);
+    groupRef.current = group;
+    holderRef.current = holder;
+
+    // onlyHide: during a cluster animation, hide circles whose marker is joining a
+    // cluster, but wait for the animation to end before showing new ones.
+    const sync = (onlyHide = false) => {
+      for (const [id, entry] of entries.current) {
+        const show = standsAlone(group, entry.marker) || spread.current.has(id);
+        if (show && onlyHide && !entry.drawn) continue;
+        showCircles(entry, holder, show);
+      }
+    };
+    syncRef.current = sync;
+    const animating = () => group._inZoomAnimation > 0;
+    // Registered after the cluster group, so these run after it has re-clustered.
+    const onZoomEnd = () => sync(true);
+    const onMoveEnd = () => sync(animating());
+    const onAnimationEnd = () => sync(false);
+    map.on("zoomend", onZoomEnd);
+    map.on("moveend", onMoveEnd);
+    group.on("animationend", onAnimationEnd);
+    group.on("spiderfied", (e) => {
+      e.markers.forEach((m) => spread.current.add(m.alert.id));
+      sync(false);
+    });
+    group.on("unspiderfied", (e) => {
+      e.markers.forEach((m) => spread.current.delete(m.alert.id));
+      sync(false);
+    });
     group.on("clustermouseover", (e) => {
       const el = e.layer.getElement();
       if (el) showTooltip(el, { label: e.layer.getChildCount() + " alerts here", shortcut: "Click to spread them out" });
     });
     group.on("clustermouseout", () => hideTooltip());
-    map.addLayer(group);
-    groupRef.current = group;
-    const current = markers.current;
+
+    const current = entries.current;
+    const spreadIds = spread.current;
     return () => {
+      map.off("zoomend", onZoomEnd);
+      map.off("moveend", onMoveEnd);
       map.removeLayer(group);
+      map.removeLayer(holder);
       current.clear();
+      spreadIds.clear();
       groupRef.current = null;
+      holderRef.current = null;
+      syncRef.current = () => {};
     };
   }, [map]);
 
   useEffect(() => {
     const group = groupRef.current;
-    if (!group) return;
+    const holder = holderRef.current;
+    if (!group || !holder) return;
     const wanted = new Map(alerts.filter(hasGps).map((a) => [a.id, a]));
     const remove = [];
     const add = [];
     const changed = [];
-    for (const [id, entry] of markers.current) {
+    for (const [id, entry] of entries.current) {
       if (!wanted.has(id)) {
         remove.push(entry.marker);
-        markers.current.delete(id);
+        showCircles(entry, holder, false);
+        entries.current.delete(id);
+        spread.current.delete(id);
       }
     }
     for (const a of wanted.values()) {
       const key = [a.alert_type, alertState(a), a.latitude, a.longitude].join("|");
-      const entry = markers.current.get(a.id);
+      let entry = entries.current.get(a.id);
       if (!entry) {
         const marker = L.marker([a.latitude, a.longitude], {
           icon: markerIcon(a, a.id === highlightedId),
@@ -177,7 +296,8 @@ export function ClusterLayer({ alerts, highlightedId, onOpen, onHover }) {
           hideTooltip();
         });
         marker.on("add", () => labelElement(marker));
-        markers.current.set(a.id, { marker, key });
+        entry = { marker, key, circles: [], shape: null, drawn: false };
+        entries.current.set(a.id, entry);
         add.push(marker);
       } else {
         entry.marker.alert = a;
@@ -190,27 +310,31 @@ export function ClusterLayer({ alerts, highlightedId, onOpen, onHover }) {
           changed.push(entry.marker);
         }
       }
+      const wasDrawn = entry.drawn;
+      syncCircles(entry, a, sightRadius, holder);
+      if (wasDrawn && !entry.drawn) showCircles(entry, holder, true); // rebuilt: draw again right away
     }
     if (remove.length) group.removeLayers(remove);
     if (add.length) group.addLayers(add);
     if (changed.length) group.refreshClusters(changed);
+    syncRef.current(group._inZoomAnimation > 0);
     // highlightedId is read here only for new markers; the effect below keeps it current.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [alerts]);
+  }, [alerts, sightRadius]);
 
   // Hovering a row lights up its marker, or the cluster it is hiding in.
   useEffect(() => {
     const group = groupRef.current;
     const prev = lit.current;
     if (prev.parent) prev.parent.classList.remove("is-highlighted");
-    const prevEntry = prev.id !== null ? markers.current.get(prev.id) : null;
+    const prevEntry = prev.id !== null ? entries.current.get(prev.id) : null;
     if (prevEntry) {
       const el = prevEntry.marker.getElement();
       if (el && el.firstChild) el.firstChild.classList.remove("is-highlighted");
       prevEntry.marker.setZIndexOffset(alertState(prevEntry.marker.alert) === "open" ? 0 : -500);
     }
     lit.current = { id: null, parent: null };
-    const entry = highlightedId !== null ? markers.current.get(highlightedId) : null;
+    const entry = highlightedId !== null ? entries.current.get(highlightedId) : null;
     if (!entry || !group) return;
     const visible = group.getVisibleParent(entry.marker);
     if (visible === entry.marker) {
@@ -228,79 +352,62 @@ export function ClusterLayer({ alerts, highlightedId, onOpen, onHover }) {
   return null;
 }
 
-/** One marker that does nothing on click, for the peek map. */
-export function StaticMarker({ alert }) {
+/** The Peek map: one marker that does nothing on click, and its circles.
+    Updated in place, like the Live map. */
+export function SingleAlertLayer({ alert, sightRadius }) {
   const map = useMap();
-  const alertRef = useRef(alert);
-  alertRef.current = alert;
-  const key = [alert.id, alert.alert_type, alertState(alert), alert.latitude, alert.longitude].join("|");
+  const ref = useRef(null);
+
   useEffect(() => {
-    const a = alertRef.current;
-    const marker = L.marker([a.latitude, a.longitude], { icon: markerIcon(a, false), keyboard: false, interactive: false });
-    marker.addTo(map);
-    return () => marker.remove();
-  }, [map, key]);
+    const holder = L.layerGroup().addTo(map);
+    const entry = { marker: null, key: null, circles: [], shape: null, drawn: false, holder };
+    ref.current = entry;
+    return () => {
+      if (entry.marker) entry.marker.remove();
+      map.removeLayer(holder);
+      ref.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const entry = ref.current;
+    if (!entry || !hasGps(alert)) return;
+    const key = [alert.alert_type, alertState(alert), alert.latitude, alert.longitude].join("|");
+    if (!entry.marker) {
+      entry.marker = L.marker([alert.latitude, alert.longitude], { icon: markerIcon(alert, false), keyboard: false, interactive: false });
+      entry.marker.addTo(map);
+    } else if (entry.key !== key) {
+      entry.marker.setLatLng([alert.latitude, alert.longitude]);
+      entry.marker.setIcon(markerIcon(alert, false));
+    }
+    entry.key = key;
+    entry.marker.alert = alert;
+    syncCircles(entry, alert, sightRadius, entry.holder);
+    showCircles(entry, entry.holder, true);
+  }, [map, alert, sightRadius]);
+
   return null;
 }
 
-/** One circle. react-leaflet hands top-level props to Leaflet when the circle
-    is created (className only works there), and pathOptions on later changes. */
-function Zone({ center, radius, style }) {
-  return <Circle center={center} radius={radius} interactive={false} {...style} pathOptions={style} />;
-}
-
-/** Circles for one alert, radius in meters. Colors come from CSS classes in map.css. */
-export function AlertZones({ alert, sightRadius }) {
-  if (!hasGps(alert)) return null;
-  const center = [alert.latitude, alert.longitude];
-  const color = typeMeta(alert.alert_type).color;
-  const faded = alertState(alert) === "open" ? 1 : 0.5;
-  const acc = alert.accuracy || 0;
-
-  if (alert.alert_type === "SUSPICIOUS") {
-    return (
-      <>
-        <Zone
-          center={center}
-          radius={zoneRadius(alert, sightRadius)}
-          style={{ className: "zone zone--sight", weight: 2, dashArray: "6 6", opacity: faded, fillOpacity: 0.12 * faded }}
-        />
-        {acc > 0 && (
-          <Zone center={center} radius={acc} style={{ className: "zone zone--yellow-inner", weight: 1.5, opacity: faded, fillOpacity: 0 }} />
-        )}
-      </>
-    );
-  }
-  if (acc <= 0) return null;
-  return (
-    <Zone
-      center={center}
-      radius={acc}
-      style={{ className: "zone zone--" + color, weight: 2, opacity: faded, fillOpacity: 0.12 * faded }}
-    />
-  );
-}
-
 /** Floating control group, bottom right: zoom in, zoom out, fit, labels. */
-export function MapControls({ map, onFit, fitLabel = "Fit all alerts", FitIcon = Maximize, labels, onToggleLabels, hasKey, reducedMotion }) {
-  const ICON = { size: 16, strokeWidth: 1.75, "aria-hidden": true };
+export function MapControls({ map, onFit, fitLabel = "Fit all alerts", fitIcon = icons.fitAll, labels, onToggleLabels, hasKey, reducedMotion }) {
   const labelsTip = hasKey ? (labels ? "Hide map labels" : "Show map labels") : "Map labels need a CARTO key";
   return (
     <div className="map-controls" role="group" aria-label="Map controls">
       <Tooltip label="Zoom in">
         <button type="button" className="map-ctl" aria-label="Zoom in" onClick={() => map && map.zoomIn(1, { animate: !reducedMotion })}>
-          <Plus {...ICON} />
+          <Icon icon={icons.zoomIn} />
         </button>
       </Tooltip>
       <Tooltip label="Zoom out">
         <button type="button" className="map-ctl" aria-label="Zoom out" onClick={() => map && map.zoomOut(1, { animate: !reducedMotion })}>
-          <Minus {...ICON} />
+          <Icon icon={icons.zoomOut} />
         </button>
       </Tooltip>
       <span className="map-ctl-divider" aria-hidden="true" />
       <Tooltip label={fitLabel}>
         <button type="button" className="map-ctl" aria-label={fitLabel} onClick={onFit}>
-          <FitIcon {...ICON} />
+          <Icon icon={fitIcon} />
         </button>
       </Tooltip>
       <Tooltip label={labelsTip}>
@@ -312,11 +419,9 @@ export function MapControls({ map, onFit, fitLabel = "Fit all alerts", FitIcon =
           aria-disabled={hasKey ? undefined : true}
           onClick={() => hasKey && onToggleLabels()}
         >
-          <Type {...ICON} />
+          <Icon icon={icons.mapLabels} />
         </button>
       </Tooltip>
     </div>
   );
 }
-
-export { LocateFixed };
