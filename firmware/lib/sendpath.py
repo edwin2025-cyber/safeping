@@ -89,6 +89,115 @@ def fail_reason(step, timed_out, budget_left_ms):
     return "connect_failed"
 
 
+def is_timeout(err):
+    """True if an error means time ran out (MicroPython or laptop)."""
+    if isinstance(err, OSError) and err.args:
+        if err.args[0] in (110, 116, 11, "timed out"):    # ETIMEDOUT, ETIMEDOUT (lwIP), EAGAIN
+            return True
+    return "timed out" in str(err).lower()
+
+
+def classify_error(step, err, step_parts=None):
+    """Which step really failed, whether it timed out, and the detail, for an error caught
+    during the WiFi attempt. step is the step main.py was on. step_parts is
+    umqtt_safe.step_parts (it reads a StepError's args). Returns (step, timed_out, detail).
+    A StepError from the client's own connect or TLS step wins over main.py's step."""
+    parts = step_parts(err) if step_parts is not None else None
+    if parts is not None:
+        inner_step, detail, timed_out = parts
+        if inner_step in ("connect", "tls"):
+            step = inner_step
+        return step, bool(timed_out), detail
+    return step, is_timeout(err), err
+
+
+# Plain words for each reason, printed when WiFi was not used or failed.
+PLAIN = {
+    "wifi_off": "WiFi is switched off in config.py (WIFI_SSID is none)",
+    "wifi_join_failed": "could not join the WiFi network (wrong name or password, or out of range)",
+    "dns_failed": "could not look up the broker's address (DNS)",
+    "tls_failed": "the secure connection to the broker failed (CA file, certificate or clock)",
+    "connect_timeout": "the broker did not answer in time",
+    "connect_failed": "the broker could not be reached or refused the connection or login",
+    "no_server_ack": "the broker took the alert, but the server did not confirm it in time",
+    "clock_not_set": "the clock is not set yet, and the secure connection needs the date",
+    "ca_missing": "the broker's CA file is missing on the Fob",
+    "ackcheck_missing": "ackcheck.py is missing, so a WiFi send could never be confirmed",
+    "budget_exceeded": "the WiFi attempt ran out of time",
+}
+
+# Plain words for common error numbers (lwIP and mbedTLS on the board, Linux on the laptop).
+ERRNO_WORDS = {
+    11: "no answer yet (timed out)",
+    104: "the broker reset the connection",
+    110: "timed out",
+    111: "the broker refused the connection",
+    113: "no route to the broker",
+    116: "timed out",
+    118: "no route to the broker",
+    119: "still connecting when time ran out",
+    -9984: "the broker's certificate did not check out (CA file or clock)",
+    -29312: "the broker closed the secure connection",
+    -30592: "the secure handshake failed",
+}
+
+
+def plain_error(detail):
+    """A short plain description of an error or message, with the original kept in brackets."""
+    if isinstance(detail, OSError) and detail.args and detail.args[0] in ERRNO_WORDS:
+        return "{} ({})".format(ERRNO_WORDS[detail.args[0]], detail)
+    return str(detail)
+
+
+def plain_reason(reason, detail=None):
+    text = PLAIN.get(reason, reason)
+    if detail is not None and str(detail):
+        text += ": " + plain_error(detail)
+    return text
+
+
+def mqtt_attempt(client, addr, budget, ssl_context, host, ack_topic, alert_topic, payload,
+                 ack_wait_ms, got, step_parts=None):
+    """The MQTT half of a WiFi send, after the WiFi join and DNS: TCP connect, TLS, login,
+    subscribe to the ack topic, publish, then wait for the server's ack.
+
+    client is an umqtt_safe.MQTTClient whose callback appends to got when the right ack
+    arrives. Every error is turned into a reason here, so the board and the laptop test
+    run the same code. Always disconnects.
+    Returns (confirmed, reason, published, detail, step)."""
+    step = "connect"
+    published = False
+    ack_total = 0
+    try:
+        client.open(addr, budget.left, ssl_context, host)      # TCP, then TLS
+        step = "mqtt"
+        client.connect()
+        step = "subscribe"
+        client.subscribe(ack_topic, qos=1)                     # subscribe BEFORE publishing
+        step = "publish"
+        client.publish(alert_topic, payload, qos=1)            # returns at the broker's PUBACK
+        published = True
+        step = "ack"
+        ack_budget = Budget(budget.left(ack_wait_ms))
+        ack_total = ack_budget.total
+        client.left_ms = ack_budget.left
+        while not got:
+            client.wait_msg()                                  # raises when the wait is over
+        return True, "-", True, None, step
+    except Exception as err:
+        if got:                     # the ack came in, then something failed: still confirmed
+            return True, "-", True, None, step
+        step, timed_out, detail = classify_error(step, err, step_parts)
+        if step == "ack":
+            detail = "no ack from server within {} ms".format(ack_total)
+        return False, fail_reason(step, timed_out, budget.left()), published, detail, step
+    finally:
+        try:
+            client.disconnect()
+        except Exception:
+            pass
+
+
 def lora_outcome(lora_result, wifi_published):
     """lora_result is what lora_send_confirmed() returned.
     wifi_published is True if the broker took the message but the server never acked.

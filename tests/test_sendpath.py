@@ -216,26 +216,10 @@ def run_client(mode, budget_ms=5000, ack_wait_ms=2000):
     budget = sendpath.Budget(budget_ms)
     client = umqtt_safe.MQTTClient("FOB-T", user="safeping-fob", password="placeholder", keepalive=30)
     client.set_callback(on_msg)
-    step, outcome = "connect", None
-    try:
-        client.open(("127.0.0.1", port[0]), budget.left)
-        step = "mqtt"
-        client.connect()
-        step = "subscribe"
-        client.subscribe("safeping/ack/FOB-T", qos=1)
-        step = "publish"
-        client.publish("safeping/alert/FOB-T", b'{"v":1}', qos=1)
-        step = "ack"
-        ack_budget = sendpath.Budget(budget.left(ack_wait_ms))
-        client.left_ms = ack_budget.left
-        while not got:
-            client.wait_msg()
-        outcome = "confirmed"
-    except Exception as err:
-        timed_out = umqtt_safe._is_timeout(err) or isinstance(err, socket.timeout)
-        outcome = "confirmed" if got else sendpath.fail_reason(step, timed_out, budget.left())
-    finally:
-        client.disconnect()
+    confirmed, reason, published, detail, step = sendpath.mqtt_attempt(
+        client, ("127.0.0.1", port[0]), budget, None, "localhost", "safeping/ack/FOB-T",
+        "safeping/alert/FOB-T", b'{"v":1}', ack_wait_ms, got, umqtt_safe.step_parts)
+    outcome = "confirmed" if confirmed else reason
     return outcome, budget.used(), log, ignored
 
 

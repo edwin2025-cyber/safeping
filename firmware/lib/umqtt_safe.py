@@ -6,7 +6,7 @@
 #     never hang on WiFi: TCP connect, the TLS handshake, every read and every write.
 #   - TCP connect is non-blocking with poll(), so an address that never answers still
 #     gives up on time.
-#   - Errors say which step failed (StepError.step), so the Fob can print a clear reason.
+#   - Errors say which step failed (StepError args), so the Fob can print a clear reason.
 #   - Only what the Fob needs: connect, subscribe, publish (QoS 0 or 1), wait_msg, disconnect.
 #
 # Original license (micropython-lib, MIT):
@@ -49,18 +49,29 @@ class MQTTException(Exception):
 
 
 class StepError(Exception):
-    """step is "connect", "tls", "mqtt" or "io". timeout is True when time ran out."""
+    """Raised as StepError(step, detail, timed_out).
+    step is "connect", "tls", "mqtt" or "io". detail is a message or the original error.
+    timed_out is True when time ran out.
+    No __init__ on purpose: MicroPython 1.27 has no Exception.__init__ to call, and it
+    crashed the first press on 2026-11-10. Everything lives in err.args instead."""
+    pass
 
-    def __init__(self, step, err, timeout=False):
-        Exception.__init__(self, "{}: {}".format(step, err))
-        self.step = step
-        self.err = err
-        self.timeout = timeout
+
+def _fail(step, detail, timed_out=False):
+    return StepError(step, detail, bool(timed_out))
+
+
+def step_parts(err):
+    """(step, detail, timed_out) of a StepError, or None for any other error."""
+    if isinstance(err, StepError) and len(err.args) >= 3:
+        return err.args[0], err.args[1], err.args[2]
+    return None
 
 
 def _is_timeout(err):
-    if isinstance(err, StepError):
-        return err.timeout
+    parts = step_parts(err)
+    if parts is not None:
+        return parts[2]
     if isinstance(err, OSError) and err.args:
         return err.args[0] in (110, 116, 11, "timed out")    # ETIMEDOUT, ETIMEDOUT (lwIP), EAGAIN
     return "timed out" in str(err)
@@ -83,7 +94,7 @@ class MQTTClient:
         """Set the socket timeout to what is left of the budget. No time left: stop here."""
         ms = self.left_ms()
         if ms <= 0:
-            raise StepError("io", "time budget used up", True)
+            raise _fail("io", "time budget used up", True)
         seconds = ms / 1000
         for s in (self.raw, self.sock):
             if s is not None and hasattr(s, "settimeout"):
@@ -101,7 +112,7 @@ class MQTTClient:
             if chunk is None:
                 continue
             if chunk == b"":
-                raise StepError("io", "connection closed")
+                raise _fail("io", "connection closed")
             buf += chunk
         return buf
 
@@ -132,7 +143,7 @@ class MQTTClient:
         self.raw = socket.socket()
         ms = self.left_ms()
         if ms <= 0:
-            raise StepError("connect", "time budget used up", True)
+            raise _fail("connect", "time budget used up", True)
         if select is None or not hasattr(select, "poll") or not hasattr(self.raw, "setblocking"):
             self._timeout()                         # before connect
             self.raw.connect(addr)
@@ -148,10 +159,10 @@ class MQTTClient:
         poller.register(self.raw, select.POLLOUT | select.POLLERR | select.POLLHUP)
         events = poller.poll(max(1, self.left_ms()))
         if not events:
-            raise StepError("connect", "no answer", True)
+            raise _fail("connect", "no answer", True)
         flags = events[0][1]
         if flags & (select.POLLERR | select.POLLHUP):
-            raise StepError("connect", "refused or unreachable")
+            raise _fail("connect", "refused or unreachable")
         self.raw.setblocking(True)
         self._timeout()
 
@@ -165,7 +176,7 @@ class MQTTClient:
             raise
         except Exception as err:
             self.close()
-            raise StepError("connect", err, _is_timeout(err))
+            raise _fail("connect", err, _is_timeout(err))
         if ssl_context is None:
             self.sock = self.raw
             return
@@ -175,7 +186,7 @@ class MQTTClient:
             self._timeout()                         # after the TLS wrap
         except Exception as err:
             self.close()
-            raise StepError("tls", err, _is_timeout(err))
+            raise _fail("tls", err, _is_timeout(err))
 
     def connect(self, clean_session=True):
         """MQTT CONNECT and wait for CONNACK. open() first."""
@@ -204,14 +215,15 @@ class MQTTClient:
                 self._send_str(self.pswd)
             resp = self._read(4)
         except StepError as err:
-            raise StepError("mqtt", err.err, err.timeout)
+            parts = step_parts(err)
+            raise _fail("mqtt", parts[1], parts[2])
         except Exception as err:
-            raise StepError("mqtt", err, _is_timeout(err))
+            raise _fail("mqtt", err, _is_timeout(err))
         if resp[0] != 0x20 or resp[1] != 0x02:
-            raise StepError("mqtt", "not an MQTT broker")
+            raise _fail("mqtt", "not an MQTT broker")
         if resp[3] != 0:
             # 4 = bad user name or password, 5 = not authorized
-            raise StepError("mqtt", "broker refused the login (code {})".format(resp[3]))
+            raise _fail("mqtt", "broker refused the login (code {})".format(resp[3]))
         return resp[2] & 1
 
     def close(self):
@@ -267,7 +279,7 @@ class MQTTClient:
                 if op == 0x40:
                     sz = self._read(1)
                     if sz != b"\x02":
-                        raise StepError("mqtt", "bad PUBACK")
+                        raise _fail("mqtt", "bad PUBACK")
                     rcv_pid = self._read(2)
                     rcv_pid = rcv_pid[0] << 8 | rcv_pid[1]
                     if pid == rcv_pid:
@@ -289,9 +301,9 @@ class MQTTClient:
             if op == 0x90:
                 resp = self._read(4)
                 if resp[1] != pkt[2] or resp[2] != pkt[3]:
-                    raise StepError("mqtt", "bad SUBACK")
+                    raise _fail("mqtt", "bad SUBACK")
                 if resp[3] == 0x80:
-                    raise StepError("mqtt", "broker refused the subscription")
+                    raise _fail("mqtt", "broker refused the subscription")
                 return
 
     def wait_msg(self):

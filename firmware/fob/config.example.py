@@ -44,4 +44,6 @@ CANCEL_MS = 2000    # cancel window for SUSPICIOUS and MEDICAL
 # MOTOR_STRENGTH = 100, LORA_ACK = True, ACK_WAIT_MS = 1000, LORA_TRIES = 3,
 # GPS_MAX_AGE_S = 60, LOW_BATTERY_PCT = 20,
 # WIFI_BOOT_MS = 8000 (join wait at power on), WIFI_RECONNECTS = 1, WIFI_RETRY_S = 30,
-# NTP_RETRY_S = 1800, DNS_REFRESH_S = 3600, WATCHDOG_MS = 30000, SENDING_DIM_PCT = 15
+# NTP_RETRY_S = 1800, DNS_REFRESH_S = 3600, WATCHDOG_MS = 30000, SENDING_DIM_PCT = 15,
+# WIFI_OFF_FOR_LORA = True (WiFi radio off during a LoRa fallback),
+# WIFI_SETTLE_MS = 150 (pause after WiFi goes quiet, before the LoRa send)
