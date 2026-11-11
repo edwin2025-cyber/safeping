@@ -47,7 +47,17 @@ CREATE TABLE IF NOT EXISTS rejected (
     payload   TEXT
 );
 
+-- The signature of every accepted alert, so an identical resend can be told apart
+-- from a replay (the "duplicate" rule in message-format.md).
+CREATE TABLE IF NOT EXISTS accepted_sigs (
+    device_id TEXT NOT NULL,
+    counter   INTEGER NOT NULL,
+    sig       TEXT NOT NULL,
+    timestamp REAL NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_alerts_time ON alerts (timestamp);
+CREATE INDEX IF NOT EXISTS idx_accepted_sigs ON accepted_sigs (device_id, counter);
 CREATE INDEX IF NOT EXISTS idx_ref_time ON reference_readings (timestamp);
 CREATE INDEX IF NOT EXISTS idx_rejected_time ON rejected (timestamp);
 """
@@ -136,6 +146,26 @@ def advance_counter(device_id, counter):
             (counter, device_id, counter),
         )
         return cur.rowcount == 1
+
+
+def record_accepted(device_id, counter, sig, received_at):
+    """Remember an accepted alert's signature for the duplicate check."""
+    with connect() as c:
+        c.execute(
+            "INSERT INTO accepted_sigs (device_id, counter, sig, timestamp) VALUES (?, ?, ?, ?)",
+            (device_id, counter, sig.lower(), received_at),
+        )
+
+
+def is_recent_duplicate(device_id, counter, sig, since):
+    """True if this exact alert (same id, counter and signature) was accepted at or after since."""
+    with connect() as c:
+        row = c.execute(
+            """SELECT 1 FROM accepted_sigs
+               WHERE device_id = ? AND counter = ? AND sig = ? AND timestamp >= ? LIMIT 1""",
+            (device_id, counter, sig.lower(), since),
+        ).fetchone()
+    return row is not None
 
 
 # ---------- alerts ----------

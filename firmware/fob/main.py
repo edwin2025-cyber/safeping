@@ -16,10 +16,14 @@ Cancel window
   0.6 s count as part of the pattern and do not cancel.
 
 Sending
-  WiFi + MQTT. The counter is saved to flash BEFORE the message is sent, so a
-  crash or power loss can never reuse a counter. Whatever happens, one line
-  starting with SAFEPING_MSG is printed to the serial console with the full
-  signed message, so you can check it against the server (server/replay_serial.py).
+  WiFi + MQTT over TLS first, LoRa second. One WiFi attempt per press, inside a hard
+  time budget (WIFI_BUDGET_MS). A WiFi send counts only when the SERVER sends back a
+  signed ack on safeping/ack/<id>. Otherwise the SAME message (same counter and
+  signature) goes over LoRa. The counter is saved to flash BEFORE the message is sent,
+  so a crash or power loss can never reuse a counter. Whatever happens, one line
+  starting with SAFEPING_MSG is printed to the serial console with the full signed
+  message, so you can check it against the server (server/replay_serial.py), and one
+  SEND_RESULT line says which path was used, the result, the time and why.
 
 Settings come from config.py (see config.example.py). Anything missing uses the
 default below. Pin numbers are for the ESP32 board in Wokwi. Change them for the
@@ -29,13 +33,18 @@ import binascii
 import hashlib
 import json
 import network
+import os
+import socket
 import time
 from machine import Pin, PWM
 
+import sendpath                      # the send rules (sendpath.py must be on the board)
+
 try:
-    from umqtt.simple import MQTTClient
+    from umqtt_safe import MQTTClient, StepError     # our MQTT client with timeouts
 except ImportError:
     MQTTClient = None
+    StepError = None
 try:
     import config
 except ImportError:
@@ -53,12 +62,27 @@ def _cfg(name, default):
 # ---------- settings ----------
 WIFI_SSID = _cfg("WIFI_SSID", "Wokwi-GUEST")
 WIFI_PASSWORD = _cfg("WIFI_PASSWORD", "")
-MQTT_HOST = _cfg("MQTT_HOST", "localhost")
-MQTT_PORT = _cfg("MQTT_PORT", 1883)
+MQTT_HOST = _cfg("MQTT_HOST", "your-deployment-address")
+MQTT_PORT = _cfg("MQTT_PORT", 8883)
 MQTT_USER = _cfg("MQTT_USER", None)
-MQTT_PASS = _cfg("MQTT_PASS", None)
-MQTT_TOPIC = _cfg("MQTT_TOPIC", "safeping/alerts")
+MQTT_PASSWORD = _cfg("MQTT_PASSWORD", _cfg("MQTT_PASS", None))   # MQTT_PASS is the old name
+MQTT_TLS = _cfg("MQTT_TLS", True)
+MQTT_CA_FILE = _cfg("MQTT_CA_FILE", "/certs/broker-ca.pem")
 DEVICE_ID = _cfg("DEVICE_ID", "FOB-001")
+ALERT_TOPIC = "safeping/alert/" + DEVICE_ID       # the Fob publishes here
+ACK_TOPIC = "safeping/ack/" + DEVICE_ID           # the server's signed ack comes back here
+
+# WiFi time limits, in milliseconds
+WIFI_BUDGET_MS = _cfg("WIFI_BUDGET_MS", 5000)     # the whole WiFi attempt, then LoRa
+WIFI_JOIN_MS = _cfg("WIFI_JOIN_MS", 3000)         # one join at press time, inside the budget
+MQTT_ACK_WAIT_MS = _cfg("MQTT_ACK_WAIT_MS", 2000) # the server's ack, inside the budget
+WIFI_BOOT_MS = _cfg("WIFI_BOOT_MS", _cfg("WIFI_TIMEOUT_MS", 8000))   # the join at power on
+WIFI_RECONNECTS = _cfg("WIFI_RECONNECTS", 1)      # driver retries per join, so a bad name fails fast
+WIFI_RETRY_S = _cfg("WIFI_RETRY_S", 30)           # rejoin in the background this often while idle
+NTP_RETRY_S = _cfg("NTP_RETRY_S", 1800)           # retry NTP this often until it works
+DNS_REFRESH_S = _cfg("DNS_REFRESH_S", 3600)       # look the broker up again this often while idle
+WATCHDOG_ENABLED = _cfg("WATCHDOG_ENABLED", False)   # see watchdog_start() before turning on
+WATCHDOG_MS = _cfg("WATCHDOG_MS", 30000)
 SECRET_KEY = _cfg("SECRET_KEY", "paste-the-key-from-add_device.py")
 COUNTER_FILE = _cfg("COUNTER_FILE", "counter.txt")
 
@@ -105,8 +129,8 @@ COOLDOWN_MS = _cfg("COOLDOWN_MS", 3000)          # presses ignored this long aft
 CONFIRM_MS = _cfg("CONFIRM_MS", 3000)            # solid color shown after the alert is sent
 PRESS_TICK_MS = _cfg("PRESS_TICK_MS", 0)         # buzz on each press. 0 = off (Edwin's choice
                                                  # 2026-11-07: 40 ms was too short to feel)
-WIFI_TIMEOUT_MS = _cfg("WIFI_TIMEOUT_MS", 10000)
-SEND_ATTEMPTS = _cfg("SEND_ATTEMPTS", 3)
+STATUS_SUCCESS_PATTERN = _cfg("STATUS_SUCCESS_PATTERN", "ok")   # "ok" (two pulses) or "short"
+SENDING_DIM_PCT = _cfg("SENDING_DIM_PCT", 15)    # brightness of the "sending" light, percent
 LORA_ACK = _cfg("LORA_ACK", True)                # wait for the Relay to answer "ACK <id> <ctr>"
 ACK_WAIT_MS = _cfg("ACK_WAIT_MS", 1000)          # how long to listen for the ack after each send
 LORA_TRIES = _cfg("LORA_TRIES", 3)               # sends of the same message before giving up
@@ -132,6 +156,8 @@ PATTERNS = {
     "ok": [(1, 250), (0, 150), (1, 250)],      # sent: two medium buzzes
     "fail": [(1, 1200)],                        # not sent: one long buzz
 }
+if STATUS_SUCCESS_PATTERN not in PATTERNS:
+    STATUS_SUCCESS_PATTERN = "ok"
 
 # States
 IDLE, DOWN, COUNT, PENDING, LOCKOUT = "IDLE", "DOWN", "COUNT", "PENDING", "LOCKOUT"
@@ -355,6 +381,7 @@ def _wait_for_ack(expected, wait_ms):
     An ack for this Fob with a wrong signature is reported and ignored."""
     deadline = time.ticks_add(time.ticks_ms(), wait_ms)
     while True:
+        watchdog_feed()
         left = time.ticks_diff(deadline, time.ticks_ms())
         if left <= 0:
             return False
@@ -421,36 +448,263 @@ def build_message(kind):
     return msg
 
 
+# ---------- watchdog ----------
+_wdt = None
+
+
+def watchdog_start():
+    """Hardware watchdog: resets the board if the program stops feeding it for WATCHDOG_MS.
+    Off by default. Once started on the ESP32 it CANNOT be stopped, so after Ctrl+C in
+    Thonny the board resets WATCHDOG_MS later. Turn it on only for field use."""
+    global _wdt
+    if not WATCHDOG_ENABLED:
+        return False
+    try:
+        from machine import WDT
+        _wdt = WDT(timeout=WATCHDOG_MS)
+        return True
+    except Exception as err:
+        print("watchdog not started:", err)
+        return False
+
+
+def watchdog_feed():
+    if _wdt is not None:
+        _wdt.feed()
+
+
 # ---------- network ----------
-def wifi_connect(service=None):
-    if not WIFI_SSID or WIFI_SSID.lower() == "none":
-        return False                    # WiFi is switched off in config.py (bench testing)
-    sta = network.WLAN(network.STA_IF)
-    sta.active(True)
-    if not sta.isconnected():
+_wlan = None
+_broker_addr = None               # the broker's address from the last good DNS lookup
+_tls_ctx = None
+STAT_CONNECTING = getattr(network, "STAT_CONNECTING", 1001)
+_JOIN_FAILED = tuple(getattr(network, name) for name in (
+    "STAT_NO_AP_FOUND", "STAT_WRONG_PASSWORD", "STAT_CONNECT_FAIL", "STAT_ASSOC_FAIL",
+    "STAT_HANDSHAKE_TIMEOUT", "STAT_BEACON_TIMEOUT") if hasattr(network, name))
+
+
+def _sta():
+    """The WiFi interface, switched on the first time. Never used when WiFi is off."""
+    global _wlan
+    if _wlan is None:
+        _wlan = network.WLAN(network.STA_IF)
+        _wlan.active(True)
         try:
-            sta.connect(WIFI_SSID, WIFI_PASSWORD)
-        except OSError:
-            pass                        # an attempt is already running, so keep waiting for it
-    start = time.ticks_ms()
-    while not sta.isconnected() and time.ticks_diff(time.ticks_ms(), start) < WIFI_TIMEOUT_MS:
+            # Few driver retries per join, so a wrong name ends the join quickly
+            # instead of retrying forever in the background.
+            _wlan.config(reconnects=WIFI_RECONNECTS)
+        except Exception:
+            pass
+    return _wlan
+
+
+def wifi_connected():
+    return _wlan is not None and _wlan.isconnected()
+
+
+def wifi_joining():
+    try:
+        return _wlan is not None and not _wlan.isconnected() and _wlan.status() == STAT_CONNECTING
+    except Exception:
+        return False
+
+
+def wifi_start_join():
+    """Start a join without waiting. If one is already running, leave it alone: calling
+    connect() on top of it is what printed "sta is connecting, cannot set config"."""
+    sta = _sta()
+    if sta.isconnected() or wifi_joining():
+        return True
+    try:
+        sta.connect(WIFI_SSID, WIFI_PASSWORD)
+        return True
+    except OSError as err:
+        print("WiFi join could not start:", err)
+        return False
+
+
+def wifi_join(wait_ms, service=None):
+    """Be connected within wait_ms. Waits on a join already in progress instead of starting
+    a second one. Stops early if the driver says the name or password is wrong."""
+    if not wifi_start_join():
+        return False
+    sta = _sta()
+    deadline = time.ticks_add(time.ticks_ms(), wait_ms)
+    while not sta.isconnected():
+        now = time.ticks_ms()
+        if time.ticks_diff(deadline, now) <= 0:
+            break
+        try:
+            if sta.status() in _JOIN_FAILED:
+                break
+        except Exception:
+            pass
         if service:
-            service(time.ticks_ms())
-        time.sleep_ms(50)
+            service(now)
+        watchdog_feed()
+        time.sleep_ms(20)
     return sta.isconnected()
 
 
-def mqtt_publish(payload):
-    client = MQTTClient(DEVICE_ID, MQTT_HOST, port=MQTT_PORT, user=MQTT_USER or None,
-                        password=MQTT_PASS or None, keepalive=30)
-    client.connect()
+def wifi_quiet():
+    """WiFi idle for a LoRa send: stop any join and drop the link. The interface stays
+    active, so the next join is quick. Bench 2026-11-10 (test 3): right after WiFi
+    activity the Fob missed all 3 Relay acks, so WiFi must not be busy during LoRa."""
+    if _wlan is None:
+        return
     try:
-        client.publish(MQTT_TOPIC, payload, qos=1)    # waits for the broker to say it has it
-    finally:
+        if _wlan.isconnected() or wifi_joining():
+            _wlan.disconnect()
+    except Exception as err:
+        print("WiFi disconnect error:", err)
+
+
+def ntp_sync():
+    """Set the clock from NTP. Only called while idle, never during a send."""
+    try:
+        import ntptime
+        ntptime.settime()
+        print("clock set by NTP, year", time.gmtime()[0])
+        return True
+    except Exception as err:
+        print("no NTP ({}), will retry in {} min".format(err, NTP_RETRY_S // 60))
+        return False
+
+
+def clock_year():
+    return time.gmtime()[0]
+
+
+def dns_lookup():
+    """Look the broker up and save the address. Returns the address or None."""
+    global _broker_addr
+    try:
+        addr = socket.getaddrinfo(MQTT_HOST, MQTT_PORT, 0, socket.SOCK_STREAM)[0][-1]
+    except Exception as err:
+        print("DNS lookup failed for the broker:", err)
+        return None
+    _broker_addr = addr
+    return addr
+
+
+def broker_address():
+    """The saved address if there is one (no DNS wait on a press), else a lookup now.
+    The host name is still used for the TLS certificate check."""
+    if _broker_addr is not None:
+        return _broker_addr, True
+    return dns_lookup(), False
+
+
+def forget_broker_address():
+    global _broker_addr
+    _broker_addr = None
+
+
+def ca_present():
+    try:
+        os.stat(MQTT_CA_FILE)
+        return True
+    except OSError:
+        return False
+
+
+def tls_context():
+    """TLS settings, made once. Certificate checks are always on.
+    Loads the CA as given (PEM or DER). If the board refuses PEM, it is turned into DER."""
+    global _tls_ctx
+    if _tls_ctx is None:
+        import ssl
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        with open(MQTT_CA_FILE, "rb") as f:
+            data = f.read()
         try:
+            ctx.load_verify_locations(cadata=data)
+        except Exception as err:
+            der = sendpath.pem_to_der(data)
+            if der is data:
+                raise
+            print("CA as PEM refused ({}), loading it as DER".format(err))
+            ctx.load_verify_locations(cadata=der)
+        _tls_ctx = ctx
+    return _tls_ctx
+
+
+def wifi_send(payload, ctr, sig, budget, service=None):
+    """One WiFi/MQTT attempt inside the budget. Never retries.
+    Returns (confirmed, reason, published). published = the broker took it (PUBACK)."""
+    reason = sendpath.skip_reason(WIFI_SSID, MQTTClient is not None, ACK_KEY is not None,
+                                  MQTT_TLS, (not MQTT_TLS) or ca_present(), clock_year())
+    if reason:
+        if reason == "ca_missing":
+            print("TLS CA file missing:", MQTT_CA_FILE)
+        elif reason == "clock_not_set":
+            print("clock not set, WiFi skipped (TLS needs the date)")
+        return False, reason, False
+
+    expected = ackcheck.ack_text(ACK_KEY, DEVICE_ID, ctr, sig).encode()
+    ack_topic = ACK_TOPIC.encode()
+    got = []
+
+    def on_message(topic, msg):
+        if topic == ack_topic and msg.strip() == expected:
+            got.append(True)
+        else:
+            print("WiFi ack ignored: not for this alert")
+
+    client = None
+    published = False
+    step = "join"
+    used_saved_addr = False
+    try:
+        if not wifi_join(budget.left(WIFI_JOIN_MS), service):
+            return False, "wifi_join_failed", False
+        step = "dns"
+        addr, used_saved_addr = broker_address()
+        if addr is None:
+            return False, "dns_failed", False
+        if budget.left() <= 0:
+            return False, "budget_exceeded", False
+        step = "tls"
+        ctx = tls_context() if MQTT_TLS else None
+        step = "connect"
+        client = MQTTClient(DEVICE_ID, user=MQTT_USER, password=MQTT_PASSWORD, keepalive=30)
+        client.set_callback(on_message)
+        client.open(addr, budget.left, ctx, MQTT_HOST)      # TCP, then TLS
+        step = "mqtt"
+        client.connect()
+        step = "subscribe"
+        client.subscribe(ACK_TOPIC, qos=1)                 # subscribe BEFORE publishing
+        step = "publish"
+        client.publish(ALERT_TOPIC, payload, qos=1)        # returns at the broker's PUBACK
+        published = True
+        step = "ack"
+        wait = budget.left(MQTT_ACK_WAIT_MS)
+        ack_budget = sendpath.Budget(wait)
+        client.left_ms = ack_budget.left
+        while not got:
+            client.wait_msg()                              # raises when the wait is over
+        return True, "-", True
+    except Exception as err:
+        timed_out = False
+        if StepError is not None and isinstance(err, StepError):
+            timed_out = err.timeout
+            if err.step in ("connect", "tls"):
+                step = err.step
+        elif isinstance(err, OSError) and err.args:
+            timed_out = err.args[0] in (110, 116, 11)
+        if step == "ack":
+            if got:                    # the ack came in, then the read timed out: still good
+                return True, "-", True
+            print("no ack from server within", ack_budget.total, "ms")
+        else:
+            print("WiFi send failed at {}: {}".format(step, err))
+            if step in ("connect", "tls") and used_saved_addr:
+                forget_broker_address()                    # maybe the broker moved: look up again
+        return False, sendpath.fail_reason(step, timed_out, budget.left()), published
+    finally:
+        if client is not None:
             client.disconnect()
-        except Exception:
-            pass
 
 
 # ---------- LED ----------
@@ -610,6 +864,7 @@ class Motor:
         """Play a pattern and wait for it to finish (used right before a slow network call)."""
         self.play(name)
         while self.busy():
+            watchdog_feed()
             time.sleep_ms(5)
             self.update(time.ticks_ms())
 
@@ -646,6 +901,13 @@ class Fob:
         self.press_can_cancel = False
         self.in_press = False
         self.lockout_until = 0
+        # idle upkeep (WiFi rejoin, NTP, DNS), never during a send
+        self.next_upkeep = 0
+        self.next_join = 0
+        self.join_until = None
+        self.clock_ok = False
+        self.next_ntp = 0
+        self.next_dns = 0
 
     # --- start up ---
     def service(self, now):
@@ -669,55 +931,121 @@ class Fob:
         self.led.show(WHITE, duration_ms=200)
         self.motor.run("tick")
         time.sleep_ms(250)
-        self.led.show(ORANGE, 300, 300)
-        if wifi_connect(self.service):
-            print("WiFi connected")
-            try:
-                import ntptime
-                ntptime.settime()
-            except Exception:
-                print("no NTP, timestamps may be missing or wrong")
+        if sendpath.wifi_off(WIFI_SSID):
+            print("WiFi off (WIFI_SSID is none), every alert goes over LoRa")
         else:
-            print("WiFi not connected yet, will retry when an alert is sent")
+            self.boot_wifi()
         self.led.off()
         self.refresh_battery()
+        if watchdog_start():
+            print("watchdog on:", WATCHDOG_MS, "ms")
+
+    def boot_wifi(self):
+        print("WiFi path: {}:{} TLS {}, budget {} ms (join {} ms, ack {} ms)".format(
+            MQTT_HOST, MQTT_PORT, "on" if MQTT_TLS else "OFF", WIFI_BUDGET_MS, WIFI_JOIN_MS,
+            MQTT_ACK_WAIT_MS))
+        if MQTTClient is None:
+            print("WARNING: umqtt_safe.py missing, every alert goes over LoRa")
+        if MQTT_TLS and not ca_present():
+            print("TLS CA file missing:", MQTT_CA_FILE)
+        self.led.show(ORANGE, 300, 300)
+        if wifi_join(WIFI_BOOT_MS, self.service):
+            print("WiFi connected")
+            self.clock_ok = ntp_sync()
+            if not self.clock_ok:
+                self.next_ntp = time.ticks_add(time.ticks_ms(), NTP_RETRY_S * 1000)
+            ok = dns_lookup() is not None
+            wait_s = DNS_REFRESH_S if ok else WIFI_RETRY_S
+            self.next_dns = time.ticks_add(time.ticks_ms(), wait_s * 1000)
+        else:
+            print("WiFi not connected yet, will retry in the background")
+            wifi_quiet()
+            self.next_join = time.ticks_add(time.ticks_ms(), WIFI_RETRY_S * 1000)
+
+    def upkeep(self, now):
+        """Idle-only WiFi upkeep, at most once a second: rejoin in the background, retry
+        NTP, refresh the broker address. Never runs during a send or a cancel window.
+        A join started here does not block: a press during it waits on it (inside the budget)."""
+        if sendpath.wifi_off(WIFI_SSID) or time.ticks_diff(now, self.next_upkeep) < 0:
+            return
+        self.next_upkeep = time.ticks_add(now, 1000)
+        if wifi_connected():
+            self.join_until = None
+            if not self.clock_ok and time.ticks_diff(now, self.next_ntp) >= 0:
+                watchdog_feed()
+                self.clock_ok = ntp_sync()
+                self.next_ntp = time.ticks_add(time.ticks_ms(), NTP_RETRY_S * 1000)
+            if time.ticks_diff(now, self.next_dns) >= 0:
+                watchdog_feed()
+                ok = dns_lookup() is not None              # a failure keeps the old address
+                wait_s = DNS_REFRESH_S if ok else WIFI_RETRY_S
+                self.next_dns = time.ticks_add(time.ticks_ms(), wait_s * 1000)
+            return
+        if self.join_until is not None:                     # a background join is running
+            if not wifi_joining() or time.ticks_diff(now, self.join_until) >= 0:
+                if not wifi_connected():
+                    wifi_quiet()                            # stop it, so LoRa has a quiet radio
+                self.join_until = None
+                self.next_join = time.ticks_add(now, WIFI_RETRY_S * 1000)
+            return
+        if time.ticks_diff(now, self.next_join) >= 0:
+            if wifi_start_join():
+                self.join_until = time.ticks_add(now, WIFI_BOOT_MS)
+            else:
+                self.next_join = time.ticks_add(now, WIFI_RETRY_S * 1000)
 
     def refresh_battery(self):
         bat = read_battery()
         self.led.scale = 40 if (bat is not None and bat < LOW_BATTERY_PCT) else 100
 
     # --- sending ---
+    def show_sending(self, kind):
+        """A dim, steady light while the send runs. SILENT stays dark."""
+        if kind == "SILENT":
+            return
+        color = {"SUSPICIOUS": YELLOW, "MEDICAL": RED}.get(kind, WHITE)
+        self.led.show(tuple(c * SENDING_DIM_PCT // 100 for c in color))
+
     def send(self, kind):
-        """Build, sign and send one message. Returns True if the broker accepted it."""
+        """Build, sign and send one message: WiFi once inside WIFI_BUDGET_MS, then LoRa
+        with the same message. Returns True only if it was confirmed (or LoRa acks are off
+        and it was sent). Always prints one SEND_RESULT line."""
         self.motor.before_send()           # motor off while the radio transmits
+        self.show_sending(kind)
+        budget = sendpath.Budget(WIFI_BUDGET_MS)   # starts at the press decision
         msg = build_message(kind)
+        ctr, sig = msg["ctr"], msg["sig"]
         if "lat" in msg:
             print("location sent, accuracy about", msg["acc"], "m")
         else:
             print("no GPS fix, sending without a location")
         payload = json.dumps(msg)
         print("SAFEPING_MSG " + payload)
-        for attempt in range(SEND_ATTEMPTS):
-            try:
-                if not wifi_connect(None):
-                    raise OSError("no WiFi")
-                mqtt_publish(payload)
-                print("sent", kind, "ctr", msg["ctr"])
-                return True
-            except Exception as err:
-                print("send attempt", attempt + 1, "failed:", err)
-        result = lora_send_confirmed(payload, msg["ctr"], msg["sig"])
+
+        confirmed, reason, published = wifi_send(payload, ctr, sig, budget, self.service)
+        if confirmed:
+            print("sent", kind, "ctr", ctr, "over WiFi, confirmed by the server")
+            print(sendpath.result_line(ctr, kind, "wifi", "confirmed", budget.used(), "-"))
+            return True
+
+        if reason == "wifi_off":
+            print("WiFi off, using LoRa")
+        else:
+            print("falling back to LoRa:", reason)
+            wifi_quiet()                   # WiFi idle during the LoRa send and ack window
+        self.motor.before_send()
+        result = lora_send_confirmed(payload, ctr, sig)
         if result == "confirmed":
-            print("sent over LoRa", kind, "confirmed by the Relay")
-            return True
-        if result == "sent":
-            print("sent over LoRa", kind)
-            return True
-        if result == "unconfirmed":
-            print("NOT CONFIRMED", kind, "(no ack from the Relay)")
-            return False
-        print("NOT SENT", kind)
-        return False
+            print("sent over LoRa", kind, "ctr", ctr, "confirmed by the Relay")
+        elif result == "sent":
+            print("sent over LoRa", kind, "ctr", ctr)
+        elif result == "unconfirmed":
+            print("NOT CONFIRMED", kind, "ctr", ctr, "(no ack from the Relay)")
+        else:
+            print("NOT SENT", kind, "ctr", ctr)
+        path, outcome, ok = sendpath.lora_outcome(result, published)
+        print(sendpath.result_line(ctr, kind, path, outcome, budget.used(), reason))
+        return ok
 
     def finish(self, kind, ok):
         """Show the result, then ignore presses for a short while."""
@@ -729,7 +1057,8 @@ class Fob:
         elif kind == "STATUS":
             if ok:
                 self.led.show(WHITE, 150, 150, 300)
-                self.motor.play("short")
+                gap = RESULT_GAP_MS if STATUS_SUCCESS_PATTERN == "ok" else 0
+                self.motor.play(STATUS_SUCCESS_PATTERN, gap)   # "ok" = two pulses, like the rest
             else:
                 self.led.show(ORANGE, duration_ms=CONFIRM_MS)
                 self.motor.play("fail", RESULT_GAP_MS)
@@ -773,8 +1102,7 @@ class Fob:
 
     def send_pending(self):
         kind = self.pending
-        self.led.show(RED if kind == "MEDICAL" else YELLOW)     # solid while the slow part runs
-        self.finish(kind, self.send(kind))
+        self.finish(kind, self.send(kind))     # send() shows the dim "sending" light
 
     def cancel_pending(self):
         print("CANCELLED", self.pending)
@@ -796,6 +1124,8 @@ class Fob:
         if self.state == IDLE:
             if pressed:
                 self.press_down(now)
+            elif not down:
+                self.upkeep(now)
 
         elif self.state == DOWN:
             if released:
@@ -860,6 +1190,7 @@ def main():
     fob.boot()
     while True:
         fob.step(time.ticks_ms())
+        watchdog_feed()
         time.sleep_ms(LOOP_MS)
 
 

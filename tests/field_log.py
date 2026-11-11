@@ -48,7 +48,18 @@ CSV_COLUMNS = [
     "ctr", "type", "fob_time", "fob_result", "relay_time", "received", "delay_s",
     "lat", "lon", "acc_m", "lat_deg", "lon_deg", "rssi_dbm", "snr_db", "same_message",
     "lora_retry", "p_pa", "t_c", "bat_pct", "confirmed", "ack_try",
+    "path", "result", "ms", "reason",          # from the Fob's SEND_RESULT line
 ]
+
+
+def parse_send_result(line):
+    """The fields of a Fob 'SEND_RESULT ctr=.. kind=.. path=.. result=.. ms=.. reason=..' line."""
+    out = {}
+    for part in line.split()[1:]:
+        if "=" in part:
+            name, value = part.split("=", 1)
+            out[name] = value
+    return out
 
 
 def now_text(t):
@@ -95,6 +106,17 @@ class Session:
             self._seen(ctr)
             self.last_fob_ctr = ctr
             return "FOB  sent ctr {} {}{}".format(ctr, msg.get("type"), self._gps_text(msg))
+        if line.startswith("SEND_RESULT "):
+            fields = parse_send_result(line)
+            try:
+                ctr = int(fields.get("ctr", ""))
+            except ValueError:
+                ctr = None
+            if ctr in self.fob:
+                self.fob[ctr]["send"] = fields
+            return "FOB  " + line
+        if line.startswith("falling back to LoRa") or line.startswith("no ack from server"):
+            return "FOB  " + line
         if self.last_fob_ctr is not None and self.last_fob_ctr in self.fob:
             entry = self.fob[self.last_fob_ctr]
             if line.startswith("sent over LoRa"):
@@ -211,6 +233,10 @@ class Session:
                 "bat_pct": msg.get("bat", ""),
                 "confirmed": ("yes" if f.get("confirmed") else "no") if f and f["result"] in ("LoRa", "not confirmed") else "",
                 "ack_try": f.get("ack_try", "") if f else "",
+                "path": f.get("send", {}).get("path", "") if f else "",
+                "result": f.get("send", {}).get("result", "") if f else "",
+                "ms": f.get("send", {}).get("ms", "") if f else "",
+                "reason": f.get("send", {}).get("reason", "") if f else "",
             })
         return rows
 

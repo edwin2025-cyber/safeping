@@ -83,6 +83,8 @@ def main():
             else mqtt.Client()
         if config.MQTT_USER:
             client.username_pw_set(config.MQTT_USER, config.MQTT_PASS)
+        if config.MQTT_CA:
+            client.tls_set(ca_certs=config.MQTT_CA)
         client.connect(config.MQTT_HOST, config.MQTT_PORT)
         client.loop_start()
 

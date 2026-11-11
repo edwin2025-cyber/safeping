@@ -4,12 +4,16 @@ Every device (Fob, Relay, Reference) and the server follow this one format. If y
 
 ## Transport
 
-| What | Topic | Sent by | Over |
+| What | Topic | Sent by | QoS |
 |---|---|---|---|
-| Alerts | `safeping/alerts` | Fob (WiFi), or Relay on behalf of a Fob (LoRa) | MQTT |
-| Reference readings | `safeping/reference` | Reference | MQTT |
+| Alerts from a Fob over WiFi | `safeping/alert/<id>` (for example `safeping/alert/FOB-001`) | Fob | 1 |
+| Signed acks for WiFi alerts | `safeping/ack/<id>` | Server | 1 |
+| Alerts (old shared topic, still read) | `safeping/alerts` | `fake_fob.py`, or a future Relay forwarder | 1 |
+| Reference readings | `safeping/reference` | Reference | 1 |
 
-The Relay passes a LoRa packet on exactly as received. It does not edit or re-sign anything. The server cannot tell which path a message took.
+The broker is EMQX Cloud Serverless. It takes **TLS only, on port 8883**, with a user name and password: `safeping-fob` for the Fobs and `safeping-server` for the server. Both sides check the broker's certificate against the CA file. Certificate checks are never turned off. The Fob checks the certificate date, so it needs a set clock (NTP). With the clock before 2026, it skips WiFi and uses LoRa (`clock_not_set`).
+
+The Relay passes a LoRa packet on exactly as received. It does not edit or re-sign anything. The message is the same on every path. The server only records which path it came in on.
 
 Two ways the Relay can pass alerts on:
 
@@ -78,6 +82,29 @@ Over LoRa the Fob waits for the Relay to confirm it saved the alert.
 
 The ack proves the Relay saved the alert. It does not yet prove the server saved it. The server can make the same ack (it knows every secret), so moving the ack to the server later keeps this format.
 
+## WiFi acks (Fob and server, over MQTT)
+
+Over WiFi the Fob waits for the **server** to confirm it saved the alert. The broker's own PUBACK only means the broker has it, so it does not count.
+
+1. The Fob connects (TLS), **subscribes to `safeping/ack/<id>` first**, then publishes the alert to `safeping/alert/<id>` at QoS 1.
+2. The server checks the alert as usual. **Only after the alert is saved** (before any text goes out), it publishes the ack to `safeping/ack/<id>` at QoS 1.
+3. The ack text is exactly the LoRa ack: `ACK <id> <ctr> <mac>`, with the same `ack_key` and `mac` as above (`ackcheck.py`, shared by the Fob, the Relay and the server).
+4. The Fob waits up to `MQTT_ACK_WAIT_MS` (2 s) for the exact ack and ignores anything else. Valid ack: confirmed, two pulses. No valid ack in time: it sends the **same message** (same `ctr`, same `sig`) over LoRa.
+5. The server never acks a rejected message, except a duplicate (below).
+
+The whole WiFi attempt (join, DNS, TLS, connect, publish, ack) has a hard limit of `WIFI_BUDGET_MS` (5 s). After that the Fob uses LoRa.
+
+## Duplicates
+
+Because the Fob resends the same message over LoRa when the WiFi ack is lost, the server can get one alert twice.
+
+- A message that is **identical to an already accepted alert** (same `id`, `ctr` and `sig`) and arrives **within 10 minutes** of it is a `duplicate`:
+  - it is not stored again and no second text is sent
+  - it is written to the `rejected` table with reason `duplicate` (System health shows it as "Duplicates caught")
+  - if it came over MQTT, the server acks it again, so the Fob stops resending
+- Anything else with an old or reused counter is still `replay`: a different signature, a lower counter, an identical copy after 10 minutes, or a Reference reading.
+- The duplicate check runs only after the signature is good, so it cannot be forged.
+
 ## What the server checks, in this order
 
 1. Payload is under 512 bytes and is valid JSON. Otherwise `bad_json`.
@@ -85,7 +112,7 @@ The ack proves the Relay saved the alert. It does not yet prove the server saved
 3. The ID is registered. Otherwise `unknown_device`.
 4. The device is allowed to send this type (Fobs send alerts, the Reference sends `REF`). Otherwise `wrong_role`.
 5. The signature matches. Otherwise `bad_signature`.
-6. The counter is higher than the last accepted one for that device. Otherwise `replay`.
+6. The counter is higher than the last accepted one for that device. Otherwise `replay`, or `duplicate` if it is an identical copy of an alert accepted in the last 10 minutes (see Duplicates).
 
 The counter is only used up after the signature is good, so nobody can lock a device out with fake messages.
 

@@ -252,10 +252,9 @@ def build(first, last, now=None):
         "median_ack_by_type": {t: _median(s) for t, s in ack_by_type.items() if s},
         "hotspots": _hotspots(start, end),
         "delivery": db.count_by_link(start, end),
-        # The server cannot tell a Fob resending the same message from someone replaying it:
-        # both fail the counter check and are counted under rejected as "replay". So
-        # duplicates are not tracked on their own.
-        "duplicates": None,
+        # An identical resend of an accepted alert within 10 minutes (WiFi, then LoRa) is
+        # logged under rejected as "duplicate". Any other old counter stays "replay".
+        "duplicates": by_reason.get("duplicate", 0),
         "rejected": {"total": sum(by_reason.values()), "by_reason": by_reason},
         "stale_fobs": sorted(_device_name(d) for d in stale),
         "low_battery_fobs": [{"name": _device_name(d), "pct": d["battery"]} for d in low],
