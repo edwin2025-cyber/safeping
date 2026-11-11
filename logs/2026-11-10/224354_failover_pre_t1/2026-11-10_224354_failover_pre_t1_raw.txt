@@ -1,0 +1,30 @@
+# label failover_pre_t1  fob COM15  relay COM14
+2026-11-10 22:43:54.873 INFO  RELAY connected on COM14
+2026-11-10 22:43:54.873 INFO  FOB connected on COM15
+2026-11-10 22:44:05.249 FOB   >>> [VIBRATE: one]
+2026-11-10 22:44:07.308 FOB   no GPS fix, sending without a location
+2026-11-10 22:44:07.309 FOB   SAFEPING_MSG {"ctr": 193, "t": 2080, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "7cfd85432b0225470e4aaa88217f0aafc29c64ac7a17f623c12b388085c3ba1d"}
+2026-11-10 22:44:07.309 FOB   send attempt 1 failed: no WiFi
+2026-11-10 22:44:07.852 RELAY SAFEPING_MSG {"ctr": 193, "t": 2080, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "7cfd85432b0225470e4aaa88217f0aafc29c64ac7a17f623c12b388085c3ba1d"}
+2026-11-10 22:44:07.854 RELAY from FOB-001 type SUSPICIOUS ctr 193 signal -31 dBm, snr 10.0
+2026-11-10 22:44:07.855 FOB   ACK received (try 1)
+2026-11-10 22:44:07.855 FOB   sent over LoRa SUSPICIOUS confirmed by the Relay
+2026-11-10 22:44:07.856 FOB   >>> [VIBRATE: ok]
+2026-11-10 22:44:26.411 FOB   >>> [VIBRATE: one]
+2026-11-10 22:44:28.478 FOB   no GPS fix, sending without a location
+2026-11-10 22:44:28.479 FOB   SAFEPING_MSG {"ctr": 194, "t": 2074, "id": "FOB-001", "v": 1, "bat": 100, "p": 99398, "type": "SUSPICIOUS", "sig": "bd56a4c773cc7442677af72b19990317f1329d28de005291b767a39aac7af362"}
+2026-11-10 22:44:28.480 FOB   send attempt 1 failed: no WiFi
+2026-11-10 22:44:28.872 RELAY SAFEPING_MSG {"ctr": 194, "t": 2074, "id": "FOB-001", "v": 1, "bat": 100, "p": 99398, "type": "SUSPICIOUS", "sig": "bd56a4c773cc7442677af72b19990317f1329d28de005291b767a39aac7af362"}
+2026-11-10 22:44:28.874 RELAY from FOB-001 type SUSPICIOUS ctr 194 signal -32 dBm, snr 9.5
+2026-11-10 22:44:28.875 FOB   ACK received (try 1)
+2026-11-10 22:44:28.875 FOB   sent over LoRa SUSPICIOUS confirmed by the Relay
+2026-11-10 22:44:28.877 FOB   >>> [VIBRATE: ok]
+2026-11-10 22:44:46.069 FOB   >>> [VIBRATE: one]
+2026-11-10 22:44:48.138 FOB   no GPS fix, sending without a location
+2026-11-10 22:44:48.139 FOB   SAFEPING_MSG {"ctr": 195, "t": 2075, "id": "FOB-001", "v": 1, "bat": 100, "p": 99399, "type": "SUSPICIOUS", "sig": "b4e2d8b5da8589dd1c320845353de4cd7de94f222b8dccee556f83a900248098"}
+2026-11-10 22:44:48.139 FOB   send attempt 1 failed: no WiFi
+2026-11-10 22:44:48.544 RELAY SAFEPING_MSG {"ctr": 195, "t": 2075, "id": "FOB-001", "v": 1, "bat": 100, "p": 99399, "type": "SUSPICIOUS", "sig": "b4e2d8b5da8589dd1c320845353de4cd7de94f222b8dccee556f83a900248098"}
+2026-11-10 22:44:48.545 RELAY from FOB-001 type SUSPICIOUS ctr 195 signal -29 dBm, snr 9.25
+2026-11-10 22:44:48.546 FOB   ACK received (try 1)
+2026-11-10 22:44:48.546 FOB   sent over LoRa SUSPICIOUS confirmed by the Relay
+2026-11-10 22:44:48.547 FOB   >>> [VIBRATE: ok]

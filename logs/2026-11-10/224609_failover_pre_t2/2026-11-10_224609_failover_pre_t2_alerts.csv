@@ -1,0 +1,4 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try
+196,SUSPICIOUS,2026-11-10 22:46:15.773,LoRa,2026-11-10 22:46:17.793,yes,2.02,,,,,,-32,9.25,yes,,99397,20.92,100,yes,1
+197,SUSPICIOUS,2026-11-10 22:46:36.774,LoRa,2026-11-10 22:46:38.674,yes,1.90,,,,,,-33,10.0,yes,,99394,20.97,100,yes,1
+198,SUSPICIOUS,2026-11-10 22:46:56.933,LoRa,2026-11-10 22:46:59.197,yes,2.26,,,,,,-33,9.25,yes,,99396,20.98,100,yes,1

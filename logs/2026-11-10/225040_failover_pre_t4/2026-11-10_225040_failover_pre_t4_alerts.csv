@@ -1,0 +1,4 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try
+202,SUSPICIOUS,2026-11-10 22:50:54.678,not confirmed,,no,,,,,,,,,,,99394,21.26,100,no,
+203,SUSPICIOUS,2026-11-10 22:51:12.039,not confirmed,,no,,,,,,,,,,,99393,21.25,100,no,
+204,SUSPICIOUS,2026-11-10 22:51:35.118,not confirmed,,no,,,,,,,,,,,99395,21.26,100,no,

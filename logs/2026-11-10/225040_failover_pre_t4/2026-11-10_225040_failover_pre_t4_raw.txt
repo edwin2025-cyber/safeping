@@ -1,0 +1,63 @@
+# label failover_pre_t4  fob COM15  relay COM14
+2026-11-10 22:50:40.478 INFO  FOB connected on COM15
+2026-11-10 22:50:40.478 INFO  RELAY connected on COM14
+2026-11-10 22:50:46.202 INFO  RELAY problem on COM14: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-10 22:50:48.203 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:50:50.203 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:50:52.204 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:50:52.612 FOB   >>> [VIBRATE: one]
+2026-11-10 22:50:54.205 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:50:54.678 FOB   no GPS fix, sending without a location
+2026-11-10 22:50:54.678 FOB   SAFEPING_MSG {"ctr": 202, "t": 2126, "id": "FOB-001", "v": 1, "bat": 100, "p": 99394, "type": "SUSPICIOUS", "sig": "b34182e491b2c666937c0caed4c87d5cc5010080c1589c71e6f28995c2ddac94"}
+2026-11-10 22:50:54.679 FOB   E (40733) wifi:sta is connecting, cannot set config
+2026-11-10 22:50:56.181 FOB   send attempt 1 failed: no WiFi
+2026-11-10 22:50:56.206 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:50:57.712 FOB   ACK missing (try 1 of 3)
+2026-11-10 22:50:58.207 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:50:59.116 FOB   ACK missing (try 2 of 3)
+2026-11-10 22:51:00.208 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:00.511 FOB   ACK missing (try 3 of 3)
+2026-11-10 22:51:00.512 FOB   NOT CONFIRMED SUSPICIOUS (no ack from the Relay)
+2026-11-10 22:51:00.514 FOB   >>> [VIBRATE: fail]
+2026-11-10 22:51:02.208 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:04.209 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:06.210 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:08.211 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:09.980 FOB   >>> [VIBRATE: one]
+2026-11-10 22:51:10.212 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:12.039 FOB   no GPS fix, sending without a location
+2026-11-10 22:51:12.039 FOB   SAFEPING_MSG {"ctr": 203, "t": 2125, "id": "FOB-001", "v": 1, "bat": 100, "p": 99393, "type": "SUSPICIOUS", "sig": "7508459db92c4f8a1abccb8d389cef89851a3180e4298746ac0de9f4bf354856"}
+2026-11-10 22:51:12.040 FOB   E (58093) wifi:sta is connecting, cannot set config
+2026-11-10 22:51:12.212 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:13.542 FOB   send attempt 1 failed: no WiFi
+2026-11-10 22:51:14.213 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:14.945 FOB   ACK missing (try 1 of 3)
+2026-11-10 22:51:16.214 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:16.332 FOB   ACK missing (try 2 of 3)
+2026-11-10 22:51:17.731 FOB   ACK missing (try 3 of 3)
+2026-11-10 22:51:17.731 FOB   NOT CONFIRMED SUSPICIOUS (no ack from the Relay)
+2026-11-10 22:51:17.733 FOB   >>> [VIBRATE: fail]
+2026-11-10 22:51:18.215 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:20.215 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:22.216 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:24.217 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:26.218 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:28.219 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:30.220 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:32.221 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:33.044 FOB   >>> [VIBRATE: one]
+2026-11-10 22:51:34.222 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:35.117 FOB   no GPS fix, sending without a location
+2026-11-10 22:51:35.118 FOB   SAFEPING_MSG {"ctr": 204, "t": 2126, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "36784651a01cf3bab348bf70e4bb716d7611f26b2f0b26763f4ad6a932e88431"}
+2026-11-10 22:51:35.119 FOB   E (81173) wifi:sta is connecting, cannot set config
+2026-11-10 22:51:36.223 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:36.621 FOB   send attempt 1 failed: no WiFi
+2026-11-10 22:51:38.030 FOB   ACK missing (try 1 of 3)
+2026-11-10 22:51:38.223 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:39.426 FOB   ACK missing (try 2 of 3)
+2026-11-10 22:51:40.224 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:40.826 FOB   ACK missing (try 3 of 3)
+2026-11-10 22:51:40.827 FOB   NOT CONFIRMED SUSPICIOUS (no ack from the Relay)
+2026-11-10 22:51:40.829 FOB   >>> [VIBRATE: fail]
+2026-11-10 22:51:42.224 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-10 22:51:44.225 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s

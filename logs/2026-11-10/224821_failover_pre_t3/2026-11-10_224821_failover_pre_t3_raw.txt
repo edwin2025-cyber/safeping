@@ -1,0 +1,34 @@
+# label failover_pre_t3  fob COM15  relay COM14
+2026-11-10 22:48:21.517 INFO  RELAY connected on COM14
+2026-11-10 22:48:21.517 INFO  FOB connected on COM15
+2026-11-10 22:48:32.885 FOB   >>> [VIBRATE: one]
+2026-11-10 22:48:34.957 FOB   no GPS fix, sending without a location
+2026-11-10 22:48:34.957 FOB   SAFEPING_MSG {"ctr": 199, "t": 2101, "id": "FOB-001", "v": 1, "bat": 100, "p": 99393, "type": "SUSPICIOUS", "sig": "a78d7b34aa7e6ec650b55c02d0d380dbcbb5a19c616a1f30e5fe29b646e6d0c4"}
+2026-11-10 22:48:34.961 FOB   send attempt 1 failed: [Errno 104] ECONNRESET
+2026-11-10 22:48:35.486 RELAY SAFEPING_MSG {"ctr": 199, "t": 2101, "id": "FOB-001", "v": 1, "bat": 100, "p": 99393, "type": "SUSPICIOUS", "sig": "a78d7b34aa7e6ec650b55c02d0d380dbcbb5a19c616a1f30e5fe29b646e6d0c4"}
+2026-11-10 22:48:35.487 RELAY from FOB-001 type SUSPICIOUS ctr 199 signal -29 dBm, snr 9.5
+2026-11-10 22:48:36.480 FOB   ACK missing (try 1 of 3)
+2026-11-10 22:48:36.861 RELAY duplicate of FOB-001 ctr 199 (acked again)
+2026-11-10 22:48:37.877 FOB   ACK missing (try 2 of 3)
+2026-11-10 22:48:38.255 RELAY duplicate of FOB-001 ctr 199 (acked again)
+2026-11-10 22:48:39.268 FOB   ACK missing (try 3 of 3)
+2026-11-10 22:48:39.268 FOB   NOT CONFIRMED SUSPICIOUS (no ack from the Relay)
+2026-11-10 22:48:39.271 FOB   >>> [VIBRATE: fail]
+2026-11-10 22:48:59.783 FOB   >>> [VIBRATE: one]
+2026-11-10 22:49:01.844 FOB   no GPS fix, sending without a location
+2026-11-10 22:49:01.845 FOB   SAFEPING_MSG {"ctr": 200, "t": 2101, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "cd380fd7d18185991c99c3045506c7d184dcff3216d3f25a3eab145ef27cb9f3"}
+2026-11-10 22:49:01.849 FOB   send attempt 1 failed: [Errno 104] ECONNRESET
+2026-11-10 22:49:02.246 RELAY SAFEPING_MSG {"ctr": 200, "t": 2101, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "cd380fd7d18185991c99c3045506c7d184dcff3216d3f25a3eab145ef27cb9f3"}
+2026-11-10 22:49:02.248 RELAY from FOB-001 type SUSPICIOUS ctr 200 signal -33 dBm, snr 10.0
+2026-11-10 22:49:02.249 FOB   ACK received (try 1)
+2026-11-10 22:49:02.249 FOB   sent over LoRa SUSPICIOUS confirmed by the Relay
+2026-11-10 22:49:02.250 FOB   >>> [VIBRATE: ok]
+2026-11-10 22:49:18.353 FOB   >>> [VIBRATE: one]
+2026-11-10 22:49:20.414 FOB   no GPS fix, sending without a location
+2026-11-10 22:49:20.415 FOB   SAFEPING_MSG {"ctr": 201, "t": 2107, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "122552531bc9b987b46fe5105c49a793cfa6e33dc02cbd39bb038811b77cbcfe"}
+2026-11-10 22:49:20.422 FOB   send attempt 1 failed: [Errno 104] ECONNRESET
+2026-11-10 22:49:20.817 RELAY SAFEPING_MSG {"ctr": 201, "t": 2107, "id": "FOB-001", "v": 1, "bat": 100, "p": 99395, "type": "SUSPICIOUS", "sig": "122552531bc9b987b46fe5105c49a793cfa6e33dc02cbd39bb038811b77cbcfe"}
+2026-11-10 22:49:20.819 RELAY from FOB-001 type SUSPICIOUS ctr 201 signal -33 dBm, snr 9.75
+2026-11-10 22:49:20.821 FOB   ACK received (try 1)
+2026-11-10 22:49:20.821 FOB   sent over LoRa SUSPICIOUS confirmed by the Relay
+2026-11-10 22:49:20.822 FOB   >>> [VIBRATE: ok]
