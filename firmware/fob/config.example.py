@@ -39,11 +39,23 @@ MOTOR_PIN = 3
 HOLD_MS = 2000      # hold this long for SILENT (the PDR said 5000)
 CANCEL_MS = 2000    # cancel window for SUSPICIOUS and MEDICAL
 
+# Retry queue: an alert not confirmed on both paths is sent again (same message).
+RETRY_EVERY_MS = 30000     # try again this often
+RETRY_FOR_MS = 600000      # for 10 minutes, then give up
+RETRY_MAX = 5              # alerts kept at most. Full: STATUS dropped first, MEDICAL last
+
+# Help is coming: after a WiFi confirm, listen this long for the server's help message
+# (sent when staff press Acknowledge). 0 turns it off.
+HELP_LISTEN_MS = 120000
+
 # Other settings you can add here (defaults in main.py):
+# QUEUE_FILE = "queue.json" (the retry queue in flash), GPS_CHECK_MS = 5000 (boot self-check:
+# the GPS must send data this soon), SECRET_KEY_LEN = 32 (boot self-check: key length),
 # LORA_CS = 26, LORA_RST = 6, I2C_SDA = 23, I2C_SCL = 24, BME280_ADDR = 0x77,
 # MOTOR_STRENGTH = 100, LORA_ACK = True, ACK_WAIT_MS = 1000, LORA_TRIES = 3,
 # GPS_MAX_AGE_S = 60, LOW_BATTERY_PCT = 20,
 # WIFI_BOOT_MS = 8000 (join wait at power on), WIFI_RECONNECTS = 1, WIFI_RETRY_S = 30,
 # NTP_RETRY_S = 1800, DNS_REFRESH_S = 3600, WATCHDOG_MS = 30000, SENDING_DIM_PCT = 15,
 # WIFI_OFF_FOR_LORA = True (WiFi radio off during a LoRa fallback),
-# WIFI_SETTLE_MS = 150 (pause after WiFi goes quiet, before the LoRa send)
+# WIFI_SETTLE_MS = 150 (pause after WiFi goes quiet, before the LoRa send),
+# WIFI_RESET_MS = 200 (radio off this long when WiFi is reset after a state error)

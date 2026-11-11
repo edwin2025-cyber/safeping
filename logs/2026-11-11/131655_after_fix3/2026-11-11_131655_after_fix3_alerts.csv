@@ -1,0 +1,2 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try,path,result,ms,reason
+231,STATUS,2026-11-11 13:17:08.121,WiFi,,no,,,,,,,,,,,98855,20.80,95,yes,,wifi,confirmed,2107,-

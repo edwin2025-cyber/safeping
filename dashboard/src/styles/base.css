@@ -453,6 +453,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .tag--lora { background: var(--color-lora-bg); color: var(--color-lora-text); }
 .tag--wifi { background: var(--color-wifi-bg); color: var(--color-wifi-text); }
 .tag--orange { background: var(--color-orange-subtler); color: var(--color-orange-text); }
+.tag--yellow { background: var(--color-yellow-subtlest); color: var(--color-yellow-text); }
 .tag--magenta { background: var(--color-magenta-bg); color: var(--color-magenta-text); }
 /* Battery words: plain heavy text in the level's color, no box */
 .battery-word { font-weight: 700; }
@@ -463,7 +464,8 @@ input[type="search"]::-webkit-search-cancel-button {
 
 /* ---------- type icons on their own (legends, search, Overview): the type color ---------- */
 .type-icon--medical { color: var(--color-type-medical); }
-.type-icon--suspicious { color: var(--color-type-suspicious); }
+/* Suspicious icons can take a darker shade than the fill (set by the Suspicious color test) */
+.type-icon--suspicious { color: var(--color-type-suspicious-icon, var(--color-type-suspicious)); }
 .type-icon--silent { color: var(--color-type-silent); }
 .type-icon--status { color: var(--color-type-status); }
 /* Type words in color: only where the word is the point (urgent counts on Overview) */

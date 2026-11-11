@@ -3,6 +3,7 @@
 // Answers have the same shape as the Flask routes in server/app.py.
 import {
   MOCK_ALERTS,
+  MOCK_BOOTS,
   MOCK_CONFIG,
   MOCK_DEVICES,
   MOCK_DUPLICATES,
@@ -63,12 +64,13 @@ function describe(alert) {
 
 // ---------- the in-memory alert list ----------
 
-function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackAfter = 60, resolveAfter = 540 }) {
+function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackAfter = 60, resolveAfter = 540, lateS = 0 }) {
   const dev = MOCK_DEVICES.find((d) => d.device_id === device);
   counters[device] = (counters[device] || 0) + 1;
   const hasGps = lat !== undefined;
   const indoors = !hasGps && floor !== undefined;
   const acked = state === "acknowledged" || state === "resolved";
+  const pressed = Math.round(time - lateS); // lateS: the Fob's retry queue sent it this much later
   return describe({
     id: nextId++,
     device_id: device,
@@ -76,7 +78,13 @@ function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackA
     alert_type: type,
     priority: PRIORITY[type],
     timestamp: time,
-    device_ts: Math.round(time),
+    device_ts: pressed,
+    pressed_at: pressed,
+    late_s: Math.round(time - pressed),
+    sent_late: time - pressed > 60,
+    late_over_max: time - pressed > 900,
+    // Mock mode acts as if MQTT is on: acknowledging sends the help message
+    help_sent_at: acked && type !== "STATUS" ? time + ackAfter : null,
     latitude: hasGps ? lat : null,
     longitude: hasGps ? lon : null,
     accuracy: hasGps ? acc : null,
@@ -233,9 +241,42 @@ function getDevices() {
       battery: own.length ? own[0].battery : null,
       link: own.length ? own[0].link : "unknown",
       open_alerts: own.filter((a) => !a.acknowledged && !a.resolved && a.alert_type !== "STATUS").length,
+      last_boot: d.role === "REF" ? null : bootsFor(d.device_id)[0] || null,
     };
   });
   return { server_time: now(), devices };
+}
+
+// Same words as RESET_WORDS in server/validate.py
+const RESET_WORDS = {
+  1: "Power on",
+  2: "Restarted after a crash",
+  3: "Restarted by the watchdog",
+  4: "Woke from deep sleep",
+  5: "Soft reset (Thonny or Ctrl+D)",
+};
+
+/** Boot reports, same shape as /api/devices/<id>/boots. Newest first, up to 10. */
+function bootsFor(deviceId) {
+  const plan = MOCK_BOOTS[deviceId] || [];
+  return plan.map((b, i) => ({
+    time: start - b.minAgo * 60,
+    device_ts: Math.round(start - b.minAgo * 60),
+    counter: 100 - i,
+    all_passed: b.failed.length === 0,
+    failed: b.failed.slice(),
+    wifi: b.wifi,
+    firmware: "2026.11.11b",
+    link: b.wifi ? "wifi" : "lora",
+    reset_cause: b.reset || 1,
+    reset_words: RESET_WORDS[b.reset || 1],
+    crashed: b.reset === 2,
+  }));
+}
+
+function getDeviceBoots(deviceId) {
+  if (!MOCK_DEVICES.some((d) => d.device_id === deviceId)) notFound();
+  return { server_time: now(), boots: bootsFor(deviceId).slice(0, 10) };
 }
 
 function getDeviceAlerts(deviceId) {
@@ -407,6 +448,7 @@ function getStats(params) {
     hotspots: hotspots(counted),
     delivery,
     duplicates: MOCK_DUPLICATES.filter((d) => inRange(d.minAgo)).length,
+    late_over_max: cur.filter((a) => a.late_over_max).length,
     rejected: { total: Object.values(byReason).reduce((s, n) => s + n, 0), by_reason: byReason },
     stale_fobs: fobs.filter((d) => !seen.includes(d)).map(name).sort(),
     low_battery_fobs: low.map((d) => ({ name: name(d), pct: d.battery })),
@@ -495,6 +537,7 @@ function hotspots(list) {
 const CSV_COLUMNS = [
   "Received", "Type", "Student", "Fob ID", "Status", "Place", "Floor",
   "Latitude", "Longitude", "Accuracy (m)", "Battery (%)", "Link", "Acknowledged", "Resolved",
+  "Pressed (Fob clock)", "Sent late",
 ];
 
 function localTime(ts) {
@@ -542,6 +585,8 @@ export function mockExportCsv(from, to) {
         { lora: "LoRa", wifi: "WiFi" }[a.link] || "",
         localTime(a.acknowledged_at),
         localTime(a.resolved_at),
+        localTime(a.pressed_at),
+        a.late_over_max ? "Yes, over 15 min, " + a.late_s + " s" : a.sent_late ? "Yes, " + a.late_s + " s" : "",
       ]
         .map(csvCell)
         .join(","),
@@ -564,6 +609,8 @@ export async function mockGet(url) {
   if (path === "/api/devices") return getDevices();
   const m = path.match(/^\/api\/devices\/([^/]+)\/alerts$/);
   if (m) return getDeviceAlerts(decodeURIComponent(m[1]));
+  const b = path.match(/^\/api\/devices\/([^/]+)\/boots$/);
+  if (b) return getDeviceBoots(decodeURIComponent(b[1]));
   return notFound();
 }
 
@@ -577,8 +624,9 @@ export async function mockPost(url, body) {
     if (changed) {
       alert.acknowledged = true;
       alert.acknowledged_at = t;
+      alert.help_sent_at = t; // as if MQTT is on: "Help message sent to Fob"
     }
-    return { ok: true, changed };
+    return { ok: true, changed, help_sent: changed };
   }
   if (url === "/api/resolve") {
     const changed = !!alert && !alert.resolved;

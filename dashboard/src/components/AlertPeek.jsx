@@ -1,7 +1,7 @@
 import { useState } from "react";
 import L from "../lib/leafletSetup.js";
 import { MapContainer } from "react-leaflet";
-import { alertState, hasGps, linkMeta, zoneRadius } from "../lib/alertMeta.js";
+import { alertState, hasGps, isSentLate, linkMeta, zoneRadius } from "../lib/alertMeta.js";
 import { cameraHtml, detailsHtml } from "../lib/copyHtml.js";
 import { batteryIcon, icons } from "../lib/icons.js";
 import {
@@ -24,7 +24,7 @@ import CopyButton from "./CopyButton.jsx";
 import { Battery } from "./DevicesPage.jsx";
 import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
-import { LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
+import { LateTag, LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 import { AttributionPrefix, BaseTiles, MAP_OPTIONS, MAX_ZOOM, MapControls, SingleAlertLayer, SizeWatcher, fitView } from "./mapParts.jsx";
 
@@ -225,6 +225,8 @@ function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServ
   const place = placeText(alert);
   const link = linkMeta(alert.link);
   const tf = settings.timeFormat;
+  const late = isSentLate(alert);
+  const pressedTs = late ? alert.pressed_at : alert.timestamp; // a late alert shows the Fob's press time
   return (
     <article className="peek-page peek-page--sections">
       <header className="peek-head">
@@ -245,11 +247,17 @@ function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServ
             <Icon icon={icons.time} size={12} fixed />
             Pressed
           </div>
-          <div className="fact-main num">{formatTime(alert.timestamp, tf)}</div>
+          <div className="fact-main num">{formatTime(pressedTs, tf)}</div>
           <div className="fact-sub num">
-            <span>{formatDate(alert.timestamp)}</span>
-            <span className="muted">{ago(nowServer - alert.timestamp)}</span>
+            <span>{formatDate(pressedTs)}</span>
+            <span className="muted">{ago(nowServer - pressedTs)}</span>
           </div>
+          {late && (
+            <div className="fact-foot num late-line">
+              <LateTag alert={alert} timeFormat={tf} />
+              <span>Arrived {stamp(alert.timestamp, pressedTs, tf)}</span>
+            </div>
+          )}
         </section>
         <section className="fact" aria-label="Where">
           <div className="fact-label">
@@ -285,9 +293,20 @@ function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServ
             Timeline
           </h3>
           <ol className="timeline">
-            <Step done label="Pressed">
-              {formatTime(alert.timestamp, tf)}
-            </Step>
+            {isSentLate(alert) ? (
+              <>
+                <Step done label="Pressed">
+                  {stamp(alert.pressed_at, alert.timestamp, tf)}
+                </Step>
+                <Step done label="Arrived, sent late">
+                  {formatTime(alert.timestamp, tf)}
+                </Step>
+              </>
+            ) : (
+              <Step done label="Pressed">
+                {formatTime(alert.timestamp, tf)}
+              </Step>
+            )}
             {alert.alert_type !== "STATUS" && (
               <Step done={!!alert.sms_sent} label="Text to duty phone">
                 {alert.sms_sent ? "Sent" : <span className="muted">Not sent</span>}
@@ -296,6 +315,11 @@ function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServ
             <Step done={!!alert.acknowledged} label="Acknowledged">
               {alert.acknowledged && alert.acknowledged_at ? stamp(alert.acknowledged_at, alert.timestamp, tf) : <span className="muted">Not yet</span>}
             </Step>
+            {alert.help_sent_at && (
+              <Step done label="Help message sent to Fob">
+                {stamp(alert.help_sent_at, alert.timestamp, tf)}
+              </Step>
+            )}
             <Step done={!!alert.resolved} label="Resolved">
               {alert.resolved && alert.resolved_at ? stamp(alert.resolved_at, alert.timestamp, tf) : <span className="muted">Not yet</span>}
             </Step>
@@ -344,6 +368,16 @@ function ListBody({ alert, state, settings, update, theme, cartoKey, nowServer, 
         <Prop icon={icons.time} label="Pressed">
           {formatDateTime(alert.timestamp, settings.timeFormat)} <span className="muted">({ago(nowServer - alert.timestamp)})</span>
         </Prop>
+        {isSentLate(alert) && (
+          <Prop icon={icons.late} label="Sent late">
+            Pressed {formatDateTime(alert.pressed_at, settings.timeFormat)}, arrived {formatDateTime(alert.timestamp, settings.timeFormat)}
+          </Prop>
+        )}
+        {alert.help_sent_at && (
+          <Prop icon={icons.acknowledged} label="Help message sent to Fob">
+            {formatDateTime(alert.help_sent_at, settings.timeFormat)}
+          </Prop>
+        )}
         <Prop icon={icons.place} label="Place">
           {place || <span className="muted">Unknown</span>}
         </Prop>

@@ -527,17 +527,33 @@
   transform: translateX(-30%);
 }
 
-/* Every band and line grows up from the baseline together when the chart first shows (or the
-   range changes), with one long ease-out. The lines keep their width while they grow.
-   No animation with reduced motion (base.css). */
-.chart-fill.is-animated .recharts-area,
-.chart-fill.is-animated .recharts-line {
+/* Every bar and week-before tick grows up from the baseline together when the chart first
+   shows (or the range changes), with one long ease-out. OverviewPage removes is-animated
+   after that, so a refresh never replays it. No animation with reduced motion. */
+.chart-fill.is-animated .bar-seg,
+.chart-fill.is-animated .prev-ticks {
   transform-box: view-box;
   transform-origin: 0 var(--baseline, 100%);
   animation: chart-grow 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.ov-chart .recharts-line-curve {
+.prev-ticks line {
   vector-effect: non-scaling-stroke;
+}
+/* Week before: a short dashed tick across each bar, with a panel-colored halo so it shows
+   on top of any type color and on the empty panel. */
+.prev-tick-halo {
+  stroke: var(--color-panel);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.prev-tick {
+  stroke: var(--color-gray-bold);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+/* The hovered slot */
+.ov-chart .recharts-tooltip-cursor {
+  fill: var(--color-surface-hover);
 }
 @keyframes chart-grow {
   from {
@@ -553,36 +569,12 @@
   }
 }
 
-/* The guide line, the dots and the card glide together from point to point. */
+/* The tooltip card glides from bar to bar. */
 .ov-chart {
   --glide: 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.glide-layer {
-  pointer-events: none;
-}
-.glide-guide {
-  stroke: var(--color-border-bold);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  opacity: 0;
-  transition: transform var(--glide), opacity 150ms ease;
-}
-.glide-dot {
-  stroke: var(--color-panel);
-  stroke-width: 2;
-  opacity: 0;
-  transition: transform var(--glide), opacity 150ms ease;
-}
-.glide-layer.is-shown .glide-guide,
-.glide-layer.is-shown .glide-dot.is-on {
-  opacity: 1;
-}
-.glide-layer.is-jump .glide-guide,
-.glide-layer.is-jump .glide-dot {
-  transition: opacity 150ms ease;
-}
 
-/* The tooltip card glides on the same slide as the dots. is-jump turns that off for
+/* is-jump turns the glide off for
    the first position, so it never slides in from a corner. */
 .glide-tip {
   position: absolute;

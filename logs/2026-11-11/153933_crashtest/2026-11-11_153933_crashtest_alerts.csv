@@ -1,0 +1,10 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try,path,result,ms,reason,retry_tries,retry_result,help_ms
+248,SUSPICIOUS,2026-11-11 15:39:56.523,WiFi,,no,,,,,,,,,,yes,,,100,yes,,wifi,confirmed,1461,-,,,
+250,SUSPICIOUS,2026-11-11 15:41:13.365,WiFi,,no,,,,,,,,,,yes,,,100,yes,,wifi,confirmed,2134,-,,,
+252,SUSPICIOUS,2026-11-11 15:42:29.674,WiFi,,no,,,,,,,,,,yes,,,100,yes,,wifi,confirmed,1551,-,,,
+254,SUSPICIOUS,2026-11-11 15:43:20.735,WiFi,,no,,,,,,,,,,yes,,,99,yes,,wifi,confirmed,1340,-,,,
+256,SUSPICIOUS,2026-11-11 15:44:12.316,WiFi,,no,,,,,,,,,,,,,99,yes,,wifi,confirmed,2500,-,,,
+257,SUSPICIOUS,2026-11-11 15:45:29.185,WiFi,,no,,,,,,,,,,,,,99,yes,,wifi,confirmed,981,-,,,11789
+258,SUSPICIOUS,2026-11-11 15:46:01.686,WiFi,,no,,,,,,,,,,,,,99,yes,,wifi,confirmed,2082,-,,,5224
+259,SUSPICIOUS,2026-11-11 15:46:38.456,WiFi,,no,,,,,,,,,,,,,99,yes,,wifi,confirmed,2480,-,,,16896
+260,SUSPICIOUS,2026-11-11 15:47:06.976,WiFi,,no,,,,,,,,,,,,,99,yes,,wifi,confirmed,2315,-,,,

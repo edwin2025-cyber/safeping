@@ -32,19 +32,30 @@
   --color-panel: rgb(255, 255, 255);
   --color-panel-border: rgb(221, 222, 225);
 
-  /* Alert types: icons, map markers and chart lines. Chart areas use the same color, faded. */
-  --color-type-medical: rgb(201, 45, 63);
-  --color-type-suspicious: rgb(214, 51, 132); /* magenta, the same pink as the Open dot */
-  --color-type-silent: rgb(116, 77, 214);
+  /* Alert types: icons, map markers and chart bars. Rich colors (v6). */
+  --color-type-medical: rgb(211, 18, 58);
+  --color-type-suspicious: rgb(255, 195, 0); /* #FFC300, the Fob LED yellow. A fill only: 1.6:1 on white */
+  --color-type-silent: rgb(122, 60, 245);
   --color-type-status: rgb(107, 110, 118);
+  /* Suspicious icons on their own: the yellow is too light for 3:1 on white, so a deep amber */
+  --color-type-suspicious-icon: rgb(185, 128, 0);
+  /* The icon inside a yellow map marker: near black, because white is under 3:1 on yellow */
+  --color-marker-icon-suspicious: rgb(30, 31, 33);
+
+  /* Alerts chart bars: the type hues, tuned to the weight of the Busy hours blue
+     (OKLCH lightness about 0.57, chroma 0.16; the gold a bit lighter so it stays gold).
+     The earlier light set, in case: 211,18,58 / 255,195,0 / 122,60,245. */
+  --color-chart-medical: rgb(199, 74, 77);
+  --color-chart-suspicious: rgb(229, 163, 35);
+  --color-chart-silent: rgb(121, 94, 201);
 
   /* Type tags: a tinted rectangle, icon and word in a darker shade of the same color */
-  --color-tag-medical-bg: rgb(255, 228, 231);
-  --color-tag-medical-text: rgb(168, 29, 49);
-  --color-tag-suspicious-bg: rgb(252, 231, 243);
-  --color-tag-suspicious-text: rgb(162, 28, 100);
-  --color-tag-silent-bg: rgb(237, 231, 255);
-  --color-tag-silent-text: rgb(92, 57, 190);
+  --color-tag-medical-bg: rgb(255, 222, 224);
+  --color-tag-medical-text: rgb(190, 10, 51);
+  --color-tag-suspicious-bg: rgb(255, 234, 171);
+  --color-tag-suspicious-text: rgb(133, 90, 0);
+  --color-tag-silent-bg: rgb(236, 229, 255);
+  --color-tag-silent-text: rgb(106, 40, 224);
 
   /* Link tags: three grays, light (Unknown), middle (LoRa), dark (WiFi) */
   --color-unknown-bg: rgb(240, 241, 242);
@@ -203,17 +214,25 @@
   --color-panel-border: rgb(38, 40, 45);
 
   --color-type-medical: rgb(255, 107, 122);
-  --color-type-suspicious: rgb(244, 114, 182);
+  --color-type-suspicious: rgb(255, 195, 0);
   --color-type-silent: rgb(168, 139, 250);
   --color-type-status: rgb(150, 153, 158);
+  --color-type-suspicious-icon: rgb(255, 195, 0);
+  --color-marker-icon-suspicious: rgb(15, 16, 18);
 
-  /* Type tags: deep tints, so they glow a little */
-  --color-tag-medical-bg: rgb(66, 24, 31);
-  --color-tag-medical-text: rgb(255, 150, 160);
-  --color-tag-suspicious-bg: rgb(70, 22, 48);
-  --color-tag-suspicious-text: rgb(249, 168, 212);
-  --color-tag-silent-bg: rgb(43, 33, 74);
-  --color-tag-silent-text: rgb(200, 184, 255);
+  /* Alerts chart bars: the type hues, tuned to the weight of the Busy hours blue on Midnight
+     (OKLCH lightness about 0.64, chroma 0.14; the gold a bit lighter) */
+  --color-chart-medical: rgb(216, 97, 98);
+  --color-chart-suspicious: rgb(230, 172, 61);
+  --color-chart-silent: rgb(140, 119, 214);
+
+  /* Type tags: deep, rich tints with a bright word, like the yellow Suspicious tag */
+  --color-tag-medical-bg: rgb(79, 9, 19);
+  --color-tag-medical-text: rgb(255, 121, 126);
+  --color-tag-suspicious-bg: rgb(60, 43, 0);
+  --color-tag-suspicious-text: rgb(255, 195, 0);
+  --color-tag-silent-bg: rgb(44, 27, 85);
+  --color-tag-silent-text: rgb(171, 148, 255);
 
   --color-unknown-bg: rgb(30, 31, 35);
   --color-unknown-text: rgb(150, 153, 158);

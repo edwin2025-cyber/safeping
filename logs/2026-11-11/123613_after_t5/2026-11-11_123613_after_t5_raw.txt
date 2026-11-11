@@ -1,0 +1,40 @@
+# label after_t5  fob COM15  relay COM14
+2026-11-11 12:36:13.612 INFO  FOB connected on COM15
+2026-11-11 12:36:13.612 INFO  RELAY connected on COM14
+2026-11-11 12:36:19.319 FOB   WiFi not connected yet, will retry in the background
+2026-11-11 12:36:37.651 FOB   >>> [VIBRATE: one]
+2026-11-11 12:36:39.722 FOB   no GPS fix, sending without a location
+2026-11-11 12:36:39.722 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "6f6591e18bb4177f918c8eac88e1ff4df4faeb319b5b44406dbbed5af14cde33", "t": 2194, "ctr": 220, "ts": 1794400599, "v": 1, "id": "FOB-001"}
+2026-11-11 12:36:39.735 FOB   falling back to LoRa: wifi_join_failed
+2026-11-11 12:36:39.735 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-11 12:36:40.457 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "6f6591e18bb4177f918c8eac88e1ff4df4faeb319b5b44406dbbed5af14cde33", "t": 2194, "ctr": 220, "ts": 1794400599, "v": 1, "id": "FOB-001"}
+2026-11-11 12:36:40.459 FOB   ACK received (try 1)
+2026-11-11 12:36:40.459 RELAY from FOB-001 type SUSPICIOUS ctr 220 signal -33 dBm, snr 9.75
+2026-11-11 12:36:40.459 FOB   sent over LoRa SUSPICIOUS ctr 220 confirmed by the Relay
+2026-11-11 12:36:40.460 FOB   SEND_RESULT ctr=220 kind=SUSPICIOUS path=lora result=confirmed ms=804 reason=wifi_join_failed
+2026-11-11 12:36:40.463 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:36:53.375 FOB   >>> [VIBRATE: one]
+2026-11-11 12:36:54.094 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 12:36:55.442 FOB   no GPS fix, sending without a location
+2026-11-11 12:36:55.443 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98912, "bat": 100, "sig": "ae7e8cedf212396230521baf1ab1dd76b2419d0517773cc6d66b972681356671", "t": 2193, "ctr": 221, "ts": 1794400615, "v": 1, "id": "FOB-001"}
+2026-11-11 12:36:55.456 FOB   E (46800) wifi:sta is connecting, cannot set config
+2026-11-11 12:36:55.456 FOB   WiFi join could not start: Wifi Internal State Error
+2026-11-11 12:36:55.456 FOB   falling back to LoRa: wifi_join_failed
+2026-11-11 12:36:55.457 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-11 12:36:56.048 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98912, "bat": 100, "sig": "ae7e8cedf212396230521baf1ab1dd76b2419d0517773cc6d66b972681356671", "t": 2193, "ctr": 221, "ts": 1794400615, "v": 1, "id": "FOB-001"}
+2026-11-11 12:36:56.049 RELAY from FOB-001 type SUSPICIOUS ctr 221 signal -35 dBm, snr 9.75
+2026-11-11 12:36:56.051 FOB   ACK received (try 1)
+2026-11-11 12:36:56.052 FOB   sent over LoRa SUSPICIOUS ctr 221 confirmed by the Relay
+2026-11-11 12:36:56.052 FOB   SEND_RESULT ctr=221 kind=SUSPICIOUS path=lora result=confirmed ms=672 reason=wifi_join_failed
+2026-11-11 12:36:56.055 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:37:07.928 FOB   >>> [VIBRATE: one]
+2026-11-11 12:37:09.992 FOB   no GPS fix, sending without a location
+2026-11-11 12:37:09.993 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98915, "bat": 100, "sig": "57ddbdd1ff3d3797943029e601301ffde87846cff05a9e995c800c79863a8cc5", "t": 2190, "ctr": 222, "ts": 1794400629, "v": 1, "id": "FOB-001"}
+2026-11-11 12:37:10.009 FOB   falling back to LoRa: wifi_join_failed
+2026-11-11 12:37:10.009 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-11 12:37:10.598 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98915, "bat": 100, "sig": "57ddbdd1ff3d3797943029e601301ffde87846cff05a9e995c800c79863a8cc5", "t": 2190, "ctr": 222, "ts": 1794400629, "v": 1, "id": "FOB-001"}
+2026-11-11 12:37:10.600 RELAY from FOB-001 type SUSPICIOUS ctr 222 signal -35 dBm, snr 9.5
+2026-11-11 12:37:10.601 FOB   ACK received (try 1)
+2026-11-11 12:37:10.602 FOB   sent over LoRa SUSPICIOUS ctr 222 confirmed by the Relay
+2026-11-11 12:37:10.603 FOB   SEND_RESULT ctr=222 kind=SUSPICIOUS path=lora result=confirmed ms=672 reason=wifi_join_failed
+2026-11-11 12:37:10.605 FOB   >>> [VIBRATE: ok]

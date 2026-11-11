@@ -56,9 +56,14 @@ function ratio(a, b) {
 // - Switch tracks (off) use text-subtlest, not border-bold.
 // - Map marker icons are white in light and the Midnight page color in dark (a white icon
 //   is under 3:1 on the dark-theme type colors).
-// - Only Medical and Silent words are ever colored as text (Suspicious amber is under 4.5:1 in light).
+// - Only Medical and Silent words are ever colored as text (the Suspicious yellow is far under 4.5:1 in light).
 // - Cluster rings use text-subtlest, not border-bold (2.82:1 on light OpenStreetMap tiles).
-const TYPES = ["type-medical", "type-suspicious", "type-silent", "type-status"];
+// - Suspicious (v6): the fill is the Fob LED yellow #FFC300, about 1.6:1 on white. It is
+//   checked as info only (chart bars, marker discs, map dots: they also have an icon, a word
+//   and a position). Suspicious icons on their own use type-suspicious-icon (deep amber), and
+//   the icon inside a yellow marker uses marker-icon-suspicious (near black).
+const TYPES = ["type-medical", "type-suspicious-icon", "type-silent", "type-status"]; // as icons
+const FILLS = ["type-medical", "type-silent", "type-status"]; // marker discs with marker-icon
 const PAIRS = [];
 
 // Neutral text on every surface it sits on
@@ -82,10 +87,11 @@ PAIRS.push(["border-overlay", "page", "info", "border of Peek, Settings, menus, 
 // Type icons on their own (legends, search, Overview lines, the filter menu): 3:1 on every background they sit on.
 for (const t of TYPES) {
   for (const bg of ["page", "surface-raised", "surface-overlay", "surface-hover", "panel", "panel-hover", "overlay-hover"]) {
-    PAIRS.push([t, bg, "ui", "type icon, chart line, legend"]);
+    PAIRS.push([t, bg, "ui", "type icon, legend"]);
   }
-  PAIRS.push(["marker-icon", t, "ui", "map marker icon on its disc"]);
 }
+for (const t of FILLS) PAIRS.push(["marker-icon", t, "ui", "map marker icon on its disc"]);
+PAIRS.push(["marker-icon-suspicious", "type-suspicious", "ui", "map marker icon on the yellow disc"]);
 // Type and link tags: icon and word in a darker shade on a tint of the same color
 for (const t of ["medical", "suspicious", "silent"]) PAIRS.push([`tag-${t}-text`, `tag-${t}-bg`, "text", "type tag"]);
 PAIRS.push(["gray-text", "gray-subtler", "text", "Status and LoRa tags"]);
@@ -111,7 +117,10 @@ PAIRS.push(["text-subtlest", "surface-overlay", "ui", "timeline step not yet (ri
 for (const t of ["type-medical", "type-silent"]) {
   for (const bg of ["panel", "panel-hover"]) PAIRS.push([t, bg, "text", "urgent type word or number on a tile"]);
 }
-PAIRS.push(["type-suspicious", "panel", "info", "never used as text (only as an icon)"]);
+PAIRS.push(["type-suspicious", "panel", "info", "Suspicious fill: map marker and dot, never text or a lone icon"]);
+// Alerts chart bars (own tokens: type colors in light, a calmer set in dark). The yellow is the accepted fail in light.
+for (const t of ["chart-medical", "chart-silent"]) PAIRS.push([t, "panel", "ui", "Alerts chart bar"]);
+PAIRS.push(["chart-suspicious", "panel", "info", "Alerts chart bar, Suspicious yellow"]);
 
 // Sidebar
 PAIRS.push(["red-on-bold", "red-bold", "text", "Live count pill when an urgent alert is open"]);
@@ -169,7 +178,7 @@ const TILES = {
   light: { "tile-positron": [250, 250, 248], "tile-osm": [242, 239, 233] },
   dark: { "tile-dark-matter": [14, 14, 14] },
 };
-const MAP_STROKES = [...TYPES, "text-subtlest"];
+const MAP_STROKES = [...FILLS, "text-subtlest"];
 
 let failed = 0;
 for (const theme of ["light", "dark"]) {
@@ -177,6 +186,7 @@ for (const theme of ["light", "dark"]) {
   const pairs = [...PAIRS];
   for (const tile of Object.keys(TILES[theme])) {
     for (const stroke of MAP_STROKES) pairs.push([stroke, tile, "ui", "marker disc, circle, Overview dot or cluster ring (approx. tile)"]);
+    pairs.push(["type-suspicious", tile, "info", "yellow marker disc, circle or Overview dot (the accepted fail in light)"]);
   }
   console.log(`\n${theme.toUpperCase()} theme`);
   for (const [fg, bg, kind, where] of pairs) {

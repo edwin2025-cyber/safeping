@@ -3,7 +3,7 @@ import { alertState, isUrgentOpen, typeMeta } from "../lib/alertMeta.js";
 import { ago, formatDateTime, placeText, studentName } from "../lib/format.js";
 import { icons } from "../lib/icons.js";
 import Icon from "./Icon.jsx";
-import { StatusDot, TypeTag } from "./Tags.jsx";
+import { LateTag, StatusDot, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 const GROUPS = [
@@ -115,6 +115,7 @@ function AlertRow({ alert, compact, showStatus, nowServer, timeFormat, selected,
           <Tooltip label={formatDateTime(alert.timestamp, timeFormat)}>
             <span>{ago(nowServer - alert.timestamp)}</span>
           </Tooltip>
+          <LateTag alert={alert} timeFormat={timeFormat} />
         </span>
       </td>
       {showStatus && (

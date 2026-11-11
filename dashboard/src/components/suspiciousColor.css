@@ -1,0 +1,377 @@
+/* TEMPORARY: the Suspicious color test in Settings (SuspiciousColorPicker.jsx).
+   Delete this file with the picker. */
+
+.scp {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.scp-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+/* ---------- picker ---------- */
+.scp-picker {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  width: 232px;
+}
+.scp-square {
+  position: relative;
+  height: 168px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-image: linear-gradient(to top, rgb(0, 0, 0), rgba(0, 0, 0, 0)), linear-gradient(to right, rgb(255, 255, 255), rgba(255, 255, 255, 0));
+  cursor: crosshair;
+  touch-action: none;
+}
+.scp-square:focus-visible,
+.scp-hue:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.scp-square-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(255, 255, 255);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.scp-hue {
+  position: relative;
+  height: 12px;
+  margin: 0 8px;
+  border-radius: 6px;
+  background: linear-gradient(
+    to right,
+    rgb(255, 0, 0),
+    rgb(255, 255, 0) 16.67%,
+    rgb(0, 255, 0) 33.33%,
+    rgb(0, 255, 255) 50%,
+    rgb(0, 0, 255) 66.67%,
+    rgb(255, 0, 255) 83.33%,
+    rgb(255, 0, 0)
+  );
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  touch-action: none;
+}
+.scp-hue-handle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(255, 255, 255);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.scp-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scp-swatch {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.scp-swatch--sm {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+}
+.scp-hex {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+}
+.scp-hex-hash {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-subtlest);
+  pointer-events: none;
+}
+.scp-hex .input {
+  width: 100%;
+  padding-left: 22px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- next to the picker ---------- */
+.scp-side {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 260px;
+}
+.scp-state {
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+}
+.scp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.scp-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 0;
+  font-size: var(--text-13);
+}
+.scp-values dt {
+  margin-bottom: 4px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
+  font-weight: 500;
+}
+.scp-values dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  margin: 0;
+}
+.scp-values-key {
+  width: 32px;
+  color: var(--color-text-subtle);
+}
+.scp-chip {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  vertical-align: -2px;
+}
+.scp-values dd .scp-chip {
+  margin-right: 0;
+}
+
+/* ---------- previews: each box carries its own theme variables ---------- */
+.scp-previews {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+.scp-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-md);
+}
+.scp-preview-title {
+  color: var(--color-text-subtle);
+  font-size: var(--text-12);
+  font-weight: 500;
+}
+.scp-tile {
+  padding: 12px;
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+}
+.scp-samples {
+  display: flex;
+  gap: 12px;
+}
+.scp-sample {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.scp-sample-label {
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+  white-space: nowrap;
+}
+.scp-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 56px;
+  padding-bottom: 1px;
+  border-bottom: 1px solid var(--color-border);
+}
+.scp-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 16px;
+}
+.scp-seg {
+  display: block;
+}
+.scp-seg.is-top {
+  border-radius: 4px 4px 0 0;
+}
+.scp-seg--medical { background: var(--color-type-medical); }
+.scp-seg--suspicious { background: var(--color-type-suspicious); }
+.scp-seg--silent { background: var(--color-type-silent); }
+.scp-map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 88px;
+  height: 56px;
+  border-radius: var(--radius);
+  background: var(--scp-map);
+}
+.scp-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-type-suspicious);
+  color: var(--color-marker-icon-suspicious, var(--color-marker-icon));
+  box-shadow: 0 0 0 2px var(--color-marker-ring), 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.scp-led-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+}
+.scp-led {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-type-suspicious);
+  box-shadow: 0 0 8px 2px var(--color-type-suspicious);
+}
+.scp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--row-height);
+  padding: 0 8px;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-14);
+  white-space: nowrap;
+}
+.scp-row-name {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+.scp-row-id {
+  overflow: hidden;
+  color: var(--color-text-subtlest);
+  font-size: var(--text-12);
+  text-overflow: ellipsis;
+}
+.scp-row-time {
+  margin-left: auto;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+}
+
+/* ---------- checks ---------- */
+.scp-heading {
+  margin: 12px 0 0;
+  font-size: var(--text-14);
+  font-weight: 600;
+}
+.scp-table th,
+.scp-table td {
+  font-size: var(--text-13);
+}
+.scp-table tbody td {
+  height: 36px;
+}
+.scp-table th:nth-child(1) { width: 18%; }
+.scp-table th:nth-child(2) { width: 32%; }
+.scp-table th:nth-child(3) { width: 17%; }
+.scp-table th:nth-child(4) { width: 11%; }
+.scp-table th:nth-child(5) { width: 10%; }
+.scp-table th:nth-child(6) { width: 12%; }
+.scp-table thead th {
+  background: var(--color-surface-overlay);
+}
+.scp-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+.scp-verdict.is-pass {
+  color: var(--color-green-text);
+}
+.scp-verdict.is-fail {
+  color: var(--color-red-text);
+}
+.scp-close {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scp-distances {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-size: var(--text-13);
+}
+.scp-distances li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scp-distances li.is-bad {
+  color: var(--color-red-text);
+  font-weight: 500;
+}
+.scp-distances li.is-soft {
+  color: var(--color-orange-text);
+}
+.scp-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: var(--text-13);
+  font-weight: 500;
+}
+.scp-warn.is-bad {
+  background: var(--color-red-subtlest);
+  color: var(--color-red-text);
+}
+.scp-warn.is-soft {
+  background: var(--color-orange-subtlest);
+  color: var(--color-orange-text);
+}
+
+@media (max-width: 800px) {
+  .scp-previews,
+  .scp-values {
+    grid-template-columns: 1fr;
+  }
+}

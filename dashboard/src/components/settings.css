@@ -88,6 +88,12 @@
 .set-text {
   min-width: 0;
 }
+/* A row with a full-width body under its text (the Suspicious color test) */
+.set-row--wide {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
 .set-name {
   font-size: var(--text-14);
   font-weight: 500;

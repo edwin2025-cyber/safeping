@@ -61,6 +61,29 @@ function Summary({ devices, nowServer }) {
   );
 }
 
+/** When the Fob last started, and "All checks passed" or the failed parts in plain words.
+    The full list and the last 10 starts are in the device panel. */
+function LastStart({ boot, isRef, nowServer, timeFormat }) {
+  if (isRef) return <span className="muted">Not reported</span>;
+  if (!boot) return <span className="muted">Not reported yet</span>;
+  const result = boot.all_passed ? "All checks passed" : boot.failed.join(", ");
+  return (
+    <span className="boot-cell">
+      <Tooltip label={formatDateTime(boot.time, timeFormat) + (boot.reset_words ? ". " + boot.reset_words : "")}>
+        <span className="num cell-muted">
+          {ago(nowServer - boot.time)}
+          {boot.crashed && <span className="tone-orange">, after a crash</span>}
+        </span>
+      </Tooltip>
+      <Tooltip label={result}>
+        <span className={"boot-result" + (boot.all_passed ? "" : " tone-orange")}>
+          {boot.all_passed ? result : plural(boot.failed.length, "problem", "problems") + ": " + result}
+        </span>
+      </Tooltip>
+    </span>
+  );
+}
+
 export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat, onOpen, selectedId, registerFocus }) {
   let body;
   if (devices === null) {
@@ -81,6 +104,7 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
           <col className="col-did" />
           <col className="col-seen" />
           <col className="col-battery" />
+          <col className="col-boot" />
           <col className="col-link" />
           <col className="col-open" />
           <col className="col-actions" />
@@ -91,6 +115,7 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
             <th scope="col">Fob ID</th>
             <th scope="col">Last seen</th>
             <th scope="col">Battery</th>
+            <th scope="col">Last start</th>
             <th scope="col">Link</th>
             <th scope="col" className="right">
               Open alerts
@@ -129,6 +154,9 @@ export default function DevicesPage({ devices, loadFailed, nowServer, timeFormat
               </td>
               <td>
                 <Battery value={d.battery} />
+              </td>
+              <td>
+                <LastStart boot={d.last_boot} isRef={d.role === "REF"} nowServer={nowServer} timeFormat={timeFormat} />
               </td>
               <td>
                 <LinkTag link={d.link} />

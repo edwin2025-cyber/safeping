@@ -12,6 +12,7 @@ import statistics
 import time
 from datetime import datetime, timedelta
 
+import config
 import db
 import places
 
@@ -252,9 +253,13 @@ def build(first, last, now=None):
         "median_ack_by_type": {t: _median(s) for t, s in ack_by_type.items() if s},
         "hotspots": _hotspots(start, end),
         "delivery": db.count_by_link(start, end),
-        # An identical resend of an accepted alert within 10 minutes (WiFi, then LoRa) is
-        # logged under rejected as "duplicate". Any other old counter stays "replay".
+        # An identical resend of an accepted message, of any age (WiFi, then LoRa, then the
+        # retry queue) is logged under rejected as "duplicate". A used counter with a
+        # different message, or a counter below the window, is "replay".
         "duplicates": by_reason.get("duplicate", 0),
+        # Alerts accepted more than MAX_ALERT_AGE_S after the press: a yellow warning on
+        # Health (a long outage, or someone playing back a recorded alert).
+        "late_over_max": db.count_late(start, end, config.MAX_ALERT_AGE_S),
         "rejected": {"total": sum(by_reason.values()), "by_reason": by_reason},
         "stale_fobs": sorted(_device_name(d) for d in stale),
         "low_battery_fobs": [{"name": _device_name(d), "pct": d["battery"]} for d in low],
@@ -273,7 +278,7 @@ def _device_name(device):
 CSV_COLUMNS = [
     "Received", "Type", "Student", "Fob ID", "Status", "Place", "Floor",
     "Latitude", "Longitude", "Accuracy (m)", "Battery (%)", "Link",
-    "Acknowledged", "Resolved",
+    "Acknowledged", "Resolved", "Pressed (Fob clock)", "Sent late",
 ]
 LINKS = {"lora": "LoRa", "wifi": "WiFi"}
 
@@ -316,6 +321,17 @@ def _status(alert):
     return "Acknowledged" if alert["acknowledged"] else "Open"
 
 
+def _late(alert):
+    """"Yes, 312 s" when the alert arrived more than LATE_AFTER_S after the press, else empty."""
+    pressed = alert.get("device_ts")
+    if pressed is None:
+        return ""
+    gap = alert["timestamp"] - pressed
+    if gap > config.MAX_ALERT_AGE_S:
+        return "Yes, over 15 min, {} s".format(int(round(gap)))
+    return "Yes, {} s".format(int(round(gap))) if gap > config.LATE_AFTER_S else ""
+
+
 def _coord(value):
     return "" if value is None else "{:.6f}".format(value)
 
@@ -347,5 +363,7 @@ def export_csv(first, last):
             LINKS.get(alert.get("link"), ""),
             _local(alert["acknowledged_at"]),
             _local(alert.get("resolved_at")),
+            _local(alert.get("device_ts")),
+            _late(alert),
         ])
     return "﻿" + out.getvalue()

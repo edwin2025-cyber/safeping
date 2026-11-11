@@ -13,9 +13,9 @@ const STATUS_ORDER = ["Open", "Acknowledged", "Resolved"];
 
 // Light colors, as ARGB: a tinted fill and a darker word of the same color, like the dashboard tags.
 const TYPE_STYLE = {
-  Medical: { fill: "FFFFE4E7", font: "FFA81D31" },
-  Suspicious: { fill: "FFFCE7F3", font: "FFA21C64" },
-  Silent: { fill: "FFEDE7FF", font: "FF5C39BE" },
+  Medical: { fill: "FFFFDEE0", font: "FFBE0A33" },
+  Suspicious: { fill: "FFFFEAAB", font: "FF855A00" },
+  Silent: { fill: "FFECE5FF", font: "FF6A28E0" },
   Status: { fill: "FFDDDEE1", font: "FF505258" },
 };
 const STATUS_STYLE = {
@@ -117,6 +117,8 @@ export async function downloadXlsx(from, to, timeFormat) {
     link: r[11],
     acknowledged: excelDate(r[12]),
     resolved: excelDate(r[13]),
+    pressed: excelDate(r[14]),
+    late: r[15] || "",
   }));
 
   const wb = new ExcelJS.Workbook();
@@ -230,9 +232,12 @@ export async function downloadXlsx(from, to, timeFormat) {
     { name: "Link", width: 9 },
     { name: "Acknowledged", width: 20, fmt: dateFormat },
     { name: "Resolved", width: 20, fmt: dateFormat },
+    { name: "Pressed (Fob clock)", width: 20, fmt: dateFormat },
+    { name: "Sent late", width: 13 },
   ];
   const tableRows = data.map((d) => [
     d.received, d.type, d.student, d.fob, d.status, d.place, d.floor, d.lat, d.lon, d.accuracy, d.battery, d.link, d.acknowledged, d.resolved,
+    d.pressed, d.late,
   ]);
   ws.addTable({
     name: "AlertsTable",

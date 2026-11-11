@@ -52,8 +52,12 @@ def main():
     check("10 forged alerts rejected", accepted == 0, "accepted {}".format(accepted))
 
     # ---- 10 replayed: the exact valid message again ----
-    accepted = sum(send(good)["ok"] for _ in range(10))
+    # Since the retry queue these are "duplicate": rejected and never stored twice, but
+    # acked again, because a real Fob resends the exact same message.
+    replies = [send(good) for _ in range(10)]
+    accepted = sum(r["ok"] for r in replies)
     check("10 replayed alerts rejected", accepted == 0, "accepted {}".format(accepted))
+    check("exact copies are logged as 'duplicate'", all(r["reason"] == "duplicate" for r in replies))
 
     # ---- 10 unknown IDs: well formed and signed, but never registered ----
     accepted = 0
@@ -72,6 +76,18 @@ def main():
 
     old = fake_fob.build_message("FOB-T1", KEY, "SUSPICIOUS", 0, battery=80)   # counter 0 again
     check("old counter rejected", send(old)["reason"] == "replay")
+
+    # A validly signed but different message with a used counter (a stolen key, or a bug).
+    used = fake_fob.build_message("FOB-T1", KEY, "MEDICAL", 0, battery=80, device_ts=int(time.time()))
+    check("changed message with a used counter is 'replay'", send(used)["reason"] == "replay")
+
+    # A captured real alert played back later (its counter never reached the server).
+    # Age no longer rejects it, so it is accepted but tagged over 15 min (yellow on Health).
+    captured = fake_fob.build_message("FOB-T1", KEY, "MEDICAL", 3, battery=80,
+                                      device_ts=int(time.time()) - 3600)
+    r = send(captured)
+    check("captured alert played back 1 hour later: accepted, tagged over 15 min",
+          r["ok"] and r["late"] == "over_max", str(r))
 
     wrong_role = fake_fob.build_message("FOB-T1", KEY, "REF", 6, pressure=101000)
     check("Fob pretending to be Reference rejected", send(wrong_role)["reason"] == "wrong_role")

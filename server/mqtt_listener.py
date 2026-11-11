@@ -7,6 +7,8 @@ Topics (see message-format.md):
   safeping/reference    Reference readings
   safeping/ack/<id>     the server publishes "ACK <id> <ctr> <mac>" here (QoS 1),
                         only after the alert is saved, or for a duplicate of a saved one
+  safeping/help/<id>    the server publishes "HELP <id> <ctr> <mac>" here (QoS 1) when
+                        staff press Acknowledge (send_help, called from app.py)
 
 Messages are handled one at a time on a worker thread, so a slow text (Twilio) never
 holds up the MQTT connection or an ack.
@@ -32,11 +34,16 @@ except ImportError:  # lets the rest of the server run and be tested without pah
     mqtt = None
 
 
-def _make_client(client_id):
+def _make_client(client_id, clean_session=False):
+    """A fixed client id with clean_session=False is a persistent session: the broker
+    keeps the server's subscriptions and holds QoS 1 alerts while the server is down or
+    restarting, then delivers them when it reconnects. Only one server may use this id
+    at a time (a second one with the same id kicks the first off)."""
     # paho-mqtt 2.x needs a callback API version. 1.x does not have one.
     if hasattr(mqtt, "CallbackAPIVersion"):
-        return mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=client_id)
-    return mqtt.Client(client_id=client_id)
+        return mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=client_id,
+                           clean_session=clean_session)
+    return mqtt.Client(client_id=client_id, clean_session=clean_session)
 
 
 def ack_for(device_id, ctr, sig):
@@ -48,13 +55,39 @@ def ack_for(device_id, ctr, sig):
     return config.TOPIC_ACK_PREFIX + device_id, ackcheck.ack_text(key, device_id, ctr, sig)
 
 
+def help_for(device_id, ctr):
+    """(topic, text) of the signed "help is coming" message for one alert.
+    help key = HMAC(device secret, "safeping-help-v1"). See message-format.md."""
+    device = db.get_device(device_id)
+    if device is None:
+        raise ValueError("unknown device {}".format(device_id))
+    key = ackcheck.help_key(device["secret_key"].encode())
+    return config.TOPIC_HELP_PREFIX + device_id, ackcheck.help_text(key, device_id, ctr)
+
+
+_client = [None]        # the running client, so app.py can publish help messages
+
+
+def send_help(device_id, ctr):
+    """Publish the help message at QoS 1. Returns True if it was handed to the broker
+    connection. That does NOT mean the Fob got it (it may have stopped listening)."""
+    client = _client[0]
+    if client is None or ctr is None:
+        return False
+    topic, text = help_for(device_id, ctr)
+    info = client.publish(topic, text, qos=1)
+    ok = getattr(info, "rc", 0) == 0
+    print("[mqtt] help {} to {} ctr {}".format("sent" if ok else "NOT sent", topic, ctr))
+    return ok
+
+
 def start(block=False):
     if mqtt is None:
         raise RuntimeError("paho-mqtt is not installed. Run: pip install -r requirements.txt")
     if config.MQTT_CA and not os.path.isfile(config.MQTT_CA):
         raise RuntimeError("MQTT CA file not found (SAFEPING_MQTT_CA)")
 
-    client = _make_client("safeping-server")
+    client = _make_client(config.MQTT_CLIENT_ID, clean_session=False)
     if config.MQTT_USER:
         client.username_pw_set(config.MQTT_USER, config.MQTT_PASS)
     if config.MQTT_CA:
@@ -82,8 +115,10 @@ def start(block=False):
         if rc != 0:
             print("[mqtt] broker refused the connection (code {}). Check the user name and password.".format(rc))
             return
-        print("[mqtt] connected to {}:{}{}".format(config.MQTT_HOST, config.MQTT_PORT,
-                                                  " with TLS" if config.MQTT_CA else ""))
+        resumed = bool(flags.get("session present")) if isinstance(flags, dict) else False
+        print("[mqtt] connected to {}:{}{}, {}".format(
+            config.MQTT_HOST, config.MQTT_PORT, " with TLS" if config.MQTT_CA else "",
+            "session resumed (held alerts come next)" if resumed else "new session"))
         client.subscribe([(config.TOPIC_ALERT_PREFIX + "+", 1), (config.TOPIC_ALERTS, 1),
                           (config.TOPIC_REFERENCE, 1)])
 
@@ -100,6 +135,7 @@ def start(block=False):
     client.on_message = on_message
     client.reconnect_delay_set(min_delay=1, max_delay=30)
     client.connect_async(config.MQTT_HOST, config.MQTT_PORT, keepalive=30)
+    _client[0] = client
 
     if block:
         client.loop_forever()

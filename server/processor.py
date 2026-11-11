@@ -12,6 +12,8 @@ import validate
 
 
 LINKS = ("lora", "wifi")
+PRUNE_EVERY_S = 3600          # forget old seen counters at most this often
+_last_prune = [0.0]
 
 
 def _ack(on_ack, device, msg):
@@ -24,6 +26,16 @@ def _ack(on_ack, device, msg):
         print("[ack] could not send the ack: {}".format(error))
 
 
+def _prune(now):
+    if now - _last_prune[0] < PRUNE_EVERY_S:
+        return
+    _last_prune[0] = now
+    try:
+        db.prune_seen(now - config.SEEN_KEEP_DAYS * 86400)
+    except Exception as error:          # pruning must never stop an alert
+        print("[db] could not prune seen counters: {}".format(error))
+
+
 def process(payload, now=None, source="unknown", on_ack=None):
     """payload is bytes or text. Returns a dict describing what happened.
 
@@ -33,28 +45,29 @@ def process(payload, now=None, source="unknown", on_ack=None):
 
     on_ack(device_id, ctr, sig), if given, is called once the alert is safely saved
     (before any text is sent, so the ack is not held up), or when the message is a
-    duplicate of an alert already saved. Never for a rejected message or a REF reading.
+    duplicate of one already saved. Never for a rejected message or a REF reading.
 
-    Duplicate rule: an alert identical to one accepted in the last DUPLICATE_WINDOW_S
-    seconds (same id, ctr and sig) fails the counter check like a replay, but it is a
-    Fob resend (WiFi first, then LoRa). It is not stored again, it is logged in the
-    rejected table as "duplicate", and it is acked again. Anything else with an old
-    counter stays "replay"."""
+    Counter rule (validate.check_counter, message-format.md):
+      duplicate  an exact copy of a saved message, any age: not stored again, logged
+                 in the rejected table as "duplicate", acked again
+      accepted   a counter never seen, no more than COUNTER_WINDOW below the highest,
+                 with or without ts, even if a higher counter got in first
+      replay     a counter already seen with a different message, or an unseen counter
+                 more than COUNTER_WINDOW below the highest
+    Age never rejects an alert. The result's "late" is None, "late" (ts more than
+    LATE_AFTER_S old) or "over_max" (more than MAX_ALERT_AGE_S old).
+    BOOT messages follow the same rule. They are stored as boot reports, never as alerts."""
     now = time.time() if now is None else now
     link = source if source in LINKS else "unknown"
     if isinstance(payload, str):
         payload = payload.encode()
+    _prune(now)
 
-    ok, reason, msg, device = validate.authenticate(payload)
+    ok, reason, msg, device = validate.authenticate(payload, now)
     if not ok:
-        duplicate = (reason == "replay" and msg["type"] != validate.REF_TYPE
-                     and db.is_recent_duplicate(device["device_id"], msg["ctr"], msg["sig"],
-                                                now - config.DUPLICATE_WINDOW_S))
-        if duplicate:
-            reason = "duplicate"
         db.log_rejected(now, validate.claimed_id(payload), reason,
                         payload.decode("utf-8", "replace")[:300])
-        if duplicate:
+        if reason == "duplicate":
             _ack(on_ack, device, msg)
         return {"ok": False, "reason": reason}
 
@@ -62,14 +75,28 @@ def process(payload, now=None, source="unknown", on_ack=None):
         db.insert_reference(now, msg["p"], msg.get("t"))
         return {"ok": True, "kind": "reference"}
 
-    loc = location.resolve(msg, db.latest_reference(), now)
-    alert_id = db.insert_alert(
-        device["device_id"], msg["type"], now, msg.get("ts"), loc,
-        msg.get("p"), msg.get("bat"),
-        temperature=msg.get("t"), counter=msg.get("ctr"), link=link,
-    )
-    db.record_accepted(device["device_id"], msg["ctr"], msg["sig"], now)
+    try:
+        if msg["type"] == validate.BOOT_TYPE:
+            boot_id = db.insert_boot(device["device_id"], now, msg.get("ts"), msg["ctr"],
+                                     msg["fail"], msg.get("wifi"), msg.get("fw"), link,
+                                     reset_cause=msg.get("rst"))
+        else:
+            loc = location.resolve(msg, db.latest_reference(), now)
+            alert_id = db.insert_alert(
+                device["device_id"], msg["type"], now, msg.get("ts"), loc,
+                msg.get("p"), msg.get("bat"),
+                temperature=msg.get("t"), counter=msg.get("ctr"), link=link,
+            )
+    except Exception:
+        # Not saved: give the counter back, so the Fob's resend is not a "duplicate"
+        # of something the server never stored.
+        db.release_counter(device["device_id"], msg["ctr"], msg["sig"])
+        raise
     _ack(on_ack, device, msg)          # saved: ack before the text
+
+    if msg["type"] == validate.BOOT_TYPE:
+        return {"ok": True, "kind": "boot", "boot_id": boot_id, "fail": msg["fail"],
+                "failed": validate.boot_failures(msg["fail"])}
 
     sms = None
     if msg["type"] != "STATUS":
@@ -78,4 +105,5 @@ def process(payload, now=None, source="unknown", on_ack=None):
         db.mark_sms(alert_id, sms == "sent")
 
     return {"ok": True, "kind": "alert", "alert_id": alert_id,
-            "type": msg["type"], "source": loc["source"], "floor": loc["floor"], "sms": sms}
+            "type": msg["type"], "source": loc["source"], "floor": loc["floor"], "sms": sms,
+            "late": validate.age_tag(msg, now)}

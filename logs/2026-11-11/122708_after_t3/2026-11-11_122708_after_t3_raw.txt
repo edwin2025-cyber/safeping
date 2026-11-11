@@ -1,0 +1,39 @@
+# label after_t3  fob COM15  relay COM14
+2026-11-11 12:27:08.232 INFO  RELAY connected on COM14
+2026-11-11 12:27:08.232 INFO  FOB connected on COM15
+2026-11-11 12:27:37.033 FOB   >>> [VIBRATE: one]
+2026-11-11 12:27:39.103 FOB   no GPS fix, sending without a location
+2026-11-11 12:27:39.104 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98902, "bat": 100, "sig": "d2ce686cf946b72481eab056069e14ba5cba31a181e70dff637ef24c75d5b821", "t": 2164, "ctr": 214, "ts": 1794421658, "v": 1, "id": "FOB-001"}
+2026-11-11 12:27:44.044 FOB   WiFi send failed at connect: no answer
+2026-11-11 12:27:44.045 FOB   falling back to LoRa: connect_timeout
+2026-11-11 12:27:44.045 FOB   WiFi problem: the broker did not answer in time: no answer
+2026-11-11 12:27:44.862 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98902, "bat": 100, "sig": "d2ce686cf946b72481eab056069e14ba5cba31a181e70dff637ef24c75d5b821", "t": 2164, "ctr": 214, "ts": 1794421658, "v": 1, "id": "FOB-001"}
+2026-11-11 12:27:44.863 RELAY from FOB-001 type SUSPICIOUS ctr 214 signal -40 dBm, snr 9.75
+2026-11-11 12:27:44.866 FOB   ACK received (try 1)
+2026-11-11 12:27:44.866 FOB   sent over LoRa SUSPICIOUS ctr 214 confirmed by the Relay
+2026-11-11 12:27:44.867 FOB   SEND_RESULT ctr=214 kind=SUSPICIOUS path=lora result=confirmed ms=5831 reason=connect_timeout
+2026-11-11 12:27:44.870 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:28:08.881 FOB   >>> [VIBRATE: one]
+2026-11-11 12:28:11.816 FOB   no GPS fix, sending without a location
+2026-11-11 12:28:11.816 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98896, "bat": 100, "sig": "a53f41c9edae87abb1e5b342dfb83542cd436235231874336f22d4a46671cd48", "t": 2162, "ctr": 215, "ts": 1794421691, "v": 1, "id": "FOB-001"}
+2026-11-11 12:28:15.884 FOB   WiFi send failed at connect: no answer
+2026-11-11 12:28:15.885 FOB   falling back to LoRa: connect_timeout
+2026-11-11 12:28:15.885 FOB   WiFi problem: the broker did not answer in time: no answer
+2026-11-11 12:28:16.463 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98896, "bat": 100, "sig": "a53f41c9edae87abb1e5b342dfb83542cd436235231874336f22d4a46671cd48", "t": 2162, "ctr": 215, "ts": 1794421691, "v": 1, "id": "FOB-001"}
+2026-11-11 12:28:16.464 RELAY from FOB-001 type SUSPICIOUS ctr 215 signal -41 dBm, snr 12.25
+2026-11-11 12:28:16.466 FOB   ACK received (try 1)
+2026-11-11 12:28:16.467 FOB   sent over LoRa SUSPICIOUS ctr 215 confirmed by the Relay
+2026-11-11 12:28:16.468 FOB   SEND_RESULT ctr=215 kind=SUSPICIOUS path=lora result=confirmed ms=5586 reason=connect_timeout
+2026-11-11 12:28:16.470 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:28:36.562 FOB   >>> [VIBRATE: one]
+2026-11-11 12:28:38.623 FOB   no GPS fix, sending without a location
+2026-11-11 12:28:38.624 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98901, "bat": 100, "sig": "8364a4b9fb23cdc6e8a1d6a5208492d2eecaae6254ec705c8357548e48127c37", "t": 2165, "ctr": 216, "ts": 1794421718, "v": 1, "id": "FOB-001"}
+2026-11-11 12:28:43.574 FOB   WiFi send failed at connect: no answer
+2026-11-11 12:28:43.574 FOB   falling back to LoRa: connect_timeout
+2026-11-11 12:28:43.575 FOB   WiFi problem: the broker did not answer in time: no answer
+2026-11-11 12:28:44.173 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98901, "bat": 100, "sig": "8364a4b9fb23cdc6e8a1d6a5208492d2eecaae6254ec705c8357548e48127c37", "t": 2165, "ctr": 216, "ts": 1794421718, "v": 1, "id": "FOB-001"}
+2026-11-11 12:28:44.174 RELAY from FOB-001 type SUSPICIOUS ctr 216 signal -42 dBm, snr 9.75
+2026-11-11 12:28:44.176 FOB   ACK received (try 1)
+2026-11-11 12:28:44.177 FOB   sent over LoRa SUSPICIOUS ctr 216 confirmed by the Relay
+2026-11-11 12:28:44.178 FOB   SEND_RESULT ctr=216 kind=SUSPICIOUS path=lora result=confirmed ms=5614 reason=connect_timeout
+2026-11-11 12:28:44.180 FOB   >>> [VIBRATE: ok]

@@ -47,3 +47,50 @@ def ack_text(key, device_id, ctr, sig):
     body = "ACK|{}|{}|{}".format(device_id, ctr, sig).encode()
     mac = binascii.hexlify(hmac_sha256(key, body)).decode()[:MAC_HEX]
     return "ACK {} {} {}".format(device_id, ctr, mac)
+
+
+# ---------- "help is coming" (message-format.md) ----------
+# Sent by the SERVER when staff press Acknowledge. The Relay never makes one.
+# help key  = HMAC-SHA256(device secret key, "safeping-help-v1")
+# help text = "HELP <id> <ctr> <mac>", mac = first 16 hex characters of
+#             HMAC-SHA256(help key, "HELP|<id>|<ctr>")
+HELP_LABEL = b"safeping-help-v1"
+
+
+def help_key(secret_key):
+    """secret_key as bytes. Returns the 32 byte help key."""
+    return hmac_sha256(secret_key, HELP_LABEL)
+
+
+def help_text(key, device_id, ctr):
+    body = "HELP|{}|{}".format(device_id, ctr).encode()
+    mac = binascii.hexlify(hmac_sha256(key, body)).decode()[:MAC_HEX]
+    return "HELP {} {} {}".format(device_id, ctr, mac)
+
+
+def check_help(key, device_id, text, waiting):
+    """Check a help message the Fob received. waiting is the ctrs it is listening for.
+    Returns (ctr, None) when it is valid for one of them, else (ctr or None, reason):
+      "not_help"      not a HELP line at all (unsigned or junk)
+      "other_device"  for another Fob
+      "other_ctr"     signed format, but not for an alert this Fob is waiting on
+      "bad_signature" for a waiting ctr, but the mac is wrong"""
+    if isinstance(text, (bytes, bytearray)):
+        try:
+            text = bytes(text).decode()
+        except Exception:
+            return None, "not_help"
+    parts = text.strip().split(" ")
+    if len(parts) != 4 or parts[0] != "HELP" or len(parts[3]) != MAC_HEX:
+        return None, "not_help"
+    if parts[1] != device_id:
+        return None, "other_device"
+    try:
+        ctr = int(parts[2])
+    except ValueError:
+        return None, "not_help"
+    if ctr not in waiting:
+        return ctr, "other_ctr"
+    if text.strip() != help_text(key, device_id, ctr):
+        return ctr, "bad_signature"
+    return ctr, None

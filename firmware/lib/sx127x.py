@@ -196,9 +196,11 @@ class SX127x:
         return True
 
     # ---- receive ----
-    def receive(self, timeout_ms=5000):
+    def receive(self, timeout_ms=5000, stop=None):
         """Listen for one packet. Returns (data, rssi_dbm, snr_db), or None if nothing
         good arrived in time. Packets with a bad CRC are skipped.
+        stop, if given, is checked every 2 ms: when it returns True, listening ends early
+        (returns None). The Fob uses it so a button press ends a retry at once.
         Raises OSError if the radio is not answering or is not in LoRa mode."""
         self.check()
         self.write_reg(REG_IRQ_FLAGS, 0xFF)
@@ -207,6 +209,8 @@ class SX127x:
         waited = 0
         try:
             while waited <= timeout_ms:
+                if stop is not None and stop():
+                    return None
                 flags = self.read_reg(REG_IRQ_FLAGS)
                 if flags & IRQ_RX_DONE:
                     self.write_reg(REG_IRQ_FLAGS, 0xFF)

@@ -5,9 +5,10 @@
 import { alertState, hasGps, linkMeta, STATES, typeMeta } from "./alertMeta.js";
 import { cameraInfo, coords, formatDateTime, googleMapsUrl, placeText } from "./format.js";
 
-// Title rows: the type colors, deep enough for white text. The Review cameras row is a light
-// tint of blue, so it stands apart from the magenta Suspicious title.
-const TITLE = { MEDICAL: "#C92D3F", SUSPICIOUS: "#B8246F", SILENT: "#744DD6", STATUS: "#6B6E76" };
+// Title rows: the type colors, deep enough for white text. Suspicious uses its deep amber tag
+// text, because white is unreadable on the yellow. The Review cameras row is a light tint of
+// blue, so it stands apart from the amber Suspicious title.
+const TITLE = { MEDICAL: "#D3123A", SUSPICIOUS: "#855A00", SILENT: "#7A3CF5", STATUS: "#6B6E76" };
 const CAMERA_ROW = "background:#E0F0FC;color:#1260A0;font-weight:600;";
 const STATE_CELL = {
   open: { bg: "#CFFAFE", fg: "#0E7490" },

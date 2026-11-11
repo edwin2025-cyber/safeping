@@ -1,0 +1,14 @@
+SafePing field test summary (Relay only, Fob not logged)
+label: outdoor_nov11
+start: 2026-11-11 16:04:31.314
+end:   2026-11-11 17:02:47.183
+length: 3496 s
+
+Relay received alerts:       31  (ctr 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297)
+  with a GPS position:       31
+Duplicates at the Relay:     0
+Not-SafePing packets heard:  9
+Sent, lost, confirmed:       unknown (no Fob log)
+
+Signal (dBm):  min -102  max -77  avg -89
+SNR (dB):      min -2.75  max 10.00  avg 7.53

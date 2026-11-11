@@ -31,7 +31,8 @@ def check(name, passed, detail=""):
 
 
 # ---------- 1. source check ----------
-FILES = ["lib/umqtt_safe.py", "lib/sendpath.py", "fob/main.py"]
+FILES = ["lib/umqtt_safe.py", "lib/sendpath.py", "fob/main.py", "lib/presslog.py", "lib/retryq.py",
+         "lib/helplisten.py", "lib/selfcheck.py", "lib/ackcheck.py"]
 
 
 def _exception_class(node):
@@ -267,9 +268,112 @@ def test_errors():
     check("no em dashes in the plain words", "—" not in text)
 
 
+# ---------- 3. "Wifi Internal State Error" (2026-11-11, ctr 221 and 228) ----------
+STATE_ERROR = OSError("Wifi Internal State Error")      # how MicroPython raises it
+
+
+class FakeWiFi:
+    """start() raises the given errors in order (None = starts fine). wait() says
+    whether the join connects, and how long it takes. reset() takes reset_ms."""
+
+    def __init__(self, clock, start_errors, connects, wait_takes=700, reset_ms=200, reset_error=None):
+        self.clock = clock
+        self.start_errors = list(start_errors)
+        self.connects = list(connects)
+        self.wait_takes = wait_takes
+        self.reset_ms = reset_ms
+        self.reset_error = reset_error
+        self.starts = 0
+        self.resets = 0
+        self.waits = []
+
+    def start(self):
+        self.starts += 1
+        err = self.start_errors.pop(0) if self.start_errors else None
+        if err is not None:
+            raise err
+
+    def wait(self, ms):
+        self.waits.append(ms)
+        ok = self.connects.pop(0) if self.connects else False
+        self.clock[0] += min(ms, self.wait_takes) if ok else ms
+        return ok
+
+    def reset(self):
+        self.resets += 1
+        self.clock[0] += self.reset_ms
+        if self.reset_error is not None:
+            raise self.reset_error
+
+
+def join(wifi, clock, budget_ms=5000, used_ms=0, join_ms=3000):
+    clock[0] = 0
+    budget = sendpath.Budget(budget_ms, clock=lambda: clock[0], diff=lambda a, b: a - b)
+    clock[0] = used_ms
+    logs = []
+    out = sendpath.join_wifi(budget, join_ms, wifi.start, wifi.wait, wifi.reset, wifi.reset_ms, logs.append)
+    return out, logs
+
+
+def test_state_error():
+    check("state error is recognised", sendpath.is_wifi_state_error(STATE_ERROR))
+    check("other errors are not a state error",
+          not sendpath.is_wifi_state_error(OSError(110)) and not sendpath.is_wifi_state_error(OSError("Wifi Not Started")))
+
+    clock = [0]
+    w = FakeWiFi(clock, [STATE_ERROR, None], [True])
+    (ok, reason, detail), logs = join(w, clock)
+    check("state error: reset, second try connects", ok and reason == "-" and w.resets == 1 and w.starts == 2,
+          "{} {} resets {} starts {}".format(ok, reason, w.resets, w.starts))
+    check("state error: the log says it reset", logs == ["WiFi state error, resetting WiFi and trying once more"], str(logs))
+    check("state error: second join is still capped at WIFI_JOIN_MS", w.waits == [3000], str(w.waits))
+
+    w = FakeWiFi(clock, [STATE_ERROR, None], [True])
+    (ok, reason, detail), logs = join(w, clock, used_ms=3500)
+    check("late in the budget the retry join is shorter", ok and w.waits == [1300], str(w.waits))
+
+    w = FakeWiFi(clock, [STATE_ERROR, STATE_ERROR], [])
+    (ok, reason, detail), logs = join(w, clock)
+    check("state error twice: wifi_state_error, only one reset",
+          not ok and reason == "wifi_state_error" and w.resets == 1 and w.starts == 2, reason)
+
+    w = FakeWiFi(clock, [STATE_ERROR], [])
+    (ok, reason, detail), logs = join(w, clock, used_ms=3900)        # 1100 ms left < 200 + 1000
+    check("not enough budget: no reset, wifi_state_error",
+          not ok and reason == "wifi_state_error" and w.resets == 0 and w.starts == 1, reason)
+    check("not enough budget: the log says so", logs == ["WiFi state error, no time left for a WiFi reset"], str(logs))
+
+    w = FakeWiFi(clock, [STATE_ERROR, None], [False])
+    (ok, reason, detail), logs = join(w, clock)
+    check("reset, then the join does not connect: wifi_state_error", not ok and reason == "wifi_state_error", reason)
+    check("the whole thing stays inside the 5 s budget", clock[0] <= 5000, "{} ms".format(clock[0]))
+
+    w = FakeWiFi(clock, [STATE_ERROR], [], reset_error=OSError("Wifi Internal Error"))
+    (ok, reason, detail), logs = join(w, clock)
+    check("the reset itself fails: wifi_state_error", not ok and reason == "wifi_state_error", reason)
+
+    w = FakeWiFi(clock, [OSError(5)], [])
+    (ok, reason, detail), logs = join(w, clock)
+    check("another start error: wifi_join_failed, no reset", not ok and reason == "wifi_join_failed" and w.resets == 0, reason)
+
+    w = FakeWiFi(clock, [None], [False])
+    (ok, reason, detail), logs = join(w, clock)
+    check("normal join failure is still wifi_join_failed", not ok and reason == "wifi_join_failed" and w.resets == 0, reason)
+
+    w = FakeWiFi(clock, [None], [True])
+    (ok, reason, detail), logs = join(w, clock)
+    check("normal join works with no reset", ok and w.resets == 0 and w.starts == 1)
+
+    check("wifi_state_error is a known reason", "wifi_state_error" in sendpath.REASONS)
+    line = sendpath.result_line(221, "SUSPICIOUS", "lora", "confirmed", 1450, "wifi_state_error")
+    check("SEND_RESULT shows wifi_state_error", line.endswith("reason=wifi_state_error"), line)
+    check("wifi_state_error has plain words", "stuck" in sendpath.plain_reason("wifi_state_error", STATE_ERROR))
+
+
 def main():
     test_source()
     test_errors()
+    test_state_error()
     print()
     print("{} of {} checks passed".format(sum(results), len(results)))
     return 0 if all(results) else 1

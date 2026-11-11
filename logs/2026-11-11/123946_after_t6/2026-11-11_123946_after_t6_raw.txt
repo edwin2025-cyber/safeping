@@ -1,0 +1,39 @@
+# label after_t6  fob COM15  relay COM14
+2026-11-11 12:39:46.719 INFO  FOB connected on COM15
+2026-11-11 12:39:46.720 INFO  RELAY connected on COM14
+2026-11-11 12:40:04.410 FOB   >>> [VIBRATE: one]
+2026-11-11 12:40:06.476 FOB   no GPS fix, sending without a location
+2026-11-11 12:40:06.476 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "1d3d2fdcecb70b4c351978ffb758414a1472db854ce7c25ebca36aa19efe33d4", "t": 2195, "ctr": 223, "ts": 1794422405, "v": 1, "id": "FOB-001"}
+2026-11-11 12:40:06.481 FOB   TLS CA file missing: /certs/broker-ca.pem
+2026-11-11 12:40:06.481 FOB   falling back to LoRa: ca_missing
+2026-11-11 12:40:06.482 FOB   WiFi problem: the broker's CA file is missing on the Fob
+2026-11-11 12:40:07.223 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "1d3d2fdcecb70b4c351978ffb758414a1472db854ce7c25ebca36aa19efe33d4", "t": 2195, "ctr": 223, "ts": 1794422405, "v": 1, "id": "FOB-001"}
+2026-11-11 12:40:07.224 FOB   ACK received (try 1)
+2026-11-11 12:40:07.225 FOB   sent over LoRa SUSPICIOUS ctr 223 confirmed by the Relay
+2026-11-11 12:40:07.225 RELAY from FOB-001 type SUSPICIOUS ctr 223 signal -32 dBm, snr 9.0
+2026-11-11 12:40:07.226 FOB   SEND_RESULT ctr=223 kind=SUSPICIOUS path=lora result=confirmed ms=813 reason=ca_missing
+2026-11-11 12:40:07.228 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:40:20.184 FOB   >>> [VIBRATE: one]
+2026-11-11 12:40:22.255 FOB   no GPS fix, sending without a location
+2026-11-11 12:40:22.256 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98919, "bat": 100, "sig": "3cc8d76bb7b70104bbe743a809d53f7986cf6986a3984b4cdba002d69b8af47a", "t": 2193, "ctr": 224, "ts": 1794422421, "v": 1, "id": "FOB-001"}
+2026-11-11 12:40:22.261 FOB   TLS CA file missing: /certs/broker-ca.pem
+2026-11-11 12:40:22.262 FOB   falling back to LoRa: ca_missing
+2026-11-11 12:40:22.262 FOB   WiFi problem: the broker's CA file is missing on the Fob
+2026-11-11 12:40:22.833 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98919, "bat": 100, "sig": "3cc8d76bb7b70104bbe743a809d53f7986cf6986a3984b4cdba002d69b8af47a", "t": 2193, "ctr": 224, "ts": 1794422421, "v": 1, "id": "FOB-001"}
+2026-11-11 12:40:22.834 FOB   ACK received (try 1)
+2026-11-11 12:40:22.834 FOB   sent over LoRa SUSPICIOUS ctr 224 confirmed by the Relay
+2026-11-11 12:40:22.835 RELAY from FOB-001 type SUSPICIOUS ctr 224 signal -35 dBm, snr 10.0
+2026-11-11 12:40:22.835 FOB   SEND_RESULT ctr=224 kind=SUSPICIOUS path=lora result=confirmed ms=642 reason=ca_missing
+2026-11-11 12:40:22.838 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:40:35.296 FOB   >>> [VIBRATE: one]
+2026-11-11 12:40:37.364 FOB   no GPS fix, sending without a location
+2026-11-11 12:40:37.365 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98916, "bat": 100, "sig": "e460daf714e15722c448e701952bdd395b0c029ced3aa4682e604d35673ab36c", "t": 2189, "ctr": 225, "ts": 1794422436, "v": 1, "id": "FOB-001"}
+2026-11-11 12:40:37.370 FOB   TLS CA file missing: /certs/broker-ca.pem
+2026-11-11 12:40:37.371 FOB   falling back to LoRa: ca_missing
+2026-11-11 12:40:37.371 FOB   WiFi problem: the broker's CA file is missing on the Fob
+2026-11-11 12:40:37.793 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98916, "bat": 100, "sig": "e460daf714e15722c448e701952bdd395b0c029ced3aa4682e604d35673ab36c", "t": 2189, "ctr": 225, "ts": 1794422436, "v": 1, "id": "FOB-001"}
+2026-11-11 12:40:37.795 RELAY from FOB-001 type SUSPICIOUS ctr 225 signal -36 dBm, snr 9.75
+2026-11-11 12:40:37.797 FOB   ACK received (try 1)
+2026-11-11 12:40:37.798 FOB   sent over LoRa SUSPICIOUS ctr 225 confirmed by the Relay
+2026-11-11 12:40:37.799 FOB   SEND_RESULT ctr=225 kind=SUSPICIOUS path=lora result=confirmed ms=499 reason=ca_missing
+2026-11-11 12:40:37.801 FOB   >>> [VIBRATE: ok]

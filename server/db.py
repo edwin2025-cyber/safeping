@@ -47,8 +47,9 @@ CREATE TABLE IF NOT EXISTS rejected (
     payload   TEXT
 );
 
--- The signature of every accepted alert, so an identical resend can be told apart
--- from a replay (the "duplicate" rule in message-format.md).
+-- Every counter the server has accepted from a Fob, with its signature: the record of
+-- seen counters for the replay and duplicate rule in message-format.md. One row per
+-- (device, counter), enforced by idx_seen_counter. Pruned after SEEN_KEEP_DAYS.
 CREATE TABLE IF NOT EXISTS accepted_sigs (
     device_id TEXT NOT NULL,
     counter   INTEGER NOT NULL,
@@ -56,8 +57,32 @@ CREATE TABLE IF NOT EXISTS accepted_sigs (
     timestamp REAL NOT NULL
 );
 
+-- Boot reports (BOOT messages). Never alerts. The newest BOOT_REPORTS_KEPT per device are kept.
+CREATE TABLE IF NOT EXISTS boot_reports (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id   TEXT NOT NULL,
+    timestamp   REAL NOT NULL,      -- when the server received it
+    device_ts   INTEGER,            -- the Fob's clock, if set
+    counter     INTEGER NOT NULL,
+    failed      INTEGER NOT NULL,   -- bit mask of failed required checks, 0 = all passed
+    wifi        INTEGER,            -- 1 = WiFi joined at boot, 0 = not (information only)
+    firmware    TEXT,
+    link        TEXT NOT NULL DEFAULT 'unknown'
+);
+
+-- Help messages sent to a Fob when staff press Acknowledge ("help is coming").
+CREATE TABLE IF NOT EXISTS help_sent (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    alert_id  INTEGER NOT NULL,
+    timestamp REAL NOT NULL,
+    path      TEXT NOT NULL          -- wifi (MQTT). lora is Part E.
+);
+
 CREATE INDEX IF NOT EXISTS idx_alerts_time ON alerts (timestamp);
 CREATE INDEX IF NOT EXISTS idx_accepted_sigs ON accepted_sigs (device_id, counter);
+CREATE INDEX IF NOT EXISTS idx_accepted_sigs_time ON accepted_sigs (timestamp);
+CREATE INDEX IF NOT EXISTS idx_boot_device ON boot_reports (device_id, id);
+CREATE INDEX IF NOT EXISTS idx_help_alert ON help_sent (alert_id);
 CREATE INDEX IF NOT EXISTS idx_ref_time ON reference_readings (timestamp);
 CREATE INDEX IF NOT EXISTS idx_rejected_time ON rejected (timestamp);
 """
@@ -70,6 +95,7 @@ MIGRATIONS = [
     ("alerts", "link", "TEXT NOT NULL DEFAULT 'unknown'"),   # lora, wifi or unknown
     ("alerts", "temperature", "INTEGER"),                    # hundredths of a degree C, like "t"
     ("alerts", "counter", "INTEGER"),                        # the message's "ctr"
+    ("boot_reports", "reset_cause", "INTEGER"),              # BOOT "rst", machine.reset_cause()
 ]
 
 
@@ -95,6 +121,10 @@ def init_db():
             existing = {row["name"] for row in c.execute("PRAGMA table_info({})".format(table))}
             if column not in existing:
                 c.execute("ALTER TABLE {} ADD COLUMN {} {}".format(table, column, definition))
+        # One row per (device, counter), so two copies arriving at the same moment cannot
+        # both claim a counter. The old rule only ever accepted rising counters, so an
+        # existing database has no two rows with the same pair.
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_seen_counter ON accepted_sigs (device_id, counter)")
 
 
 # ---------- devices ----------
@@ -148,24 +178,62 @@ def advance_counter(device_id, counter):
         return cur.rowcount == 1
 
 
-def record_accepted(device_id, counter, sig, received_at):
-    """Remember an accepted alert's signature for the duplicate check."""
+def raise_counter(device_id, counter):
+    """last_counter becomes the highest counter seen. Never goes down."""
     with connect() as c:
-        c.execute(
-            "INSERT INTO accepted_sigs (device_id, counter, sig, timestamp) VALUES (?, ?, ?, ?)",
+        c.execute("UPDATE devices SET last_counter = MAX(last_counter, ?) WHERE device_id = ?",
+                  (counter, device_id))
+
+
+def seen_sig(device_id, counter):
+    """The signature saved for this device and counter, or None if the counter is unseen
+    (or was pruned)."""
+    with connect() as c:
+        row = c.execute("SELECT sig FROM accepted_sigs WHERE device_id = ? AND counter = ?",
+                        (device_id, counter)).fetchone()
+    return row[0] if row else None
+
+
+def claim_counter(device_id, counter, sig, received_at):
+    """Mark a counter as seen with this signature. Returns False if it was already taken
+    (by this message or another one). One INSERT, so two copies cannot both win."""
+    with connect() as c:
+        cur = c.execute(
+            """INSERT OR IGNORE INTO accepted_sigs (device_id, counter, sig, timestamp)
+               VALUES (?, ?, ?, ?)""",
             (device_id, counter, sig.lower(), received_at),
         )
+        return cur.rowcount == 1
 
 
-def is_recent_duplicate(device_id, counter, sig, since):
-    """True if this exact alert (same id, counter and signature) was accepted at or after since."""
+def release_counter(device_id, counter, sig):
+    """Undo claim_counter, when the message could not be saved after all."""
     with connect() as c:
-        row = c.execute(
-            """SELECT 1 FROM accepted_sigs
-               WHERE device_id = ? AND counter = ? AND sig = ? AND timestamp >= ? LIMIT 1""",
-            (device_id, counter, sig.lower(), since),
-        ).fetchone()
-    return row is not None
+        c.execute("DELETE FROM accepted_sigs WHERE device_id = ? AND counter = ? AND sig = ?",
+                  (device_id, counter, sig.lower()))
+
+
+def prune_seen(before, window=None):
+    """Forget seen counters received before this time, but never one inside the counter
+    window (no more than window below the device's highest counter): those must stay, or
+    an old copy could be accepted again. Returns how many were removed."""
+    window = config.COUNTER_WINDOW if window is None else window
+    with connect() as c:
+        return c.execute(
+            """DELETE FROM accepted_sigs WHERE timestamp < ? AND counter <
+                   (SELECT d.last_counter - ? FROM devices d WHERE d.device_id = accepted_sigs.device_id)""",
+            (before, window),
+        ).rowcount
+
+
+def count_late(start, end, over_s):
+    """Alerts received in the range that arrived more than over_s after the press (ts)."""
+    with connect() as c:
+        return c.execute(
+            """SELECT COUNT(*) FROM alerts WHERE timestamp >= ? AND timestamp < ?
+                   AND device_ts IS NOT NULL AND timestamp - device_ts > ?""",
+            (start, end, over_s),
+        ).fetchone()[0]
 
 
 # ---------- alerts ----------
@@ -479,6 +547,67 @@ def alerts_between(start, end):
             (start, end),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+# ---------- boot reports ----------
+
+def insert_boot(device_id, received_at, device_ts, counter, failed, wifi, firmware, link="unknown",
+                reset_cause=None):
+    """Save one boot report, then keep only the newest BOOT_REPORTS_KEPT for this device."""
+    with connect() as c:
+        cur = c.execute(
+            """INSERT INTO boot_reports
+               (device_id, timestamp, device_ts, counter, failed, wifi, firmware, link, reset_cause)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (device_id, received_at, device_ts, counter, failed, wifi, firmware, link, reset_cause),
+        )
+        c.execute(
+            """DELETE FROM boot_reports WHERE device_id = ? AND id NOT IN
+               (SELECT id FROM boot_reports WHERE device_id = ? ORDER BY id DESC LIMIT ?)""",
+            (device_id, device_id, config.BOOT_REPORTS_KEPT),
+        )
+        return cur.lastrowid
+
+
+def list_boots(device_id, limit=None):
+    """One device's boot reports, newest first."""
+    with connect() as c:
+        rows = c.execute(
+            "SELECT * FROM boot_reports WHERE device_id = ? ORDER BY id DESC LIMIT ?",
+            (device_id, limit or config.BOOT_REPORTS_KEPT),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def latest_boots():
+    """{device_id: newest boot report} for every device that has one."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT b.* FROM boot_reports b
+               WHERE b.id = (SELECT MAX(id) FROM boot_reports WHERE device_id = b.device_id)"""
+        ).fetchall()
+    return {r["device_id"]: dict(r) for r in rows}
+
+
+# ---------- help messages ("help is coming") ----------
+
+def record_help(alert_id, sent_at, path="wifi"):
+    with connect() as c:
+        c.execute("INSERT INTO help_sent (alert_id, timestamp, path) VALUES (?, ?, ?)",
+                  (alert_id, sent_at, path))
+
+
+def help_times(alert_ids):
+    """{alert_id: time of the first help message sent} for the given alerts."""
+    ids = [int(i) for i in alert_ids]
+    if not ids:
+        return {}
+    with connect() as c:
+        rows = c.execute(
+            "SELECT alert_id, MIN(timestamp) FROM help_sent WHERE alert_id IN ({}) GROUP BY alert_id"
+            .format(",".join("?" * len(ids))), ids,
+        ).fetchall()
+    return {r[0]: r[1] for r in rows}
 
 
 # ---------- reference readings ----------

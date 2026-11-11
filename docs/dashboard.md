@@ -127,7 +127,8 @@ Click a row (or press Enter on it) to open the alert in a large center panel. Es
 - When and Where: two cards. Pressed shows the time large, with the date and how long ago. Place shows the place in words and Open in Google Maps (or how the floor was found, when there is no GPS). The GPS point and its accuracy are hidden: "Show GPS point" next to Open in Google Maps shows them, and "Hide GPS point" hides them again. They start hidden each time the panel opens.
 - Review cameras (SUSPICIOUS only): a plain card with a camera icon in blue. The time window is the large line, with the date, the place and "Within 62 m of the GPS point" under it (no numbers for the point), and Copy for security on the right.
 - The map, with the area line under it.
-- Timeline: Pressed, Text to duty phone, Acknowledged and Resolved, with their times ("Not yet" until they happen). A filled dot is a step that happened.
+- Timeline: Pressed, Text to duty phone, Acknowledged and Resolved, with their times ("Not yet" until they happen). A filled dot is a step that happened. After Acknowledged, "Help message sent to Fob" with the time, when the server sent the "help is coming" message (WiFi). It means the server sent it, not that the Fob got it.
+- Sent late: an alert that reached the server more than 60 s after the press (the Fob's retry queue) gets a small gray "Sent late" tag, next to the time on Live rows and in the device history, with both times in its tooltip. In the panel, the Pressed card shows the Fob's press time with "Arrived ..." under it, and the timeline has Pressed and "Arrived, sent late" as two steps. Needs the Fob's clock (`ts`), so an alert sent with no clock never shows the tag. More than 15 minutes: the tag is yellow and says "Sent late (over 15 min)", and Settings > Health counts it.
 - Fob: Battery (number and bar), Link (tag), Floor, Pressure, Temperature, Message number.
 
 The old layout, one list of every property and then the map, is still in the code. In `dashboard/src/components/AlertPeek.jsx`, set `PEEK_LAYOUT` to `"list"` to bring it back.
@@ -138,12 +139,13 @@ Copy details (top right) and Copy for security copy two versions at once: the sa
 
 Under the title, a summary: "4 Fobs, 1 low battery, all seen today". Only the problem part is orange. "Seen today" means a message in the last 24 hours.
 
-One row per registered device: Student, Fob ID, Last seen, Battery, Link and Open alerts. Battery is the percent and a thin bar: green at 20% and up, yellow under 20%, red under 10%. Under 20% a bold word in the bar's color follows it, a yellow "Low" or a red "Very low" (plain text, no box), and the percent is semibold too, so the level never depends on color alone. The same battery shows in the alert panel's Fob section. Link is a tag: gray LoRa or slate WiFi. Click a row, or its Open button (in its own column, on hover), to see that device's details and its alert history (newest 200, with a type filter).
+One row per registered device: Student, Fob ID, Last seen, Battery, Last start, Link and Open alerts. Last start is from the Fob's boot report (its self-check at power on): how long ago, and "All checks passed" or "2 problems: LoRa radio not answering, GPS not sending data" in orange. "Not reported yet" until a Fob with the new firmware starts. Boot reports never count as alerts or as "seen". Battery is the percent and a thin bar: green at 20% and up, yellow under 20%, red under 10%. Under 20% a bold word in the bar's color follows it, a yellow "Low" or a red "Very low" (plain text, no box), and the percent is semibold too, so the level never depends on color alone. The same battery shows in the alert panel's Fob section. Link is a tag: gray LoRa or slate WiFi. Click a row, or its Open button (in its own column, on hover), to see that device's details and its alert history (newest 200, with a type filter).
 
 The device panel is in sections, like the alert panel:
 
 - Header: the student's name, then "Fob" (or "Reference board"), the link tag and the Fob ID.
 - Three cards. Last seen: the time large, the date and how long ago, and the message number under them. Battery: the percent large, a bar, and a bold word in the bar's color (plain text): green "Good", yellow "Low, under 20%" or red "Very low, under 10%". Open alerts: the count, with a teal dot and "Needs action", or "None open".
+- Starts and self-checks: Last start (time and how long ago), Why it started ("Power on", "Restarted after a crash" in orange, "Restarted by the watchdog", "Soft reset (Thonny or Ctrl+D)", or "Not reported" for older firmware; the starts table has the same in a Why column, and the Devices page adds ", after a crash" next to Last start), Self-check ("All checks passed" or the failed parts in plain words), WiFi ("WiFi joined" or "No WiFi at start (LoRa still works)", information only, never a failure) and Firmware. Under it, the last 10 starts, newest first.
 - Alert history: the table, with the type filter on the right. Pressed shows the date and time with how long ago in gray.
 
 The reference board has no battery or alerts, so it shows Last seen and a Role card ("Ground floor pressure") and no history.
@@ -206,7 +208,10 @@ This runs `vite --mode mock`. The dashboard then answers every `/api` call from 
 
 - The fake data is in `dashboard/src/mock/data.js`: 8 current alerts (all 4 types, all 3 states), 4 devices, 4 places. All names are made up.
 - `dashboard/src/mock/api.js` adds about 60 days of history so Overview looks real: 0 to 6 alerts a day, more on weekdays between 7 AM and 4 PM, mostly STATUS. It is seeded by the date, so a given day always has the same alerts. History alerts are resolved and have acknowledge and resolve times.
-- `data.js` also has 4 fake rejected messages and 2 fake duplicates for Settings > Health. Mock mode shows a number for Duplicates caught so the row can be checked with data. The real server says "Not tracked" (see Settings below).
+- `data.js` also has 4 fake rejected messages and 2 fake duplicates for Settings > Health.
+- Delta's acknowledged MEDICAL arrived 21 minutes after the press: "Sent late (over 15 min)" and the yellow Health row.
+- Boot reports: `MOCK_BOOTS` in `data.js`. Alpha passed, Bravo's last start had no GPS data, Charlie's had LoRa and pressure failures, Delta has none yet.
+- The open SILENT alert from Charlie is "Sent late" (320 s). Acknowledging any alert in mock mode adds "Help message sent to Fob", as if MQTT were on.
 - The fake routes are in `dashboard/src/mock/api.js`, including `/api/stats`, `/api/search` and `/api/alerts/<id>`. Export builds both files in the browser from the mock rows. Acknowledge and Resolve work, but only in memory. A page reload starts over.
 - A new random alert arrives every 45 seconds, so the sound and auto-zoom can be tested.
 - Without a CARTO key the map uses OpenStreetMap tiles (see below to add one).
@@ -374,8 +379,9 @@ Whether the system itself is working. It reads `/api/stats` for the picked range
 | Row | How it is worked out |
 |---|---|
 | Delivery | Messages received in the range by link, as tags in three grays: LoRa, WiFi, and Unknown (older alerts and test tools). STATUS check-ins are included here, because this row is about the radio path and check-ins use it too |
-| Duplicates caught | "Not tracked". The server cannot tell a Fob sending the same message again from someone replaying a captured message: both fail the counter check and are counted under Rejected messages as "replay". The Relay already drops LoRa resends before they reach the server |
-| Rejected messages | Messages the server turned away in the range, from the `rejected` table, with the count per reason under it ("3 bad signature, 1 replay"). Red with a warning icon when any are bad signature or replay |
+| Duplicates caught | Exact copies of a message the server already saved (a Fob resending over LoRa or from its retry queue). Acked again, never stored twice, not an attack. See `docs/message-format.md`, "Counters, duplicates and replays" |
+| Sent late (over 15 min) | Alerts in the range that reached the server more than 15 minutes after the press. They are accepted and shown, with a yellow "Sent late (over 15 min)" tag. Yellow with a warning icon when there is one or more: a long outage, or a recorded alert played back. Needs the Fob's clock (`ts`) |
+| Rejected messages | Messages the server turned away in the range, from the `rejected` table, with the count per reason under it ("3 bad signature, 1 replay"). Red with a warning icon when any are bad signature or replay. Older databases may also list "too old (stale)" from before the counter window, and those count as red too. There is no separate Security page: this row is where security events show |
 | Fobs not seen in 24 h | Fobs with no message of any type, STATUS included, in the last 24 hours, with their names. Orange when any |
 | Low battery | Fobs whose newest battery reading is under 20%, with names and percents. Orange when any |
 | Reference sensor | "Last reading 2 min ago". Orange when there is no reading, or the reading is older than `REF_MAX_AGE_S` (then floors cannot be worked out) |
@@ -408,14 +414,15 @@ The server version is `VERSION` in `server/app.py` (bump it by hand) plus the gi
 
 | Route | What it returns |
 |---|---|
-| `GET /api/alerts` | Alerts. `status=1` adds STATUS, `resolved=1` adds resolved. Each alert also has `place_name`, `place_distance_m` and `place_bearing` (null when there is no named place within 200 m) |
+| `GET /api/alerts` | Alerts. `status=1` adds STATUS, `resolved=1` adds resolved. Each alert also has `place_name`, `place_distance_m` and `place_bearing` (null when there is no named place within 200 m), and `pressed_at` (the Fob's clock, or null), `late_s`, `sent_late` (more than 60 s from press to arrival) and `help_sent_at` (when the help message was sent, or null) |
 | `GET /api/alerts/<id>` | One alert, in the same shape, as `{"alert": {...}}`. 404 for an unknown id. New in version 5, for opening older alerts from Overview and search |
 | `GET /api/search?q=alpha` | Find a student (below). New in version 5 |
-| `POST /api/ack`, `POST /api/resolve` | Body `{"id": 12}` |
+| `POST /api/ack`, `POST /api/resolve` | Body `{"id": 12}`. Acknowledge also sends the Fob the "help is coming" message over MQTT and answers `help_sent` (false with `NO_MQTT=1`) |
 | `GET /api/status` | Server time, Reference pressure and age, `last_lora_age_s` |
 | `GET /api/config` | `carto_key` (or null), `pa_per_floor`, `ref_max_age_s`, `defaults`, `version`, `commit` |
 | `GET /api/devices` | One row per device. Never includes the secret key |
 | `GET /api/devices/<id>/alerts` | That device's alerts, all types and states, newest first, up to 200. 404 for an unknown device |
+| `GET /api/devices/<id>/boots` | That device's boot reports, newest first, up to 10: `time`, `device_ts`, `counter`, `all_passed`, `failed` (plain words), `wifi`, `firmware`, `link`. `/api/devices` has the newest one as `last_boot` |
 | `GET /api/places` | The places from `places.json` |
 | `GET /api/stats?from=2026-11-02&to=2026-11-08` | Everything Overview and Settings > Health show, in one answer (below) |
 | `GET /api/export.csv?from=2026-11-02&to=2026-11-08` | Every alert in the range as a CSV download (below) |
@@ -444,7 +451,7 @@ Every route is behind `require_login`. `from` and `to` are dates (`YYYY-MM-DD`),
 | `indoor_count` | Alerts in the range with no GPS. New in version 5 |
 | `recent_events` | The 10 newest events in the range: `kind` (`received`, `acknowledged` or `resolved`), `time`, `alert_id`, `type`, `name`, `place`. Built from the alert times. New in version 5 |
 | `delivery` | `lora`, `wifi`, `unknown`: alerts received in the range by link, STATUS included |
-| `duplicates` | `null`: not tracked (see Health) |
+| `duplicates` | Exact resends caught in the range (see Health) |
 | `rejected` | `total` and `by_reason` (like `{"bad_signature": 2, "replay": 1}`) for messages rejected in the range |
 | `stale_fobs` | Names of Fobs not seen in 24 hours |
 | `low_battery_fobs` | `name` and `pct` for each Fob under 20%, lowest first |
@@ -454,7 +461,7 @@ Every route is behind `require_login`. `from` and `to` are dates (`YYYY-MM-DD`),
 
 `name` is the student name, or the Fob ID when there is none. `place` is the nearest named place within 200 m, "GPS" when none is that close, "Indoors, floor N", or null.
 
-`/api/export.csv` has one row per alert, oldest first, all types: Received, Type, Student, Fob ID, Status, Place, Floor, Latitude, Longitude, Accuracy (m), Battery (%), Link, Acknowledged, Resolved. Times are `YYYY-MM-DD HH:MM:SS` in the server's time zone. Place is the named place ("Near the bus loop"), empty when there is none. The file is named like `safeping-alerts-2026-11-02-to-2026-11-08.csv`. It starts with a byte order mark so Excel reads names correctly, and a cell that starts with `=`, `+`, `-` or `@` gets a leading `'` so a spreadsheet never runs it as a formula.
+`/api/export.csv` has one row per alert, oldest first, all types: Received, Type, Student, Fob ID, Status, Place, Floor, Latitude, Longitude, Accuracy (m), Battery (%), Link, Acknowledged, Resolved, Pressed (Fob clock), Sent late ("Yes, 312 s" when it arrived more than 60 s after the press, else empty). The Excel workbook has the same two columns at the end. Times are `YYYY-MM-DD HH:MM:SS` in the server's time zone. Place is the named place ("Near the bus loop"), empty when there is none. The file is named like `safeping-alerts-2026-11-02-to-2026-11-08.csv`. It starts with a byte order mark so Excel reads names correctly, and a cell that starts with `=`, `+`, `-` or `@` gets a leading `'` so a spreadsheet never runs it as a formula.
 
 **Export > Excel workbook** builds a `.xlsx` in the browser from that same CSV (so both files always hold the same rows), with exceljs (MIT license). The library loads only when someone exports. The server is unchanged. The file is named like `safeping-alerts-2026-11-02-to-2026-11-08.xlsx` and has two sheets:
 
@@ -479,6 +486,8 @@ Rejected messages were already stored: `processor.process()` writes a row to the
 | `counter` | The message's `ctr`, shown as "Message number" |
 
 When the Relay starts republishing over MQTT (planned), its alerts will show as WiFi until the Relay path gets its own topic.
+
+New tables (created when missing, safe on an old database): `boot_reports` (the newest 10 per device) and `help_sent` (when a help message was sent for an alert). `accepted_sigs` got a unique index on (device, counter), which the replay and duplicate rule uses. No columns were added to `alerts`: the press time is the existing `device_ts`.
 
 ## Login hook
 
@@ -510,9 +519,11 @@ Types are tags in tables, panels, the map list, the device history and the alert
 
 | Type | Icon, marker and chart line, light / dark | Tag, light (background / text) | Tag, dark (background / text) |
 |---|---|---|---|
-| Medical (rose red) | 201,45,63 / 255,107,122 | 255,228,231 / 168,29,49 | 66,24,31 / 255,150,160 |
-| Suspicious (magenta) | 214,51,132 / 244,114,182 | 252,231,243 / 162,28,100 | 70,22,48 / 249,168,212 |
-| Silent (violet) | 116,77,214 / 168,139,250 | 237,231,255 / 92,57,190 | 43,33,74 / 200,184,255 |
+| Medical (crimson) | 211,18,58 / 255,107,122 | 255,222,224 / 190,10,51 | 79,9,19 / 255,121,126 |
+| Suspicious (LED yellow) | fill 255,195,0 / 255,195,0; lone icon 185,128,0 / 255,195,0 | 255,234,171 / 133,90,0 | 60,43,0 / 255,195,0 |
+| Silent (violet) | 122,60,245 / 168,139,250 | 236,229,255 / 106,40,224 | 44,27,85 / 171,148,255 |
+
+Alerts chart bars have their own tokens (`chart-medical`, `chart-suspicious`, `chart-silent`): the type hues at the same weight as the Busy hours blue, so the two charts look like one set. Light 199,74,77 / 229,163,35 / 121,94,201. Dark 216,97,98 / 230,172,61 / 140,119,214. The earlier light bars, which Edwin also liked, were 211,18,58 / 255,195,0 / 122,60,245.
 | Status (gray) | 107,110,118 / 150,153,158 | 221,222,225 / 80,82,88 | 36,38,43 / 191,193,196 |
 | Unknown link (light gray) | | 240,241,242 / 94,97,105 | 30,31,35 / 150,153,158 |
 | LoRa link (middle gray) | | 214,216,220 / 52,54,60 | 48,50,56 / 205,207,211 |
@@ -529,9 +540,11 @@ Battery colors (`battery-good`, `battery-low`, `battery-critical`, each with a `
 
 The words pass 4.5:1 in both themes, on every background they sit on. The bars are listed as "info" in the contrast check: a yellow that still looks yellow is under 2:1 on white, and the percent and the word next to the bar give the level anyway. Yellow text on white has to be a deep golden yellow to be readable, so the light-theme word is darker than the bar. The "low batteries" count in the Devices summary and in Settings > Health uses the same yellow text.
 
-The type color is used for icons, map markers, map circles, Overview dots and chart lines. Chart areas use the same color, faded. Red, orange, green and blue keep their status meanings (danger, warning, success, links and buttons), apart from the type colors. Only the Medical and Silent words on Overview tiles are ever colored text.
+The type color is used for icons, map markers, map circles, Overview dots and chart bars. Suspicious is the exception for lone icons: they use `type-suspicious-icon`, and the icon inside a yellow marker uses `marker-icon-suspicious` (near black). Red, orange, green and blue keep their status meanings (danger, warning, success, links and buttons), apart from the type colors. Only the Medical and Silent words on Overview tiles are ever colored text.
 
 Suspicious history: amber (199,110,0), deep gold (173,127,10), azure blue (28,142,219), and now magenta, chosen by Edwin: the same pink as the Open dot (214,51,132, dark 244,114,182) and the old Mock data tag. The dataviz palette check is a known fail: magenta is too close to Medical rose (color-blind separation 9.0 passes the target of 8, but normal-vision separation is 9.9, under the 15 floor; in dark 8.4 and 8.4). Types are also told apart by their icons (heart, eye, bell) and words, so nothing depends on color alone. Contrast on white is 4.5:1, so every contrast pair passes.
+
+v6: Suspicious is the Fob LED yellow #FFC300 (255,195,0), chosen by Edwin with the color test in Settings. It looks right in dark. In light the fill is 1.6:1 on white, a known and accepted fail: chart bars, marker discs and map dots are listed as "info" in the contrast check, because they also have an icon, a word and a position. Lone icons in light use a deep amber (185,128,0, 3.4:1), and the tag is a yellow tint with deep amber text (5.1:1). Medical and Silent were made richer in light at the same time (crimson 211,18,58 and violet 122,60,245, both over 5:1 on white). Their dark values did not change.
 
 The Open dot is teal (`--color-open`: light 14,116,144, dark 34,211,238), so it no longer matches the Suspicious pink. The Mock data tag is gray now. The Open status cell in Excel and in Copy details is a light teal (#CFFAFE fill, #0E7490 text).
 
@@ -553,7 +566,7 @@ It checks every text and background pair the dashboard uses, in both themes (tex
 
 - The Live count in the sidebar uses text-subtle, not text-subtlest (text-subtlest is 3.7:1 on the selected row).
 - The lighter Busy hours shades are listed as "info": a scale from faint to deep has to start near the background. The bar height, the tooltip and the hidden table give each count, and the deepest shade passes 3:1.
-- The magenta Suspicious icon is 4.5:1 on white in light.
+- The Suspicious yellow fill is "info" only. Lone Suspicious icons use the deep amber `type-suspicious-icon` (3.4:1 on white), and the yellow marker has a near-black icon.
 - The active row in Find a student uses the hover gray, not surface-selected (a type icon can be under 3:1 on surface-selected in light).
 - The Review cameras icon (blue on its tint) is 5.6:1 in light and 9.0:1 in dark.
 - Map marker icons in the dark theme use the Midnight page color, not white (white was 1.9:1 to 2.9:1 on the dark-theme type colors).

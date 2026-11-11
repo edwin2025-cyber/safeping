@@ -8,6 +8,7 @@ import { playAlertTone, unlockAudio } from "../lib/sound.js";
 import { usePolling } from "../lib/usePolling.js";
 import { Segmented, Select, Switch } from "./Controls.jsx";
 import { fontRow } from "./FontPicker.jsx"; // temporary font test
+import { suspiciousColorRow } from "./SuspiciousColorPicker.jsx"; // temporary Suspicious color test
 import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
 import { Tag } from "./Tags.jsx";
@@ -19,6 +20,8 @@ const HEALTH_RANGES = RANGE_PRESETS.filter((p) => p.value !== "custom");
 const REASONS = {
   bad_signature: "bad signature",
   replay: "replay",
+  stale: "too old (stale)",
+  duplicate: "duplicate",
   unknown_device: "unknown device",
   wrong_role: "wrong role",
   bad_format: "bad format",
@@ -80,12 +83,27 @@ function healthRows({ health, preset, setPreset, refMaxAge }) {
   });
   rows.push({
     section: "health", group: "Messages", id: "h-duplicates", name: "Duplicates caught",
-    desc: "The server cannot tell a resend from a replay yet. Both count under Rejected messages as replay.",
+    desc: "Exact copies of a message the server already saved: a Fob resending over LoRa or from its retry queue. Acked again, never stored twice, not an attack.",
     value: !s ? loading : s.duplicates === null || s.duplicates === undefined ? <span className="muted">Not tracked</span> : <span className="num">{s.duplicates}</span>,
+  });
+  // Alerts accepted more than 15 minutes after the press: a long outage, or someone
+  // playing back a recorded alert. A warning, not a rejection.
+  const veryLate = s ? s.late_over_max || 0 : 0;
+  rows.push({
+    section: "health", group: "Messages", id: "h-late", name: "Sent late (over 15 min)",
+    desc: "Alerts that reached the server more than 15 minutes after the press. They are accepted and shown, but check them: a long outage, or a recorded alert played back.",
+    value: !s ? loading : (
+      <HealthValue tone={veryLate ? "yellow" : null} icon={veryLate ? icons.warning : null}>
+        <span className="num">{veryLate}</span>
+      </HealthValue>
+    ),
   });
   const rej = s ? s.rejected : null;
   const reasons = rej ? Object.entries(rej.by_reason).sort((a, b) => b[1] - a[1]) : [];
-  const attack = rej && ((rej.by_reason.bad_signature || 0) > 0 || (rej.by_reason.replay || 0) > 0);
+  // Security events: a bad signature, or a replay (a used counter with a different message,
+  // or a counter far below the newest). "stale" is no longer made by the server, but older
+  // rows in the database may still have it.
+  const attack = rej && ["bad_signature", "replay", "stale"].some((r) => (rej.by_reason[r] || 0) > 0);
   rows.push({
     section: "health", group: "Messages", id: "h-rejected", name: "Rejected messages",
     desc: "Messages the server turned away. Red when any had a bad signature or were a replay.",
@@ -176,6 +194,7 @@ function buildRows({ settings, effective, update, reset, config, devices, soundN
       ),
     },
     fontRow(), // temporary font test
+    suspiciousColorRow(), // temporary Suspicious color test
     {
       section: "alerts", group: "Sound", id: "sound", name: "Alert sound",
       desc: soundNote || "A short tone when a new MEDICAL or SUSPICIOUS alert arrives.",
@@ -258,6 +277,19 @@ function buildRows({ settings, effective, update, reset, config, devices, soundN
 
 function Row({ row }) {
   const id = "set-" + row.id;
+  if (row.body) {
+    return (
+      <div className="set-row set-row--wide">
+        <div className="set-text">
+          <div className="set-name" id={id}>
+            {row.name}
+          </div>
+          <div className="set-desc">{row.desc}</div>
+        </div>
+        {row.body(id)}
+      </div>
+    );
+  }
   return (
     <div className="set-row">
       <div className="set-text">

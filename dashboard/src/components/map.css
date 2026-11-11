@@ -63,7 +63,8 @@
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 .alert-marker--medical { background: var(--color-type-medical); }
-.alert-marker--suspicious { background: var(--color-type-suspicious); }
+/* A light Suspicious fill can take a dark icon (set by the Suspicious color test) */
+.alert-marker--suspicious { background: var(--color-type-suspicious); color: var(--color-marker-icon-suspicious, var(--color-marker-icon)); }
 .alert-marker--silent { background: var(--color-type-silent); }
 .alert-marker--status { background: var(--color-type-status); }
 .alert-marker.is-quiet {

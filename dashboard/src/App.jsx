@@ -13,7 +13,8 @@ import DevicePeek from "./components/DevicePeek.jsx";
 import SearchPalette from "./components/SearchPalette.jsx";
 import SettingsModal from "./components/SettingsModal.jsx";
 import { getJson, postJson } from "./lib/api.js";
-import { alertState, hasGps, isUrgentOpen, sortAlerts, URGENT_TYPES } from "./lib/alertMeta.js";
+import { alertState, hasGps, isUrgentOpen, SORT_ORDERS, sortAlerts, URGENT_TYPES } from "./lib/alertMeta.js";
+import { useNow } from "./lib/clock.js";
 import { effectiveSettings, loadBool, loadChoice, saveBool, saveChoice, useSettings } from "./lib/settings.js";
 import { playAlertTone, unlockAudio } from "./lib/sound.js";
 import { useEffectiveTheme } from "./lib/theme.js";
@@ -178,6 +179,11 @@ export default function App() {
   const [typeFilter, setTypeFilter] = useState("ALL"); // a type, "URGENT" (Medical and Silent) or "ALL"
   const [stateFilter, setStateFilter] = useState("action");
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrderState] = useState(() => loadChoice("safeping.liveSort", SORT_ORDERS.map((o) => o.value), "newest"));
+  const setSortOrder = useCallback((v) => {
+    saveChoice("safeping.liveSort", v);
+    setSortOrderState(v);
+  }, []);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
   const stateRef = useRef(stateFilter);
@@ -289,6 +295,23 @@ export default function App() {
     [deviceId],
   );
 
+  // ---------- one device's boot reports (self-checks) while its peek is open ----------
+  const [boots, setBoots] = useState(null);
+  const [bootsFailed, setBootsFailed] = useState(false);
+  useEffect(() => setBoots(null), [deviceId]);
+  usePolling(
+    () =>
+      getJson("/api/devices/" + encodeURIComponent(deviceId) + "/boots")
+        .then((d) => {
+          setBoots(d.boots);
+          setBootsFailed(false);
+        })
+        .catch(() => setBootsFailed(true)),
+    DEVICES_MS,
+    deviceId !== null,
+    [deviceId],
+  );
+
   // ---------- an older alert, while its peek is open ----------
   const peekId = peek ? peek.id : null;
   const remote = peek !== null && !peek.live;
@@ -325,8 +348,12 @@ export default function App() {
           (stateFilter === "all" || alertState(a) === STATE_FILTERS[stateFilter]) &&
           (!q || (a.student_name || "").toLowerCase().includes(q) || a.device_id.toLowerCase().includes(q)),
       ),
+      sortOrder,
     );
-  }, [alerts, typeFilter, stateFilter, query]);
+  }, [alerts, typeFilter, stateFilter, query, sortOrder]);
+
+  // The newest alert id in the poll. Overview reloads its numbers when it changes.
+  const latestAlertId = alerts && alerts.length ? Math.max(...alerts.map((a) => a.id)) : null;
 
   const openAlerts = alerts ? alerts.filter((a) => alertState(a) === "open" && a.alert_type !== "STATUS") : [];
   const openCount = openAlerts.length;
@@ -413,7 +440,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggleSidebar, openPalette, modalOpen, paletteOpen]);
 
-  const nowServer = Date.now() / 1000 + skew;
+  const nowServer = useNow(skew); // one shared 5 s timer for every relative time
   const pageLabel = PAGES.find((p) => p.id === page).label;
   const peekFrom = peek && peek.from ? peek.from : pageLabel;
   const selectedRowId = (hover.from === "map" ? hover.id : null) ?? (peek ? peek.id : null);
@@ -446,7 +473,8 @@ export default function App() {
               <Suspense fallback={null}>
                 <OverviewPage
                   timeFormat={settings.timeFormat}
-                  skew={skew}
+                  nowServer={nowServer}
+                  latestAlertId={latestAlertId}
                   theme={theme}
                   settings={eff}
                   cartoKey={config && config.carto_key}
@@ -464,6 +492,8 @@ export default function App() {
                 setView={setView}
                 typeFilter={typeFilter}
                 setTypeFilter={setTypeFilter}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
                 stateFilter={stateFilter}
                 setStateFilter={setStateFilter}
                 query={query}
@@ -547,6 +577,8 @@ export default function App() {
           crumb={deviceOpen && deviceOpen.from ? deviceOpen.from : "Devices"}
           history={history}
           historyFailed={historyFailed}
+          boots={boots}
+          bootsFailed={bootsFailed}
           nowServer={nowServer}
           timeFormat={settings.timeFormat}
           onClose={() => setDeviceOpen(null)}

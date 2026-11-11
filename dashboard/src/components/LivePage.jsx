@@ -5,7 +5,7 @@ import { Segmented } from "./Controls.jsx";
 import Icon from "./Icon.jsx";
 import Popover from "./Popover.jsx";
 import Tooltip from "./Tooltip.jsx";
-import { TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
+import { SORT_ORDERS, TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
 import { icons } from "../lib/icons.js";
 import { TypeIcon } from "./Tags.jsx";
 
@@ -95,6 +95,50 @@ function FilterMenu({ typeFilter, setTypeFilter }) {
             {o.type ? <TypeIcon type={o.type} size={16} /> : <span className="menu-icon-space" aria-hidden="true" />}
             {o.label}
             {typeFilter === o.value && <Icon icon={icons.acknowledged} className="menu-check" />}
+          </button>
+        ))}
+      </Popover>
+    </>
+  );
+}
+
+/** Newest first (default) or Most urgent first, inside each group. Saved in the browser by App. */
+function SortMenu({ sortOrder, setSortOrder }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const current = SORT_ORDERS.find((o) => o.value === sortOrder) || SORT_ORDERS[0];
+  const label = "Sort: " + current.label;
+  return (
+    <>
+      <Tooltip label={label}>
+        <button
+          ref={ref}
+          type="button"
+          className="icon-btn"
+          aria-label={label}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <Icon icon={icons.sort} />
+        </button>
+      </Tooltip>
+      <Popover anchor={ref.current} open={open} onClose={() => setOpen(false)} label="Sort alerts" placement="bottom-end">
+        <div className="popover-title">Sort</div>
+        {SORT_ORDERS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="menuitemradio"
+            aria-checked={sortOrder === o.value}
+            className="menu-item"
+            onClick={() => {
+              setSortOrder(o.value);
+              setOpen(false);
+            }}
+          >
+            {o.label}
+            {sortOrder === o.value && <Icon icon={icons.acknowledged} className="menu-check" />}
           </button>
         ))}
       </Popover>
@@ -269,6 +313,8 @@ export default function LivePage(props) {
     setView,
     typeFilter,
     setTypeFilter,
+    sortOrder,
+    setSortOrder,
     stateFilter,
     setStateFilter,
     query,
@@ -336,6 +382,7 @@ export default function LivePage(props) {
         </div>
         <div className="view-tools">
           <FilterMenu typeFilter={typeFilter} setTypeFilter={setTypeFilter} />
+          <SortMenu sortOrder={sortOrder} setSortOrder={setSortOrder} />
           <SearchBox query={query} setQuery={setQuery} searchOpen={searchOpen} setSearchOpen={setSearchOpen} inputRef={searchInputRef} />
           <Segmented label="Show alerts" value={stateFilter} options={STATE_OPTIONS} onChange={setStateFilter} />
         </div>

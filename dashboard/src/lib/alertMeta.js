@@ -50,6 +50,13 @@ export function linkMeta(link) {
   return LINKS[link] || null;
 }
 
+/** True when the alert reached the server more than 60 s after the press (a retry from
+    the Fob's queue). pressed_at is the Fob's own clock, so it is missing when its clock
+    was not set. */
+export function isSentLate(alert) {
+  return !!alert.sent_late && alert.pressed_at !== null && alert.pressed_at !== undefined;
+}
+
 export function hasGps(alert) {
   return alert.latitude !== null && alert.latitude !== undefined && alert.longitude !== null && alert.longitude !== undefined;
 }
@@ -68,13 +75,24 @@ export function zoneRadius(alert, sightRadius) {
 
 const STATE_ORDER = { open: 0, acknowledged: 1, resolved: 2 };
 
-/** Open alerts first, by type priority, then newest. Then acknowledged, then resolved, newest first. */
-export function sortAlerts(alerts) {
+// The Live sort control. Newest first is the default.
+export const SORT_ORDERS = [
+  { value: "newest", label: "Newest first" },
+  { value: "urgent", label: "Most urgent first" },
+];
+
+/** Open alerts first, then acknowledged, then resolved. Inside each group:
+    "newest" puts the newest alert on top. "urgent" (the old order) sorts open alerts by
+    type priority, then newest; acknowledged and resolved stay newest first. */
+export function sortAlerts(alerts, order = "newest") {
   return alerts.slice().sort((x, y) => {
     const sx = STATE_ORDER[alertState(x)];
     const sy = STATE_ORDER[alertState(y)];
     if (sx !== sy) return sx - sy;
-    if (sx === 0 && x.priority !== y.priority) return x.priority - y.priority;
-    return y.id - x.id;
+    if (order === "urgent") {
+      if (sx === 0 && x.priority !== y.priority) return x.priority - y.priority;
+      return y.id - x.id;
+    }
+    return y.timestamp - x.timestamp || y.id - x.id;
   });
 }

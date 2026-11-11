@@ -1,0 +1,15 @@
+# label after_quick  fob COM15  relay COM14
+2026-11-11 12:20:33.924 INFO  FOB connected on COM15
+2026-11-11 12:20:33.924 INFO  RELAY connected on COM14
+2026-11-11 12:20:34.507 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 12:21:00.031 FOB   no GPS fix, sending without a location
+2026-11-11 12:21:00.031 FOB   SAFEPING_MSG {"type": "STATUS", "p": 98901, "bat": 100, "sig": "0b27e4553e6cddd18ec21a54cf94197e28d24d92a853c66e84afa622233d3221", "t": 2113, "ctr": 212, "ts": 1794421259, "v": 1, "id": "FOB-001"}
+2026-11-11 12:21:02.398 FOB   sent STATUS ctr 212 over WiFi, confirmed by the server
+2026-11-11 12:21:02.399 FOB   SEND_RESULT ctr=212 kind=STATUS path=wifi result=confirmed ms=2460 reason=-
+2026-11-11 12:21:02.401 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:21:42.473 FOB   >>> [VIBRATE: one]
+2026-11-11 12:21:44.540 FOB   no GPS fix, sending without a location
+2026-11-11 12:21:44.541 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98897, "bat": 100, "sig": "fbc4d053fb0dadc04cc02441d7889e03bf382e2e80026b140eeefcadfd58e802", "t": 2155, "ctr": 213, "ts": 1794421304, "v": 1, "id": "FOB-001"}
+2026-11-11 12:21:45.833 FOB   sent SUSPICIOUS ctr 213 over WiFi, confirmed by the server
+2026-11-11 12:21:45.834 FOB   SEND_RESULT ctr=213 kind=SUSPICIOUS path=wifi result=confirmed ms=1358 reason=-
+2026-11-11 12:21:45.837 FOB   >>> [VIBRATE: ok]

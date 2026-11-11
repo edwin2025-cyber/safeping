@@ -17,6 +17,7 @@ import config
 import db
 import places
 import stats
+import validate
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
@@ -46,13 +47,67 @@ def _git_commit():
 COMMIT = _git_commit()
 
 
-def _alert_out(alert):
-    """Shapes one alert row for the API: true/false flags, priority and the nearest place."""
+def _alert_out(alert, help_at=None):
+    """Shapes one alert row for the API: true/false flags, priority and the nearest place.
+    pressed_at is the Fob's own time of the press (device_ts), when its clock was set.
+    sent_late is True when the alert reached the server more than LATE_AFTER_S after
+    the press (a retry from the Fob's queue). help_sent_at is when the "help is coming"
+    message was sent to the Fob, or None. It does not mean the Fob got it."""
     alert["priority"] = PRIORITY.get(alert["alert_type"], 9)
     alert["acknowledged"] = bool(alert["acknowledged"])
     alert["sms_sent"] = bool(alert["sms_sent"])
     alert["resolved"] = bool(alert["resolved"])
+    pressed = alert.get("device_ts")
+    alert["pressed_at"] = pressed
+    alert["late_s"] = None if pressed is None else round(alert["timestamp"] - pressed)
+    alert["sent_late"] = alert["late_s"] is not None and alert["late_s"] > config.LATE_AFTER_S
+    # Over MAX_ALERT_AGE_S: "Sent late (over 15 min)" and a yellow warning on Health
+    alert["late_over_max"] = alert["late_s"] is not None and alert["late_s"] > config.MAX_ALERT_AGE_S
+    alert["help_sent_at"] = help_at
     return places.describe(alert)
+
+
+def _alerts_out(rows):
+    helps = db.help_times([a["id"] for a in rows])
+    return [_alert_out(a, helps.get(a["id"])) for a in rows]
+
+
+def _boot_out(boot):
+    """A boot report for the API, with the failed checks in plain words."""
+    if boot is None:
+        return None
+    return {
+        "time": boot["timestamp"],
+        "device_ts": boot["device_ts"],
+        "counter": boot["counter"],
+        "all_passed": boot["failed"] == 0,
+        "failed": validate.boot_failures(boot["failed"]),
+        "wifi": None if boot["wifi"] is None else bool(boot["wifi"]),
+        "firmware": boot["firmware"],
+        "link": boot["link"],
+        "reset_cause": boot.get("reset_cause"),
+        "reset_words": validate.reset_words(boot.get("reset_cause")),
+        "crashed": boot.get("reset_cause") == 2,
+    }
+
+
+# Sends the "help is coming" message to a Fob: (device_id, ctr) -> True if handed to the
+# broker. Set when the MQTT listener starts. None (NO_MQTT=1) means help is never sent.
+help_sender = None
+
+
+def _send_help(alert_id):
+    alert = db.get_alert(alert_id)
+    if alert is None or help_sender is None or alert.get("counter") is None:
+        return False
+    try:
+        sent = help_sender(alert["device_id"], alert["counter"])
+    except Exception as error:        # a broker problem never stops the acknowledge
+        print("[help] could not send: {}".format(error))
+        return False
+    if sent:
+        db.record_help(alert_id, time.time(), "wifi")
+    return sent
 
 
 @app.before_request
@@ -109,7 +164,7 @@ def api_alerts():
     limit = min(int(request.args.get("limit", 100)), 500)
     include_status = request.args.get("status") == "1"
     include_resolved = request.args.get("resolved") == "1"
-    alerts = [_alert_out(a) for a in db.list_alerts(limit, include_status, include_resolved)]
+    alerts = _alerts_out(db.list_alerts(limit, include_status, include_resolved))
     return jsonify({"server_time": time.time(), "alerts": alerts})
 
 
@@ -121,7 +176,7 @@ def api_alert(alert_id):
     alert = db.get_alert(alert_id)
     if alert is None:
         return jsonify({"ok": False, "error": "unknown alert"}), 404
-    return jsonify({"server_time": time.time(), "alert": _alert_out(alert)})
+    return jsonify({"server_time": time.time(), "alert": _alerts_out([alert])[0]})
 
 
 @app.route("/api/search")
@@ -152,7 +207,7 @@ def api_search():
         "server_time": time.time(),
         "query": query,
         "students": students,
-        "alerts": [_alert_out(a) for a in alerts],
+        "alerts": _alerts_out(alerts),
     })
 
 
@@ -164,7 +219,8 @@ def api_ack():
     if not isinstance(alert_id, int):
         return jsonify({"ok": False, "error": "id must be a whole number"}), 400
     changed = db.ack_alert(alert_id, time.time())
-    return jsonify({"ok": True, "changed": changed})
+    help_sent = _send_help(alert_id) if changed else False   # "help is coming" to the Fob
+    return jsonify({"ok": True, "changed": changed, "help_sent": help_sent})
 
 
 @app.route("/api/resolve", methods=["POST"])
@@ -218,11 +274,13 @@ def api_places():
 @require_login
 def api_devices():
     devices = db.list_devices()
+    boots = db.latest_boots()
     for device in devices:
         if device["last_counter"] is not None and device["last_counter"] < 0:
             device["last_counter"] = None     # -1 means nothing accepted yet
         if device["link"] is None:
             device["link"] = "unknown"
+        device["last_boot"] = _boot_out(boots.get(device["device_id"]))
     return jsonify({"server_time": time.time(), "devices": devices})
 
 
@@ -232,8 +290,18 @@ def api_device_alerts(device_id):
     """One device's alert history: all types and states, newest first, up to 200."""
     if db.get_device(device_id) is None:
         return jsonify({"ok": False, "error": "unknown device"}), 404
-    alerts = [_alert_out(a) for a in db.list_device_alerts(device_id, 200)]
+    alerts = _alerts_out(db.list_device_alerts(device_id, 200))
     return jsonify({"server_time": time.time(), "alerts": alerts})
+
+
+@app.route("/api/devices/<device_id>/boots")
+@require_login
+def api_device_boots(device_id):
+    """One device's boot reports (self-check results), newest first, up to 10."""
+    if db.get_device(device_id) is None:
+        return jsonify({"ok": False, "error": "unknown device"}), 404
+    boots = [_boot_out(b) for b in db.list_boots(device_id)]
+    return jsonify({"server_time": time.time(), "boots": boots})
 
 
 @app.route("/api/stats")
@@ -269,6 +337,7 @@ if __name__ == "__main__":
         import mqtt_listener
         try:
             mqtt_listener.start()
+            help_sender = mqtt_listener.send_help
         except RuntimeError as error:
             print("[warning] MQTT listener not started: {}".format(error))
     app.run(host=config.HOST, port=config.PORT, threaded=True)

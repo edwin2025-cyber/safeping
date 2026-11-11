@@ -1,0 +1,3 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try,path,result,ms,reason
+212,STATUS,2026-11-11 12:21:00.031,WiFi,,no,,,,,,,,,,,98901,21.13,100,,,wifi,confirmed,2460,-
+213,SUSPICIOUS,2026-11-11 12:21:44.541,WiFi,,no,,,,,,,,,,,98897,21.55,100,,,wifi,confirmed,1358,-

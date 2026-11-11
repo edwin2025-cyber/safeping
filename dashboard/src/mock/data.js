@@ -48,14 +48,30 @@ export const MOCK_REJECTIONS = [
 // tile can be checked with data.
 export const MOCK_DUPLICATES = [{ minAgo: 50 }, { minAgo: 60 * 30 }];
 
+// Boot reports (self-checks at power on), newest first. failed: plain words, like the server.
+export const MOCK_BOOTS = {
+  "MOCK-FOB-01": [
+    { minAgo: 60 * 3, failed: [], wifi: true },
+    { minAgo: 60 * 27, failed: [], wifi: true },
+  ],
+  "MOCK-FOB-02": [
+    { minAgo: 45, failed: ["GPS not sending data"], wifi: false, reset: 2 }, // after a crash
+    { minAgo: 60 * 20, failed: [], wifi: true },
+    { minAgo: 60 * 44, failed: [], wifi: true },
+  ],
+  "MOCK-FOB-03": [{ minAgo: 60 * 6, failed: ["LoRa radio not answering", "Pressure sensor not reading"], wifi: true }],
+};
+
 // The two at 34.7317, -86.5843 sit on the same spot, so the map shows a cluster.
 // state: "open", "acknowledged" or "resolved".
 export const MOCK_ALERTS = [
   { device: "MOCK-FOB-01", type: "MEDICAL", state: "open", minAgo: 2, link: "lora", lat: 34.7317, lon: -86.5843, acc: 8 },
   { device: "MOCK-FOB-02", type: "SUSPICIOUS", state: "open", minAgo: 4, link: "wifi", lat: 34.7317, lon: -86.5843, acc: 12 },
-  { device: "MOCK-FOB-03", type: "SILENT", state: "open", minAgo: 6, link: "lora", floor: 3 },
+  // lateS: the retry queue got it through this many seconds after the press ("Sent late")
+  { device: "MOCK-FOB-03", type: "SILENT", state: "open", minAgo: 6, link: "lora", floor: 3, lateS: 320 },
   { device: "MOCK-FOB-03", type: "STATUS", state: "open", minAgo: 10, link: "wifi", lat: 34.7262, lon: -86.5911, acc: 15 },
-  { device: "MOCK-FOB-04", type: "MEDICAL", state: "acknowledged", minAgo: 15, link: "lora", lat: 34.7298, lon: -86.5836, acc: 6 },
+  // 21 minutes from press to arrival: "Sent late (over 15 min)" and the yellow Health row
+  { device: "MOCK-FOB-04", type: "MEDICAL", state: "acknowledged", minAgo: 15, link: "lora", lat: 34.7298, lon: -86.5836, acc: 6, lateS: 1260 },
   { device: "MOCK-FOB-01", type: "SUSPICIOUS", state: "acknowledged", minAgo: 25, link: "wifi", floor: 2 },
   { device: "MOCK-FOB-02", type: "SILENT", state: "resolved", minAgo: 120, link: "lora", lat: 34.7286, lon: -86.5884, acc: 10 },
   { device: "MOCK-FOB-04", type: "MEDICAL", state: "resolved", minAgo: 180, link: "unknown" },

@@ -1,0 +1,162 @@
+# label crashtest  fob COM15  relay COM14  forward on
+2026-11-11 15:39:33.739 INFO  RELAY connected on COM14
+2026-11-11 15:39:33.739 INFO  FOB connected on COM15
+2026-11-11 15:39:43.312 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:39:45.315 INFO  Fob reconnected
+2026-11-11 15:39:48.094 FOB   SafePing Fob FOB-001 firmware 2026.11.11b
+2026-11-11 15:39:48.095 FOB   Reset cause: 1 power_on
+2026-11-11 15:39:48.095 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:39:48.096 FOB   Button: soft interrupt
+2026-11-11 15:39:48.097 FOB   GPS on
+2026-11-11 15:39:48.100 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:39:48.101 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:39:48.354 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:39:51.305 FOB   WiFi connected
+2026-11-11 15:39:51.394 FOB   clock set by NTP, year 2026
+2026-11-11 15:39:51.457 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok reset=power_on fw=2026.11.11b
+2026-11-11 15:39:54.493 FOB   SAFEPING_MSG {"wifi": 1, "ctr": 247, "ts": 1794433194, "v": 1, "id": "FOB-001", "type": "BOOT", "sig": "9e488c5ba4cf7596071a01efdba1c34a0c22f686d265263fdfd4f710adeda842", "fw": "2026.11.11b", "rst": 1, "bat": 100, "fail": 32}
+2026-11-11 15:39:54.499 FOB   WiFi send failed at connect: time budget used up
+2026-11-11 15:39:54.500 FOB   BOOT report stopped by a button press, not sent
+2026-11-11 15:39:54.503 FOB   >>> [VIBRATE: one]
+2026-11-11 15:39:56.523 FOB   no GPS fix, sending without a location
+2026-11-11 15:39:56.523 FOB   SAFEPING_MSG {"ctr": 248, "id": "FOB-001", "ts": 1794433196, "v": 1, "bat": 100, "type": "SUSPICIOUS", "sig": "28311d441bda85b9c0af31e1216abec88e845954572601b6afa7259fac3ce2fc"}
+2026-11-11 15:39:57.966 FOB   sent SUSPICIOUS ctr 248 over WiFi, confirmed by the server
+2026-11-11 15:39:57.967 FOB   SEND_RESULT ctr=248 kind=SUSPICIOUS path=wifi result=confirmed ms=1461 reason=-
+2026-11-11 15:39:57.968 FOB   HELP_LISTEN ctr=248 kind=SUSPICIOUS ms=120000
+2026-11-11 15:39:57.970 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:41:00.023 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:41:02.026 INFO  Fob reconnected
+2026-11-11 15:41:04.740 FOB   SafePing Fob FOB-001 firmware 2026.11.11b
+2026-11-11 15:41:04.740 FOB   Reset cause: 1 power_on
+2026-11-11 15:41:04.741 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:41:04.741 FOB   Button: soft interrupt
+2026-11-11 15:41:04.742 FOB   GPS on
+2026-11-11 15:41:04.746 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:41:04.746 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:41:05.000 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:41:07.947 FOB   WiFi connected
+2026-11-11 15:41:08.234 FOB   clock set by NTP, year 2026
+2026-11-11 15:41:08.294 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok reset=power_on fw=2026.11.11b
+2026-11-11 15:41:11.325 FOB   SAFEPING_MSG {"wifi": 1, "ctr": 249, "ts": 1794433271, "v": 1, "id": "FOB-001", "type": "BOOT", "sig": "09257d574a5ef6618b51d8409586c0af6992c36b8a39c9d3dd8698fecabbd1d9", "fw": "2026.11.11b", "rst": 1, "bat": 100, "fail": 32}
+2026-11-11 15:41:11.335 FOB   WiFi send failed at connect: time budget used up
+2026-11-11 15:41:11.335 FOB   BOOT report stopped by a button press, not sent
+2026-11-11 15:41:11.343 FOB   >>> [VIBRATE: one]
+2026-11-11 15:41:13.364 FOB   no GPS fix, sending without a location
+2026-11-11 15:41:13.365 FOB   SAFEPING_MSG {"ctr": 250, "id": "FOB-001", "ts": 1794433273, "v": 1, "bat": 100, "type": "SUSPICIOUS", "sig": "2e369980c6a7504cdf2e6e81046cd92f7346ac58031e0214f87304f430ad7555"}
+2026-11-11 15:41:15.476 FOB   sent SUSPICIOUS ctr 250 over WiFi, confirmed by the server
+2026-11-11 15:41:15.477 FOB   SEND_RESULT ctr=250 kind=SUSPICIOUS path=wifi result=confirmed ms=2134 reason=-
+2026-11-11 15:41:15.478 FOB   HELP_LISTEN ctr=250 kind=SUSPICIOUS ms=120000
+2026-11-11 15:41:15.480 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:42:16.377 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:42:18.380 INFO  Fob reconnected
+2026-11-11 15:42:21.193 FOB   SafePing Fob FOB-001 firmware 2026.11.11b
+2026-11-11 15:42:21.194 FOB   Reset cause: 1 power_on
+2026-11-11 15:42:21.194 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:42:21.194 FOB   Button: soft interrupt
+2026-11-11 15:42:21.196 FOB   GPS on
+2026-11-11 15:42:21.198 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:42:21.199 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:42:21.453 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:42:24.412 FOB   WiFi connected
+2026-11-11 15:42:24.547 FOB   clock set by NTP, year 2026
+2026-11-11 15:42:24.605 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok reset=power_on fw=2026.11.11b
+2026-11-11 15:42:27.635 FOB   SAFEPING_MSG {"wifi": 1, "ctr": 251, "ts": 1794433347, "v": 1, "id": "FOB-001", "type": "BOOT", "sig": "a58449ffe792fd205c85f912118c1fd7e73066ff8ec279f099deb5001fac7bed", "fw": "2026.11.11b", "rst": 1, "bat": 100, "fail": 32}
+2026-11-11 15:42:27.641 FOB   WiFi send failed at connect: time budget used up
+2026-11-11 15:42:27.642 FOB   BOOT report stopped by a button press, not sent
+2026-11-11 15:42:27.645 FOB   >>> [VIBRATE: one]
+2026-11-11 15:42:29.674 FOB   no GPS fix, sending without a location
+2026-11-11 15:42:29.674 FOB   SAFEPING_MSG {"ctr": 252, "id": "FOB-001", "ts": 1794433349, "v": 1, "bat": 100, "type": "SUSPICIOUS", "sig": "f37f2128f671b6ed552b264a76f33ae0a5b31728c135c56ef717c1355390f09b"}
+2026-11-11 15:42:31.204 FOB   sent SUSPICIOUS ctr 252 over WiFi, confirmed by the server
+2026-11-11 15:42:31.205 FOB   SEND_RESULT ctr=252 kind=SUSPICIOUS path=wifi result=confirmed ms=1551 reason=-
+2026-11-11 15:42:31.205 FOB   HELP_LISTEN ctr=252 kind=SUSPICIOUS ms=120000
+2026-11-11 15:42:31.208 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:43:07.412 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:43:09.415 INFO  Fob reconnected
+2026-11-11 15:43:12.196 FOB   SafePing Fob FOB-001 firmware 2026.11.11b
+2026-11-11 15:43:12.196 FOB   Reset cause: 1 power_on
+2026-11-11 15:43:12.197 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:43:12.197 FOB   Button: soft interrupt
+2026-11-11 15:43:12.198 FOB   GPS on
+2026-11-11 15:43:12.201 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:43:12.202 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:43:12.455 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:43:15.464 FOB   WiFi connected
+2026-11-11 15:43:15.599 FOB   clock set by NTP, year 2026
+2026-11-11 15:43:15.658 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok reset=power_on fw=2026.11.11b
+2026-11-11 15:43:18.696 FOB   SAFEPING_MSG {"wifi": 1, "ctr": 253, "ts": 1794433398, "v": 1, "id": "FOB-001", "type": "BOOT", "sig": "34a09548c2a2b0bd74e41b3151fc238a4fbbf84f69c0248e2f2eaef82b649f02", "fw": "2026.11.11b", "rst": 1, "bat": 99, "fail": 32}
+2026-11-11 15:43:18.702 FOB   WiFi send failed at connect: time budget used up
+2026-11-11 15:43:18.703 FOB   BOOT report stopped by a button press, not sent
+2026-11-11 15:43:18.706 FOB   >>> [VIBRATE: one]
+2026-11-11 15:43:20.735 FOB   no GPS fix, sending without a location
+2026-11-11 15:43:20.735 FOB   SAFEPING_MSG {"ctr": 254, "id": "FOB-001", "ts": 1794433400, "v": 1, "bat": 99, "type": "SUSPICIOUS", "sig": "165d82bc0597f55c38e5f19cb6f3df375f199410edbf3ba98bddbc0337d28fb6"}
+2026-11-11 15:43:22.054 FOB   sent SUSPICIOUS ctr 254 over WiFi, confirmed by the server
+2026-11-11 15:43:22.054 FOB   SEND_RESULT ctr=254 kind=SUSPICIOUS path=wifi result=confirmed ms=1340 reason=-
+2026-11-11 15:43:22.055 FOB   HELP_LISTEN ctr=254 kind=SUSPICIOUS ms=120000
+2026-11-11 15:43:22.058 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:43:59.043 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:44:01.046 INFO  Fob reconnected
+2026-11-11 15:44:03.868 FOB   SafePing Fob FOB-001 firmware 2026.11.11b
+2026-11-11 15:44:03.869 FOB   Reset cause: 1 power_on
+2026-11-11 15:44:03.870 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:44:03.870 FOB   Button: soft interrupt
+2026-11-11 15:44:03.872 FOB   GPS on
+2026-11-11 15:44:03.874 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:44:03.875 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:44:04.128 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:44:07.075 FOB   WiFi connected
+2026-11-11 15:44:07.183 FOB   clock set by NTP, year 2026
+2026-11-11 15:44:07.243 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok reset=power_on fw=2026.11.11b
+2026-11-11 15:44:10.276 FOB   SAFEPING_MSG {"wifi": 1, "ctr": 255, "ts": 1794433450, "v": 1, "id": "FOB-001", "type": "BOOT", "sig": "37d4e38625b2ad0ff64acea9b3dbae9088f7622fd02169e9bd3716f32b4aea2a", "fw": "2026.11.11b", "rst": 1, "bat": 99, "fail": 32}
+2026-11-11 15:44:10.282 FOB   WiFi send failed at connect: time budget used up
+2026-11-11 15:44:10.283 FOB   BOOT report stopped by a button press, not sent
+2026-11-11 15:44:10.289 FOB   >>> [VIBRATE: one]
+2026-11-11 15:44:12.315 FOB   no GPS fix, sending without a location
+2026-11-11 15:44:12.316 FOB   SAFEPING_MSG {"ctr": 256, "id": "FOB-001", "ts": 1794433452, "v": 1, "bat": 99, "type": "SUSPICIOUS", "sig": "67cf265ec8d537b2fb9296ce487e21e035b6c6ba8c5fb348a6627c2c26025584"}
+2026-11-11 15:44:14.791 FOB   sent SUSPICIOUS ctr 256 over WiFi, confirmed by the server
+2026-11-11 15:44:14.792 FOB   SEND_RESULT ctr=256 kind=SUSPICIOUS path=wifi result=confirmed ms=2500 reason=-
+2026-11-11 15:44:14.792 FOB   HELP_LISTEN ctr=256 kind=SUSPICIOUS ms=120000
+2026-11-11 15:44:14.795 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:44:45.158 RELAY SAFEPING_MSG {"wifi": 1, "ctr": 246, "ts": 1794411525, "v": 1, "ignored a packet that is not a SafePing alert
+2026-11-11 15:44:45.184 SERVR {'ok': False, 'reason': 'bad_json'}
+2026-11-11 15:45:27.154 FOB   >>> [VIBRATE: one]
+2026-11-11 15:45:29.170 FOB   HELP_LISTEN_END reason=send
+2026-11-11 15:45:29.185 FOB   no GPS fix, sending without a location
+2026-11-11 15:45:29.185 FOB   SAFEPING_MSG {"ctr": 257, "id": "FOB-001", "ts": 1794433528, "v": 1, "bat": 99, "type": "SUSPICIOUS", "sig": "713b70c861aacf222578f91f32c90e318ecaf507172892916dfc38c4a59dc7c6"}
+2026-11-11 15:45:30.148 FOB   sent SUSPICIOUS ctr 257 over WiFi, confirmed by the server
+2026-11-11 15:45:30.148 FOB   SEND_RESULT ctr=257 kind=SUSPICIOUS path=wifi result=confirmed ms=981 reason=-
+2026-11-11 15:45:30.148 FOB   HELP_LISTEN ctr=257 kind=SUSPICIOUS ms=120000
+2026-11-11 15:45:30.150 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:45:41.940 FOB   HELP_RECEIVED ctr=257 ms_after_confirm=11789
+2026-11-11 15:45:41.944 FOB   >>> [VIBRATE: help]
+2026-11-11 15:45:59.652 FOB   >>> [VIBRATE: one]
+2026-11-11 15:46:01.667 FOB   HELP_LISTEN_END reason=send
+2026-11-11 15:46:01.685 FOB   no GPS fix, sending without a location
+2026-11-11 15:46:01.686 FOB   SAFEPING_MSG {"ctr": 258, "id": "FOB-001", "ts": 1794433561, "v": 1, "bat": 99, "type": "SUSPICIOUS", "sig": "6c3a37feded75aa2a557855b610c020d33e73d9bebcbf2e8425f66fb89dde673"}
+2026-11-11 15:46:03.742 FOB   sent SUSPICIOUS ctr 258 over WiFi, confirmed by the server
+2026-11-11 15:46:03.743 FOB   SEND_RESULT ctr=258 kind=SUSPICIOUS path=wifi result=confirmed ms=2082 reason=-
+2026-11-11 15:46:03.744 FOB   HELP_LISTEN ctr=258 kind=SUSPICIOUS ms=120000
+2026-11-11 15:46:03.746 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:46:08.971 FOB   HELP_RECEIVED ctr=258 ms_after_confirm=5224
+2026-11-11 15:46:08.976 FOB   >>> [VIBRATE: help]
+2026-11-11 15:46:14.794 FOB   HELP_TIMEOUT ctr=256 ms=120000
+2026-11-11 15:46:14.800 FOB   HELP_LISTEN_END reason=done
+2026-11-11 15:46:29.601 FOB   >>> [VIBRATE: one]
+2026-11-11 15:46:29.973 FOB   CANCELLED SUSPICIOUS
+2026-11-11 15:46:29.976 FOB   >>> [VIBRATE: short]
+2026-11-11 15:46:36.425 FOB   >>> [VIBRATE: one]
+2026-11-11 15:46:38.456 FOB   no GPS fix, sending without a location
+2026-11-11 15:46:38.456 FOB   SAFEPING_MSG {"ctr": 259, "id": "FOB-001", "ts": 1794433598, "v": 1, "bat": 99, "type": "SUSPICIOUS", "sig": "9b1ce404916a34e38cd58bde48ae148d739d256df64ea82fc1c1859e67b22814"}
+2026-11-11 15:46:40.913 FOB   sent SUSPICIOUS ctr 259 over WiFi, confirmed by the server
+2026-11-11 15:46:40.914 FOB   SEND_RESULT ctr=259 kind=SUSPICIOUS path=wifi result=confirmed ms=2480 reason=-
+2026-11-11 15:46:40.915 FOB   HELP_LISTEN ctr=259 kind=SUSPICIOUS ms=120000
+2026-11-11 15:46:40.917 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:46:57.814 FOB   HELP_RECEIVED ctr=259 ms_after_confirm=16896
+2026-11-11 15:46:57.820 FOB   HELP_LISTEN_END reason=done
+2026-11-11 15:46:57.823 FOB   >>> [VIBRATE: help]
+2026-11-11 15:47:04.943 FOB   >>> [VIBRATE: one]
+2026-11-11 15:47:06.975 FOB   no GPS fix, sending without a location
+2026-11-11 15:47:06.976 FOB   SAFEPING_MSG {"ctr": 260, "id": "FOB-001", "ts": 1794433626, "v": 1, "bat": 99, "type": "SUSPICIOUS", "sig": "277419a62c5a1cd0a90ee31c6722c8b5e87acb9c841241ba25a3aee1a2649db4"}
+2026-11-11 15:47:09.266 FOB   sent SUSPICIOUS ctr 260 over WiFi, confirmed by the server
+2026-11-11 15:47:09.267 FOB   SEND_RESULT ctr=260 kind=SUSPICIOUS path=wifi result=confirmed ms=2315 reason=-
+2026-11-11 15:47:09.268 FOB   HELP_LISTEN ctr=260 kind=SUSPICIOUS ms=120000
+2026-11-11 15:47:09.270 FOB   >>> [VIBRATE: ok]

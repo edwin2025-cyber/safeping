@@ -6,12 +6,12 @@ One button, four alerts:
 
 | Press | Alert | Light | Buzz |
 |---|---|---|---|
-| 1 press | STATUS (logged only) | white blink | short |
-| 2 presses | SUSPICIOUS | yellow, 2 s cancel window | one, then two medium when confirmed |
-| 3 or more | MEDICAL | red, 2 s cancel window | pulsing, then two medium when confirmed |
+| 1 press | STATUS (logged only) | dim white, then a green blink when confirmed | short |
+| 2 presses | SUSPICIOUS | yellow, 2 s cancel window, then green when confirmed | one, then two medium when confirmed |
+| 3 or more | MEDICAL | red, 2 s cancel window, then green when confirmed | pulsing, then two medium when confirmed |
 | hold 2 s | SILENT | none, ever | short, then two medium when confirmed |
 
-A tap in the 2 s window cancels. Not confirmed = orange light and one long buzz.
+A tap in the 2 s window cancels (green blink). Not confirmed = orange light and one long buzz. All LED patterns: `docs/led-patterns.md`.
 
 ## How an alert travels
 

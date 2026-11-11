@@ -1,0 +1,39 @@
+# label after_t4  fob COM15  relay COM14
+2026-11-11 12:31:59.180 INFO  RELAY connected on COM14
+2026-11-11 12:31:59.180 INFO  FOB connected on COM15
+2026-11-11 12:32:12.741 FOB   >>> [VIBRATE: one]
+2026-11-11 12:32:14.814 FOB   no GPS fix, sending without a location
+2026-11-11 12:32:14.815 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "0fcc557e1472f99356f3cfe060d10ba48ff2b3c7f4b1bc4bd629e6b9b6a918cf", "t": 2176, "ctr": 217, "ts": 1794421933, "v": 1, "id": "FOB-001"}
+2026-11-11 12:32:18.580 FOB   no ack from server within 2000 ms
+2026-11-11 12:32:18.580 FOB   falling back to LoRa: no_server_ack
+2026-11-11 12:32:18.581 FOB   WiFi problem: the broker took the alert, but the server did not confirm it in time: no ack from server within 2000 ms
+2026-11-11 12:32:19.456 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "0fcc557e1472f99356f3cfe060d10ba48ff2b3c7f4b1bc4bd629e6b9b6a918cf", "t": 2176, "ctr": 217, "ts": 1794421933, "v": 1, "id": "FOB-001"}
+2026-11-11 12:32:19.457 RELAY from FOB-001 type SUSPICIOUS ctr 217 signal -34 dBm, snr 9.75
+2026-11-11 12:32:19.458 FOB   ACK received (try 1)
+2026-11-11 12:32:19.459 FOB   sent over LoRa SUSPICIOUS ctr 217 confirmed by the Relay
+2026-11-11 12:32:19.460 FOB   SEND_RESULT ctr=217 kind=SUSPICIOUS path=lora result=confirmed ms=4711 reason=no_server_ack
+2026-11-11 12:32:19.462 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:32:44.101 FOB   >>> [VIBRATE: one]
+2026-11-11 12:32:46.175 FOB   no GPS fix, sending without a location
+2026-11-11 12:32:46.176 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "5a9b4f5b41f32df5ade84ad89db702091477564f1079f6fc1ea546c2f7ffd0a6", "t": 2178, "ctr": 218, "ts": 1794421965, "v": 1, "id": "FOB-001"}
+2026-11-11 12:32:51.121 FOB   no ack from server within 1891 ms
+2026-11-11 12:32:51.121 FOB   falling back to LoRa: no_server_ack
+2026-11-11 12:32:51.122 FOB   WiFi problem: the broker took the alert, but the server did not confirm it in time: no ack from server within 1891 ms
+2026-11-11 12:32:51.726 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98917, "bat": 100, "sig": "5a9b4f5b41f32df5ade84ad89db702091477564f1079f6fc1ea546c2f7ffd0a6", "t": 2178, "ctr": 218, "ts": 1794421965, "v": 1, "id": "FOB-001"}
+2026-11-11 12:32:51.728 RELAY from FOB-001 type SUSPICIOUS ctr 218 signal -33 dBm, snr 9.75
+2026-11-11 12:32:51.730 FOB   ACK received (try 1)
+2026-11-11 12:32:51.730 FOB   sent over LoRa SUSPICIOUS ctr 218 confirmed by the Relay
+2026-11-11 12:32:51.731 FOB   SEND_RESULT ctr=218 kind=SUSPICIOUS path=lora result=confirmed ms=5620 reason=no_server_ack
+2026-11-11 12:32:51.734 FOB   >>> [VIBRATE: ok]
+2026-11-11 12:33:17.085 FOB   >>> [VIBRATE: one]
+2026-11-11 12:33:19.155 FOB   no GPS fix, sending without a location
+2026-11-11 12:33:19.155 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98915, "bat": 100, "sig": "65faefb8e23d82a371ebf14320adf25b2661594ad9accc3b59e786702f4ab560", "t": 2180, "ctr": 219, "ts": 1794421998, "v": 1, "id": "FOB-001"}
+2026-11-11 12:33:23.390 FOB   no ack from server within 2000 ms
+2026-11-11 12:33:23.390 FOB   falling back to LoRa: no_server_ack
+2026-11-11 12:33:23.391 FOB   WiFi problem: the broker took the alert, but the server did not confirm it in time: no ack from server within 2000 ms
+2026-11-11 12:33:23.976 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 98915, "bat": 100, "sig": "65faefb8e23d82a371ebf14320adf25b2661594ad9accc3b59e786702f4ab560", "t": 2180, "ctr": 219, "ts": 1794421998, "v": 1, "id": "FOB-001"}
+2026-11-11 12:33:23.977 RELAY from FOB-001 type SUSPICIOUS ctr 219 signal -33 dBm, snr 9.75
+2026-11-11 12:33:23.978 FOB   ACK received (try 1)
+2026-11-11 12:33:23.979 FOB   sent over LoRa SUSPICIOUS ctr 219 confirmed by the Relay
+2026-11-11 12:33:23.980 FOB   SEND_RESULT ctr=219 kind=SUSPICIOUS path=lora result=confirmed ms=4888 reason=no_server_ack
+2026-11-11 12:33:23.982 FOB   >>> [VIBRATE: ok]

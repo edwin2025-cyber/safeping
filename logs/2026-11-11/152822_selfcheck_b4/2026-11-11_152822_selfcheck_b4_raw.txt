@@ -1,0 +1,22 @@
+# label selfcheck_b4  fob COM15  relay COM14  forward on
+2026-11-11 15:28:22.236 INFO  FOB connected on COM15
+2026-11-11 15:28:22.237 INFO  RELAY connected on COM14
+2026-11-11 15:28:29.527 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:28:31.530 INFO  Fob reconnected
+2026-11-11 15:28:33.269 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:28:33.271 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:28:33.272 FOB   Button: soft interrupt
+2026-11-11 15:28:33.341 FOB   GPS on
+2026-11-11 15:28:33.441 FOB   Sensors: pressure on, battery gauge on
+2026-11-11 15:28:33.441 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:28:33.695 FOB   WiFi off (WIFI_SSID is none), every alert goes over LoRa
+2026-11-11 15:28:34.102 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=ok wifi=off fw=2026.11.11
+2026-11-11 15:28:35.129 FOB   SAFEPING_MSG {"wifi": 0, "type": "BOOT", "fail": 0, "sig": "14f0df5041bd09caf4cb3879d48b0dcbb4bd8d2814b134229653af87987e0d41", "fw": "2026.11.11", "ctr": 243, "id": "FOB-001", "bat": 100, "v": 1}
+2026-11-11 15:28:35.136 FOB   WiFi off, using LoRa
+2026-11-11 15:28:35.558 RELAY SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 0, "fail": 0, SAFEPING_MSG {"wifi": 0, "type": "BOOT", "fail": 0, "sig": "14f0df5041bd09caf4cb3879d48b0dcbb4bd8d2814b134229653af87987e0d41", "fw": "2026.11.11", "ctr": 243, "id": "FOB-001", "bat": 100, "v": 1}
+2026-11-11 15:28:35.598 SERVR {'ok': False, 'reason': 'bad_json'}
+2026-11-11 15:28:35.560 RELAY from FOB-001 type BOOT ctr 243 signal -43 dBm, snr 10.0
+2026-11-11 15:28:35.560 FOB   ACK received (try 1)
+2026-11-11 15:28:35.561 FOB   sent over LoRa BOOT ctr 243 confirmed by the Relay
+2026-11-11 15:28:35.562 FOB   SEND_RESULT ctr=243 kind=BOOT path=lora result=confirmed ms=432 reason=wifi_off
+2026-11-11 15:28:35.562 FOB   BOOT report confirmed

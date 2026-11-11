@@ -1,9 +1,8 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
-  Line,
   ResponsiveContainer,
   Tooltip as ChartTooltip,
   usePlotArea,
@@ -14,7 +13,7 @@ import {
 import { MapContainer, useMap } from "react-leaflet";
 import L from "../lib/leafletSetup.js";
 import { downloadCsv, getJson } from "../lib/api.js";
-import { typeColor, typeMeta } from "../lib/alertMeta.js";
+import { typeMeta } from "../lib/alertMeta.js";
 import { dayCount, dayLong, dayTick, hourLong, hourTick, isoDay, parseDay, presetRange, RANGE_PRESETS, rangeText } from "../lib/dates.js";
 import { ago, formatDateTime } from "../lib/format.js";
 import { icons } from "../lib/icons.js";
@@ -29,8 +28,7 @@ import { TypeIcon } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 import { AttributionPrefix, BaseTiles, DEFAULT_CENTER, MAP_OPTIONS, MAX_ZOOM, SizeWatcher } from "./mapParts.jsx";
 
-const STATS_MS = 30000;
-const TICK_MS = 15000; // relative times on this page update every 15 s
+const STATS_MS = 5000; // relative times tick with the shared clock (lib/clock.js)
 const RANGE_KEY = "safeping.overviewRange";
 const CHART_TYPES = ["MEDICAL", "SUSPICIOUS", "SILENT"]; // STATUS is never in Overview numbers
 const URGENT = ["MEDICAL", "SILENT"];
@@ -166,17 +164,6 @@ function ExportMenu({ from, to, disabled, timeFormat }) {
 }
 
 // ---------- small parts ----------
-
-/** Server time now, updated every 15 seconds. */
-function useServerNow(skew) {
-  const [now, setNow] = useState(() => Date.now() / 1000 + skew);
-  useEffect(() => {
-    setNow(Date.now() / 1000 + skew);
-    const timer = setInterval(() => setNow(Date.now() / 1000 + skew), TICK_MS);
-    return () => clearInterval(timer);
-  }, [skew]);
-  return now;
-}
 
 function Panel({ id, icon, title, sub, tools, className = "", children }) {
   return (
@@ -389,34 +376,95 @@ function seriesRows(stats, timeFormat) {
   }));
 }
 
-function tickInterval(stats) {
-  if (stats.per_hour) return 5; // 12a, 6a, 12p, 6p
-  return stats.days <= 7 ? 0 : "preserveStartEnd";
+/** Ranges longer than this show one bar per week, so the bars stay readable. */
+const WEEKS_AFTER_DAYS = 35;
+
+function byWeek(stats) {
+  return stats.days > WEEKS_AFTER_DAYS && !stats.per_hour;
 }
 
-/** Adds one line per type along the top of its band. A line is drawn only where its band
-    has alerts (and the points next to those), so lines never pile up along zero. */
-function withLines(rows) {
-  return rows.map((r, i) => {
-    const out = { ...r };
-    let base = 0;
-    for (const t of CHART_TYPES) {
-      const prev = i > 0 ? rows[i - 1][t] : 0;
-      const next = i < rows.length - 1 ? rows[i + 1][t] : 0;
-      const top = base + r[t];
-      out[t + "_line"] = r[t] > 0 || prev > 0 || next > 0 ? top : null;
-      base = top;
-    }
-    return out;
+/** Per-week rows for long ranges: 7 days per bar from the first day of the range. The last
+    bar can be shorter. Same fields as the per-day rows. */
+function weekRows(stats) {
+  const out = [];
+  for (let i = 0; i < stats.per_day.length; i += 7) {
+    const days = stats.per_day.slice(i, i + 7);
+    const first = days[0];
+    const last = days[days.length - 1];
+    const sum = (pick) => days.reduce((s, d) => s + pick(d), 0);
+    out.push({
+      tick: dayTick(first.date, stats.days),
+      title: rangeText(first.date, last.date),
+      prevTitle: rangeText(first.previous_date, last.previous_date),
+      total: sum((d) => d.count),
+      previous: sum((d) => d.previous_count),
+      MEDICAL: sum((d) => d.by_type.MEDICAL || 0),
+      SUSPICIOUS: sum((d) => d.by_type.SUSPICIOUS || 0),
+      SILENT: sum((d) => d.by_type.SILENT || 0),
+    });
+  }
+  return out;
+}
+
+function tickInterval(stats, rows) {
+  if (stats.per_hour) return 5; // 12a, 6a, 12p, 6p
+  return rows.length <= 7 ? 0 : "preserveStartEnd";
+}
+
+/** Marks the lowest and the highest type with alerts in each bar. The top one gets the
+    rounded corners; every segment above the lowest one leaves a small gap under itself. */
+function withEnds(rows) {
+  return rows.map((r) => {
+    const present = CHART_TYPES.filter((t) => r[t] > 0);
+    return { ...r, bottom: present[0] || null, top: present[present.length - 1] || null };
   });
 }
 
+/** The y axis top: whole numbers only, even, at least 2, and above the week-before ticks too. */
+function niceMax(rows) {
+  const max = Math.max(0, ...rows.map((r) => Math.max(r.total, r.previous)));
+  return Math.max(2, Math.ceil(max / 2) * 2);
+}
+
+const BAR_SIDE_GAP = 0.2; // empty space on each side of a bar, as a part of its slot
+const BAR_MAX = 40; // px
+const SEGMENT_GAP = 2; // px between the colors of one bar
+const BAR_RADIUS = 4; // px, top corners of the top segment only
+
+/** A rectangle with only its top corners rounded. */
+function topRoundedPath(x, y, w, h, r) {
+  if (r <= 0) return "M" + x + "," + y + "h" + w + "v" + h + "h" + -w + "Z";
+  return (
+    "M" + x + "," + (y + h) +
+    "V" + (y + r) +
+    "A" + r + "," + r + " 0 0 1 " + (x + r) + "," + y +
+    "H" + (x + w - r) +
+    "A" + r + "," + r + " 0 0 1 " + (x + w) + "," + (y + r) +
+    "V" + (y + h) + "Z"
+  );
+}
+
+/** Bar colors have their own tokens (--color-chart-*): the type colors in light, a calmer set in dark. */
+function chartColor(type) {
+  return "var(--color-chart-" + typeMeta(type).key + ")";
+}
+
+/** The shape of one type's segment in a bar. Height is its own count. Nothing for a 0. */
+function segmentShape(type) {
+  return function Segment({ x, y, width, height, payload }) {
+    if (!payload || !payload[type] || !(height > 0) || !(width > 0)) return null;
+    const h = payload.bottom === type ? height : Math.max(1, height - SEGMENT_GAP);
+    const r = payload.top === type ? Math.min(BAR_RADIUS, width / 2, h) : 0;
+    return <path className="bar-seg" d={topRoundedPath(x, y, width, h, r)} fill={chartColor(type)} />;
+  };
+}
+const SEGMENT_SHAPES = Object.fromEntries(CHART_TYPES.map((t) => [t, segmentShape(t)]));
+
 /** The legend says how many of each type the range has. A type with none is faded: it has
-    no band or line in the chart, because there is nothing to draw. */
-function Legend({ period, totals }) {
+    no segment in the chart, because there is nothing to draw. */
+function Legend({ totals }) {
   return (
     <ul className="ov-legend" aria-hidden="true">
-      <li className="ov-legend-group">{period.now}:</li>
       {CHART_TYPES.map((t) => (
         <li key={t} className={totals[t] ? undefined : "is-zero"} title={totals[t] ? undefined : "No " + typeMeta(t).label + " alerts in this range"}>
           <TypeIcon type={t} size={12} />
@@ -424,71 +472,39 @@ function Legend({ period, totals }) {
           <span className="ov-legend-count num">{totals[t]}</span>
         </li>
       ))}
-      <li className="ov-legend-before">
-        <span className="legend-line is-dashed" />
-        {period.before}
-      </li>
     </ul>
   );
 }
 
-/** Glides along with the hover: a guide line and one dot per type, drawn inside the chart.
-    They rest only on real data points (a day or an hour), never between them, and move from
-    one point to the next with a short eased slide instead of jumping. A dot fades out where its
-    type has no alerts. Uses the chart's own scale, so the dots sit exactly on the lines. */
-function GlideLayer({ row, x, wrapRef }) {
+/** Drawn inside the chart with its own scale: the week-before total of each bar as a short
+    dashed tick across it (none when that total is 0). Also tells the CSS where the baseline
+    is, so the bars grow up from it when the chart first appears. */
+function PrevTicks({ rows, wrapRef }) {
   const plot = usePlotArea();
   const yScale = useYAxisScale();
-  const [jump, setJump] = useState(true);
-  const shown = row !== null && x !== null && x !== undefined;
-  const last = useRef({ row: null, x: 0 });
-  if (shown) last.current = { row, x };
 
-  // Tell the CSS where the baseline is, so the chart grows up from it when it first appears.
   useLayoutEffect(() => {
     if (plot && wrapRef.current) wrapRef.current.style.setProperty("--baseline", plot.y + plot.height + "px");
   }, [plot, wrapRef]);
 
-  // The first position after the pointer comes in is set without a slide.
-  useEffect(() => {
-    if (!shown) {
-      setJump(true);
-      return undefined;
-    }
-    const frame = requestAnimationFrame(() => setJump(false));
-    return () => cancelAnimationFrame(frame);
-  }, [shown]);
-
-  if (!plot || !yScale) return null;
-  const r = last.current.row;
-  const gx = last.current.x;
-  let base = 0;
-  const dots = CHART_TYPES.map((t) => {
-    const value = r ? r[t] : 0;
-    base += value;
-    return { t, y: yScale(base), on: shown && value > 0 };
-  });
+  if (!plot || !yScale || !rows.length) return null;
+  const slot = plot.width / rows.length;
+  const bar = Math.min(BAR_MAX, slot * (1 - 2 * BAR_SIDE_GAP));
+  // A little wider than the bar, so it shows on both sides, but never touching the next tick.
+  const tick = bar + Math.min(8, (slot - bar) / 2);
   return (
-    <g className={"glide-layer" + (shown ? " is-shown" : "") + (jump ? " is-jump" : "")} aria-hidden="true">
-      <line
-        className="glide-guide"
-        x1={0}
-        x2={0}
-        y1={plot.y}
-        y2={plot.y + plot.height}
-        style={{ transform: "translateX(" + gx + "px)" }}
-      />
-      {dots.map((d) => (
-        <circle
-          key={d.t}
-          className={"glide-dot" + (d.on ? " is-on" : "")}
-          r={4.5}
-          cx={0}
-          cy={0}
-          fill={typeColor(d.t)}
-          style={{ transform: "translate(" + gx + "px, " + (Number.isFinite(d.y) ? d.y : plot.y + plot.height) + "px)" }}
-        />
-      ))}
+    <g className="prev-ticks" aria-hidden="true">
+      {rows.map((r, i) => {
+        if (!(r.previous > 0)) return null;
+        const cx = plot.x + (i + 0.5) * slot;
+        const y = Math.round(yScale(r.previous)) + 0.5;
+        return (
+          <g key={i}>
+            <line className="prev-tick-halo" x1={cx - tick / 2} x2={cx + tick / 2} y1={y} y2={y} />
+            <line className="prev-tick" x1={cx - tick / 2} x2={cx + tick / 2} y1={y} y2={y} />
+          </g>
+        );
+      })}
     </g>
   );
 }
@@ -548,15 +564,23 @@ function GlideTip({ row, x, wrapRef }) {
 }
 
 function AlertsChart({ stats, rows: plainRows, period, animate }) {
-  const gradId = useId().replace(/:/g, "");
   const wrapRef = useRef(null);
   const [hover, setHover] = useState(null); // { index, x }
-  const rows = useMemo(() => withLines(plainRows), [plainRows]);
+  // The bars grow in once: when the chart first shows, or the range changes (the panel
+  // remounts then). Refreshes after that only change the numbers.
+  const [growing, setGrowing] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setGrowing(false), 1100);
+    return () => clearTimeout(timer);
+  }, []);
+  const rows = useMemo(() => withEnds(plainRows), [plainRows]);
   const totals = useMemo(() => Object.fromEntries(CHART_TYPES.map((t) => [t, plainRows.reduce((s, r) => s + r[t], 0)])), [plainRows]);
+  const top = niceMax(rows);
   const empty = stats.total === 0 && stats.previous_total === 0;
-  const unit = stats.per_hour ? "hour" : "day";
-  const sub = stats.total + " " + period.phrase;
-  const label = "Alerts per " + unit + ", " + sub + ". " + period.before + ": " + stats.previous_total + ".";
+  const weekly = byWeek(stats);
+  const unit = stats.per_hour ? "hour" : weekly ? "week" : "day";
+  const sub = stats.total + " " + period.phrase + (weekly ? ", by week" : "");
+  const label = "Alerts per " + unit + ", " + stats.total + " " + period.phrase + ". " + period.before + ": " + stats.previous_total + ".";
 
   function onMove(state) {
     if (!state || !state.isTooltipActive || state.activeTooltipIndex === undefined || state.activeTooltipIndex === null) {
@@ -569,88 +593,49 @@ function AlertsChart({ stats, rows: plainRows, period, animate }) {
   }
 
   return (
-    <Panel id="ov-chart" title="Alerts" sub={sub} tools={!empty && <Legend period={period} totals={totals} />} className="ov-chart">
+    <Panel id="ov-chart" title="Alerts" sub={sub} tools={!empty && <Legend totals={totals} />} className="ov-chart">
       {empty ? (
         <PanelEmpty />
       ) : (
         <>
-          <div role="img" aria-label={label} className={"chart-fill" + (animate ? " is-animated" : "")} ref={wrapRef}>
-            {/* Keyed by the range, so the chart grows in again when the range changes, but not on a poll. */}
+          <div role="img" aria-label={label} className={"chart-fill" + (animate && growing ? " is-animated" : "")} ref={wrapRef}>
+            {/* Keyed by the range, so the chart starts fresh when the range changes, but not on a poll. */}
             <div className="chart-abs" key={stats.from + "/" + stats.to}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
+                <BarChart
                   data={rows}
                   margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+                  barCategoryGap={BAR_SIDE_GAP * 100 + "%"}
+                  maxBarSize={BAR_MAX}
                   accessibilityLayer={false}
                   onMouseMove={onMove}
                   onMouseLeave={() => setHover(null)}
                 >
-                  <defs>
-                    {/* One vertical fade for every band, measured on the whole chart, so the bands
-                        fade together toward the baseline. */}
-                    {CHART_TYPES.map((t) => (
-                      <linearGradient key={t} id={gradId + t} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100%">
-                        <stop offset="0%" style={{ stopColor: typeColor(t), stopOpacity: 0.42 }} />
-                        <stop offset="100%" style={{ stopColor: typeColor(t), stopOpacity: 0.04 }} />
-                      </linearGradient>
-                    ))}
-                  </defs>
                   <CartesianGrid vertical={false} stroke="var(--color-border)" strokeWidth={1} strokeDasharray="3 4" />
-                  <XAxis dataKey="tick" {...AXIS} padding={{ left: 12, right: 12 }} interval={tickInterval(stats)} minTickGap={12} />
-                  <YAxis {...AXIS} width={28} allowDecimals={false} tickCount={3} domain={[0, (max) => Math.max(2, Math.ceil(max / 2) * 2)]} />
+                  <XAxis dataKey="tick" {...AXIS} interval={tickInterval(stats, rows)} minTickGap={12} />
+                  <YAxis {...AXIS} width={28} allowDecimals={false} domain={[0, top]} ticks={[0, top / 2, top]} />
                   <ChartTooltip
-                    cursor={false}
+                    cursor={{ fill: "var(--color-surface-hover)" }}
                     content={() => null}
                     isAnimationActive={false}
                     animationDuration={0}
                     wrapperStyle={{ display: "none" }}
                   />
+                  {/* Bottom up: Medical, Suspicious, Silent, the order of the legend */}
                   {CHART_TYPES.map((t) => (
-                    <Area
+                    <Bar
                       key={t}
-                      type="bumpX"
                       dataKey={t}
                       name={typeMeta(t).label}
                       stackId="types"
-                      stroke="none"
-                      fill={"url(#" + gradId + t + ")"}
-                      fillOpacity={1}
-                      dot={false}
-                      activeDot={false}
+                      fill={chartColor(t)}
+                      shape={SEGMENT_SHAPES[t]}
+                      activeBar={false}
                       isAnimationActive={false}
                     />
                   ))}
-                  <Line
-                    type="bumpX"
-                    dataKey="previous"
-                    stroke="var(--color-gray-bold)"
-                    strokeOpacity={0.8}
-                    strokeWidth={1.5}
-                    strokeDasharray="4 5"
-                    strokeLinecap="round"
-                    dot={false}
-                    activeDot={false}
-                    isAnimationActive={false}
-                  />
-                  {CHART_TYPES.map((t) => (
-                    <Line
-                      key={t + "_line"}
-                      type="bumpX"
-                      dataKey={t + "_line"}
-                      name={typeMeta(t).label}
-                      stroke={typeColor(t)}
-                      strokeWidth={2.25}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      connectNulls={false}
-                      dot={false}
-                      activeDot={false}
-
-                      isAnimationActive={false}
-                    />
-                  ))}
-                  <GlideLayer row={hover ? rows[hover.index] || null : null} x={hover ? hover.x : null} wrapRef={wrapRef} />
-                </AreaChart>
+                  <PrevTicks rows={rows} wrapRef={wrapRef} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
             <GlideTip row={hover ? rows[hover.index] || null : null} x={hover ? hover.x : null} wrapRef={wrapRef} />
@@ -660,7 +645,7 @@ function AlertsChart({ stats, rows: plainRows, period, animate }) {
               <caption>{label}</caption>
               <thead>
                 <tr>
-                  <th scope="col">{unit === "hour" ? "Hour" : "Day"}</th>
+                  <th scope="col">{unit === "hour" ? "Hour" : unit === "week" ? "Week" : "Day"}</th>
                   <th scope="col">Alerts</th>
                   {CHART_TYPES.map((t) => (
                     <th key={t} scope="col">
@@ -966,7 +951,7 @@ function LoadingPanels() {
 
 // ---------- page ----------
 
-export default function OverviewPage({ timeFormat, skew = 0, theme, settings, cartoKey, configLoaded, onOpenAlert, goLive }) {
+export default function OverviewPage({ timeFormat, nowServer, latestAlertId, theme, settings, cartoKey, configLoaded, onOpenAlert, goLive }) {
   const [range, setRangeState] = useState(loadRange);
   const setRange = (next) => {
     setRangeState(next);
@@ -980,6 +965,8 @@ export default function OverviewPage({ timeFormat, skew = 0, theme, settings, ca
   const [result, setResult] = useState(null); // { key, stats }
   const [failed, setFailed] = useState(false);
   const seq = useRef(0);
+  // Every 5 s while Overview is open, and right away when the alerts poll sees a new alert id
+  // (latestAlertId in the deps restarts the timer with an immediate load).
   usePolling(
     () => {
       const n = ++seq.current;
@@ -993,13 +980,13 @@ export default function OverviewPage({ timeFormat, skew = 0, theme, settings, ca
     },
     STATS_MS,
     !error,
-    [key],
+    [key, latestAlertId],
   );
 
   const reduced = useReducedMotion();
-  const now = useServerNow(skew);
+  const now = nowServer; // the shared clock in App (lib/clock.js)
   const stats = result && result.key === key ? result.stats : null;
-  const rows = useMemo(() => (stats ? seriesRows(stats, timeFormat) : []), [stats, timeFormat]);
+  const rows = useMemo(() => (stats ? (byWeek(stats) ? weekRows(stats) : seriesRows(stats, timeFormat)) : []), [stats, timeFormat]);
 
   return (
     <div className="page page--overview">

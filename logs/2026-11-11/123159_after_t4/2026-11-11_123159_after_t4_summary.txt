@@ -1,0 +1,28 @@
+SafePing field test summary
+label: after_t4
+start: 2026-11-11 12:31:59.178
+end:   2026-11-11 12:33:51.775
+length: 113 s
+
+Fob alerts printed:          3
+  sent over LoRa:            3
+  not sent (Fob said so):    0
+  cancelled taps:            0
+  LoRa had a problem:        0
+  with a GPS position:       0
+Relay received (of LoRa):    3 of 3
+Confirmed by ack:            3 of 3
+  needed a resend:           0
+  NOT confirmed:             0
+  not confirmed but Relay had it (ack lost): 0
+Duplicates at the Relay:     0
+Fake or wrong acks rejected: 0
+LOST (sent, never heard):    0
+Relay only (not in Fob log): 0
+Changed on the way:          0
+Not-SafePing packets heard:  0
+
+Signal (dBm):  min -34  max -33  avg -33
+SNR (dB):      min 9.75  max 9.75  avg 9.75
+Fob print to Relay print (s): min 4.64  max 5.55  avg 5.00
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)

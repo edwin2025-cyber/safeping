@@ -1,0 +1,193 @@
+# label features_boot  fob COM15  relay COM14  forward on
+2026-11-11 15:07:25.730 INFO  FOB connected on COM15
+2026-11-11 15:07:25.730 INFO  RELAY connected on COM14
+2026-11-11 15:07:35.979 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:07:37.981 INFO  Fob reconnected
+2026-11-11 15:07:40.469 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:07:40.470 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:07:40.470 FOB   Button: soft interrupt
+2026-11-11 15:07:40.592 FOB   GPS on
+2026-11-11 15:07:40.775 FOB   Sensors: pressure on, battery gauge on
+2026-11-11 15:07:40.775 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:07:41.029 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:07:43.404 FOB   WiFi connected
+2026-11-11 15:07:43.655 FOB   clock set by NTP, year 2026
+2026-11-11 15:07:43.934 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=ok wifi=ok fw=2026.11.11
+2026-11-11 15:07:44.970 FOB   SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 1, "fail": 0, "fw": "2026.11.11", "sig": "3a8b16753abdddf2217acbd12b83b49c450bea1953e47e512779fdcfdbf9cb64", "ctr": 234, "id": "FOB-001", "ts": 1794431264, "v": 1}
+2026-11-11 15:07:46.071 FOB   sent BOOT ctr 234 over WiFi, confirmed by the server
+2026-11-11 15:07:46.073 FOB   SEND_RESULT ctr=234 kind=BOOT path=wifi result=confirmed ms=1101 reason=-
+2026-11-11 15:07:46.073 FOB   BOOT report confirmed
+2026-11-11 15:08:24.593 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 15:10:58.464 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 15:11:17.855 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:11:19.875 INFO  Fob reconnected
+2026-11-11 15:11:22.421 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:11:22.422 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:11:22.422 FOB   Button: soft interrupt
+2026-11-11 15:11:22.544 FOB   GPS on
+2026-11-11 15:11:22.720 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:11:22.721 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:11:22.974 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:11:24.791 FOB   WiFi connected
+2026-11-11 15:11:25.087 FOB   clock set by NTP, year 2026
+2026-11-11 15:11:25.320 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok fw=2026.11.11
+2026-11-11 15:11:28.356 FOB   SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 1, "fail": 32, "fw": "2026.11.11", "sig": "09168d6208f7abf14c918510c27a5b73fef15d5b0852fd49ea9bbe9161316947", "ctr": 235, "id": "FOB-001", "ts": 1794431488, "v": 1}
+2026-11-11 15:11:29.717 FOB   sent BOOT ctr 235 over WiFi, confirmed by the server
+2026-11-11 15:11:29.718 FOB   SEND_RESULT ctr=235 kind=BOOT path=wifi result=confirmed ms=1362 reason=-
+2026-11-11 15:11:29.718 FOB   BOOT report confirmed
+2026-11-11 15:11:46.904 FOB   >>> [VIBRATE: one]
+2026-11-11 15:11:48.935 FOB   no GPS fix, sending without a location
+2026-11-11 15:11:48.936 FOB   SAFEPING_MSG {"ctr": 236, "id": "FOB-001", "ts": 1794431508, "v": 1, "bat": 100, "type": "SUSPICIOUS", "sig": "da62e3c6047c115d0e3e8e59df75c172d4bfc9fa1e1fd7c5799223fcbd6b9f37"}
+2026-11-11 15:11:51.837 FOB   sent SUSPICIOUS ctr 236 over WiFi, confirmed by the server
+2026-11-11 15:11:51.838 FOB   SEND_RESULT ctr=236 kind=SUSPICIOUS path=wifi result=confirmed ms=2926 reason=-
+2026-11-11 15:11:51.839 FOB   HELP_LISTEN ctr=236 kind=SUSPICIOUS ms=120000
+2026-11-11 15:11:51.841 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:13:51.915 FOB   HELP_TIMEOUT ctr=236 ms=120000
+2026-11-11 15:13:51.921 FOB   HELP_LISTEN_END reason=done
+2026-11-11 15:14:15.252 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 15:14:40.072 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:14:42.076 INFO  Fob reconnected
+2026-11-11 15:14:44.682 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:14:44.682 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:14:44.683 FOB   Button: soft interrupt
+2026-11-11 15:14:44.806 FOB   GPS on
+2026-11-11 15:14:44.985 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:14:44.986 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:14:45.239 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:14:48.163 FOB   WiFi connected
+2026-11-11 15:14:48.409 FOB   clock set by NTP, year 2026
+2026-11-11 15:14:48.645 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok fw=2026.11.11
+2026-11-11 15:14:51.682 FOB   SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 1, "fail": 32, "fw": "2026.11.11", "sig": "f248cb28289d7f24be76777e4c52126a0dc2ce6b3fb440e838c875a441e54f1e", "ctr": 237, "id": "FOB-001", "ts": 1794431691, "v": 1}
+2026-11-11 15:14:51.752 FOB   WiFi send failed at connect: time budget used up
+2026-11-11 15:14:51.753 FOB   BOOT report stopped by a button press, not sent
+2026-11-11 15:14:51.756 FOB   >>> [VIBRATE: one]
+2026-11-11 15:14:53.782 FOB   no GPS fix, sending without a location
+2026-11-11 15:14:53.783 FOB   SAFEPING_MSG {"ctr": 238, "id": "FOB-001", "ts": 1794431693, "v": 1, "bat": 100, "type": "SUSPICIOUS", "sig": "d73f7023a61b686b77634e5725029d6bbffc4e98e73cc28bc81ee348c68b11b4"}
+2026-11-11 15:14:55.128 FOB   sent SUSPICIOUS ctr 238 over WiFi, confirmed by the server
+2026-11-11 15:14:55.129 FOB   SEND_RESULT ctr=238 kind=SUSPICIOUS path=wifi result=confirmed ms=1370 reason=-
+2026-11-11 15:14:55.130 FOB   HELP_LISTEN ctr=238 kind=SUSPICIOUS ms=120000
+2026-11-11 15:14:55.132 FOB   >>> [VIBRATE: ok]
+2026-11-11 15:15:00.993 FOB   
+2026-11-11 15:15:00.993 FOB   A fatal error occurred. The crash dump printed below may be used to help
+2026-11-11 15:15:00.993 FOB   determine what caused it. If you are not already running the most recent
+2026-11-11 15:15:00.993 FOB   version of MicroPython, consider upgrading. New versions often fix bugs.
+2026-11-11 15:15:00.993 FOB   
+2026-11-11 15:15:00.993 FOB   To learn more about how to debug and/or report this crash visit the wiki
+2026-11-11 15:15:00.993 FOB   page at: https://github.com/micropython/micropython/wiki/ESP32-debugging
+2026-11-11 15:15:00.993 FOB   
+2026-11-11 15:15:00.993 FOB   MPY version : v1.27.0 on 2026-02-04
+2026-11-11 15:15:00.993 FOB   IDF version : v5.5.1-dirty
+2026-11-11 15:15:00.993 FOB   Machine     : SparkFun Thing Plus ESP32-C5 with ESP32C5
+2026-11-11 15:15:00.993 FOB   
+2026-11-11 15:15:00.993 FOB   Guru Meditation Error: Core  0 panic'ed (Cache error).
+2026-11-11 15:15:00.993 FOB   Cache access error
+2026-11-11 15:15:00.993 FOB   
+2026-11-11 15:15:00.993 FOB   Core  0 register dump:
+2026-11-11 15:15:00.993 FOB   MEPC    : 0x4002a37e  RA      : 0x4002a390  SP      : 0x4082afc0  GP      : 0x40810b84
+2026-11-11 15:15:00.993 FOB   TP      : 0x4082bb40  T0      : 0x4002ccb0  T1      : 0x400000e2  T2      : 0x00001800
+2026-11-11 15:15:00.993 FOB   S0/FP   : 0x40812a84  S1      : 0x00000080  A0      : 0x40812aa4  A1      : 0x4081afe0
+2026-11-11 15:15:00.993 FOB   A2      : 0x00000001  A3      : 0x08088000  A4      : 0x600c8000  A5      : 0x40812b48
+2026-11-11 15:15:00.993 FOB   A6      : 0x40812a84  A7      : 0x00000000  S2      : 0x4083c308  S3      : 0x421b1170
+2026-11-11 15:15:00.993 FOB   S4      : 0x4085ffe4  S5      : 0x00001000  S6      : 0x00000080  S7      : 0x00538b60
+2026-11-11 15:15:00.993 FOB   S8      : 0x421b10dc  S9      : 0x00000000  S10     : 0x00000004  S11     : 0x00000000
+2026-11-11 15:15:00.993 FOB   T3      : 0x00000020  T4      : 0x00e0ef6f  T5      : 0x18e6d29c  T6      : 0xa9683ba8
+2026-11-11 15:15:00.993 FOB   MSTATUS : 0x00001881  MTVEC   : 0x40800003  MCAUSE  : 0x00000019  MTVAL   : 0x00000000
+2026-11-11 15:15:00.993 FOB   MHARTID : 0x00000000
+2026-11-11 15:15:00.993 FOB   
+2026-11-11 15:15:00.993 FOB   Stack memory:
+2026-11-11 15:15:00.993 FOB   4082afc0: 0x4083c308 0x00000080 0x00000101 0x4002aad0 0x00000004 0x00338080 0x421b1040 0x40812a84
+2026-11-11 15:15:00.993 FOB   4082afe0: 0x40860000 0x421b1170 0x00000080 0x00000080 0x00000004 0x00000000 0x421b10dc 0x00000b60
+2026-11-11 15:15:00.993 FOB   4082b000: 0x00000fff 0x00001000 0x421b10dc 0x421b1020 0x00000004 0x00338b60 0x421b1040 0x4206997c
+2026-11-11 15:15:00.993 FOB   4082b020: 0x421b10dc 0x421b1170 0x00000080 0x00000001 0x4204d94e 0x421b1040 0x00000000 0x00000338
+2026-11-11 15:15:00.993 FOB   4082b040: 0x4082b0dc 0x00000004 0x00000b60 0x4204906a 0x42188d64 0x00000001 0x00000080 0x421b1170
+2026-11-11 15:15:00.993 FOB   4082b060: 0x00000008 0x00000008 0x00000000 0x4204d018 0xbdda35f2 0x4218f000 0x00000020 0x00000000
+2026-11-11 15:15:00.993 FOB   4082b080: 0x4082b080 0x8010140b 0x8010140b 0x500ffc18 0x00000000 0x00000b60 0x00000008 0x500ffc18
+2026-11-11 15:15:00.993 FOB   4082b0a0: 0x00000004 0x421b10dc 0x4082b1b0 0x4204d8c0 0x000003ff 0x00000002 0x00000001 0x78000000
+2026-11-11 15:15:00.993 FOB   4082b0c0: 0x00000006 0x4204de08 0x4082b154 0x4082b1b8 0x421b10dc 0x20002008 0xffffffff 0x500ffc18
+2026-11-11 15:15:00.993 FOB   4082b0e0: 0x00000001 0xffffffff 0x0000033c 0x0000033d 0x00000020 0x009354f4 0x50857024 0x000009a8
+2026-11-11 15:15:00.994 FOB   4082b100: 0x00000070 0x4218f000 0x4082b1f8 0x4204e000 0x20002008 0x00000001 0x4082b1c8 0x42172000
+2026-11-11 15:15:00.994 FOB   4082b120: 0x00000001 0x4082b36b 0x00000002 0x421b10dc 0x00000006 0x4082b1b0 0x4082b365 0x4204dd20
+2026-11-11 15:15:00.994 FOB   4082b140: 0x4204a074 0x4082b1ac 0x00000000 0x4082b36b 0x4082bb40 0x421b10dc 0x4082b365 0x00000006
+2026-11-11 15:15:00.994 FOB   4082b160: 0x421b1030 0x00000001 0x4082b360 0x421d8ea4 0x421c04a2 0x421d8ea8 0x40815000 0x00000006
+2026-11-11 15:15:00.994 FOB   4082b180: 0x00000000 0x0000041d 0x00000000 0x0000041d 0x4082b1f8 0x421b10dc 0x421b1030 0x42050482
+2026-11-11 15:15:00.994 FOB   4082b1a0: 0x00000000 0x00000000 0x4085de84 0x4082b365 0x00000338 0x00000339 0x00000001 0x00000b60
+2026-11-11 15:15:00.994 FOB   4082b1c0: 0x500ffc18 0x00010008 0x0000033c 0x0000033d 0x00000000 0x00000006 0x421b1030 0x4204a4a0
+2026-11-11 15:15:00.994 FOB   4082b1e0: 0x00000000 0x00000000 0x42189be0 0x00000000 0x00000000 0x4082b360 0x4082b284 0x00000000
+2026-11-11 15:15:00.994 FOB   4082b200: 0x4082b370 0x00000000 0x0000003f 0x4082b294 0x4082b380 0x00000001 0x0000003f 0x4082b294
+2026-11-11 15:15:00.994 FOB   4082b220: 0x00000000 0x00000000 0x00000000 0x4200ff22 0x4082b368 0x4082b294 0x0000003a 0x000000e1
+2026-11-11 15:15:00.994 FOB   4082b240: 0x0000003b 0x4081490c 0x0000003a 0x40802c56 0x4203b29e 0x4203b232 0x4082b2d0 0x40810b84
+2026-11-11 15:15:00.994 FOB   4082b260: 0x4082bb40 0x40038640 0x421676ec 0x00000020 0x0000005a 0x421c2bb0 0x0000418d 0x4217501a
+2026-11-11 15:15:00.994 FOB   4082b280: 0x00000002 0x0000041d 0x00000000 0x0000041d 0x00000000 0x00000001 0x4082b350 0x42048fb6
+2026-11-11 15:15:00.994 FOB   4082b2a0: 0x00000006 0x0000041d 0x42175014 0x0000418d 0x00000001 0x4082b360 0x421c04a2 0x421d8ea4
+2026-11-11 15:15:00.994 FOB   4082b2c0: 0x00000000 0x0000453c 0x4d261f36 0x0400f00f 0x421c04a2 0x421d8ea8 0x40815000 0x00000006
+2026-11-11 15:15:00.994 FOB   4082b2e0: 0x00000000 0x0000041d 0x00000000 0x00000004 0x00000000 0x00000006 0x4082b350 0x42057e56
+2026-11-11 15:15:01.056 FOB   4082b300: 0x00000000 0x00000006 0x4082b350 0x42057ecc 0x00000000 0x00000006 0x00000002 0x420581de
+2026-11-11 15:15:01.056 FOB   4082b320: 0x00000000 0x00000001 0x421c43c0 0x00000006 0x42175014 0x00000003 0x421b0f40 0x00000003
+2026-11-11 15:15:01.056 FOB   4082b340: 0x421b0f40 0x00000004 0x4080336c 0x421d8f10 0x00000080 0x0000000b 0x4082b360 0x00000001
+2026-11-11 15:15:01.056 FOB   4082b360: 0x62696c2f 0x6c65732f 0x00746365 0x6d2e7463 0x42007970 0x421c0842 0x00000652 0x4082b310
+2026-11-11 15:15:01.056 FOB   4082b380: 0x00000000 0x00000000 0x00000000 0x00000652 0x421c0842 0x421d8ea4 0x00000050 0x0000000f
+2026-11-11 15:15:01.056 FOB   4082b3a0: 0x4082b40c 0x00000000 0x00000003 0x00000000 0x0000003c 0x421d8f10 0x4082b3f0 0x420342fa
+2026-11-11 15:15:01.056 FOB   
+2026-11-11 15:15:01.056 FOB   
+2026-11-11 15:15:01.056 FOB   
+2026-11-11 15:15:01.056 FOB   ELF file SHA256: b82a9bb22
+2026-11-11 15:15:01.056 FOB   
+2026-11-11 15:15:01.056 FOB   Rebooting...
+2026-11-11 15:15:01.056 FOB   ESP-ROM:esp32c5-eco2-20250121
+2026-11-11 15:15:01.056 FOB   Build:Jan 21 2025
+2026-11-11 15:15:01.056 FOB   rst:0xc (SW_CPU),boot:0x19 (SPI_FAST_FLASH_BOOT)
+2026-11-11 15:15:01.057 FOB   Core0 Saved PC:0x4080dac6
+2026-11-11 15:15:01.058 FOB   SPI mode:DIO, clock div:1
+2026-11-11 15:15:01.060 FOB   load:0x408556b0,len:0xdfc
+2026-11-11 15:15:01.062 FOB   load:0x4084bba0,len:0xc4c
+2026-11-11 15:15:01.064 FOB   load:0x4084e5a0,len:0x2ee8
+2026-11-11 15:15:01.068 FOB   entry 0x4084bba0
+2026-11-11 15:15:05.530 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:15:05.531 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:15:05.531 FOB   Button: soft interrupt
+2026-11-11 15:15:05.656 FOB   GPS on
+2026-11-11 15:15:05.838 FOB   Sensors: pressure off ([Errno 19] ENODEV), battery gauge on
+2026-11-11 15:15:05.839 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:15:06.092 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:15:09.019 FOB   WiFi connected
+2026-11-11 15:15:09.281 FOB   clock set by NTP, year 2026
+2026-11-11 15:15:09.541 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=fail wifi=ok fw=2026.11.11
+2026-11-11 15:15:12.577 FOB   SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 1, "fail": 32, "fw": "2026.11.11", "sig": "3ee869bd0fcaef53d1136d4c84649aa54b3a3a7f0b226fd5168ca40de592c994", "ctr": 239, "id": "FOB-001", "ts": 1794431712, "v": 1}
+2026-11-11 15:15:14.082 FOB   sent BOOT ctr 239 over WiFi, confirmed by the server
+2026-11-11 15:15:14.083 FOB   SEND_RESULT ctr=239 kind=BOOT path=wifi result=confirmed ms=1505 reason=-
+2026-11-11 15:15:14.083 FOB   BOOT report confirmed
+2026-11-11 15:16:10.628 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 15:21:20.594 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:21:22.596 INFO  Fob reconnected
+2026-11-11 15:21:25.158 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:21:25.159 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:21:25.159 FOB   Button: soft interrupt
+2026-11-11 15:21:25.286 FOB   GPS on
+2026-11-11 15:21:25.474 FOB   Sensors: pressure on, battery gauge on
+2026-11-11 15:21:25.475 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:21:25.729 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:21:28.683 FOB   WiFi connected
+2026-11-11 15:21:28.988 FOB   clock set by NTP, year 2026
+2026-11-11 15:21:29.280 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=ok wifi=ok fw=2026.11.11
+2026-11-11 15:21:30.317 FOB   SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 1, "fail": 0, "fw": "2026.11.11", "sig": "3b4e0d4c7d25313b0d475b354adb6e4667adf1d8483748518e8fb9d76e0de144", "ctr": 240, "id": "FOB-001", "ts": 1794432090, "v": 1}
+2026-11-11 15:21:31.840 FOB   sent BOOT ctr 240 over WiFi, confirmed by the server
+2026-11-11 15:21:31.841 FOB   SEND_RESULT ctr=240 kind=BOOT path=wifi result=confirmed ms=1522 reason=-
+2026-11-11 15:21:31.841 FOB   BOOT report confirmed
+2026-11-11 15:21:56.047 INFO  Fob disconnected, retrying quietly
+2026-11-11 15:21:58.050 INFO  Fob reconnected
+2026-11-11 15:22:00.624 FOB   SafePing Fob FOB-001 firmware 2026.11.11
+2026-11-11 15:22:00.625 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-11 15:22:00.625 FOB   Button: soft interrupt
+2026-11-11 15:22:00.752 FOB   GPS on
+2026-11-11 15:22:00.943 FOB   Sensors: pressure on, battery gauge on
+2026-11-11 15:22:00.944 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-11 15:22:01.197 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-11 15:22:04.275 FOB   WiFi connected
+2026-11-11 15:22:04.555 FOB   clock set by NTP, year 2026
+2026-11-11 15:22:05.812 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=fail battery=ok pressure=ok wifi=ok fw=2026.11.11
+2026-11-11 15:22:08.850 FOB   SAFEPING_MSG {"bat": 100, "type": "BOOT", "wifi": 1, "fail": 8, "fw": "2026.11.11", "sig": "660031a639d8ab522b9da954b4162865982941812890b99636c979625ef37857", "ctr": 241, "id": "FOB-001", "ts": 1794432128, "v": 1}
+2026-11-11 15:22:10.191 FOB   sent BOOT ctr 241 over WiFi, confirmed by the server
+2026-11-11 15:22:10.192 FOB   SEND_RESULT ctr=241 kind=BOOT path=wifi result=confirmed ms=1342 reason=-
+2026-11-11 15:22:10.193 FOB   BOOT report confirmed
+2026-11-11 15:23:11.219 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 15:24:24.523 RELAY ignored a packet that is not a SafePing alert

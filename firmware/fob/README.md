@@ -16,13 +16,13 @@ Related folders: `../common` holds the part drivers and the pin plan, `../bringu
 
 | Input | Alert | Light | Buzz | Sent |
 |---|---|---|---|---|
-| 1 press | `STATUS` | white blink | short | right away, never texts anyone |
-| 2 presses | `SUSPICIOUS` | yellow slow blink, then solid yellow | one buzz | after the 2 s cancel window |
-| 3 or more | `MEDICAL` | red fast blink, then solid red | steady until sent | after the 2 s cancel window |
+| 1 press | `STATUS` | dim white while sending, then one green blink | short | right away, never texts anyone |
+| 2 presses | `SUSPICIOUS` | yellow slow blink, dim yellow while sending, then solid green | one buzz | after the 2 s cancel window |
+| 3 or more | `MEDICAL` | red fast blink, dim red while sending, then solid green | steady until sent | after the 2 s cancel window |
 | hold 5 s | `SILENT` | none, ever | buzz only | right away |
 
 - **Cancel window:** a quick tap during the 2 s cancels the alert and nothing is sent (green blink). Holding 5 s during the window turns it into `SILENT`. For `MEDICAL`, extra presses in the first 0.6 s count as part of the pattern and do not cancel.
-- **Colors after sending:** solid color means the broker accepted the message. Solid orange means it could not be sent. `SILENT` never lights the LED, even on a failure. It buzzes three times instead.
+- **Colors after sending:** solid green means it was confirmed. Solid orange means it was not confirmed. `SILENT` never lights the LED, even on a failure. Every color and pattern is in `docs/led-patterns.md` (red = MEDICAL, yellow = SUSPICIOUS, green = good news, orange = a problem, blue = starting up or joining WiFi).
 - **Counter:** saved to `counter.txt` in flash before every send. If you erase the flash, the counter restarts at 0 and the server rejects everything as a replay until you register the Fob again.
 - **Every message** is also printed to the console on a line starting with `SAFEPING_MSG`. Copy those lines into a file and run `python replay_serial.py file.txt` in the `server` folder to check them against the real server.
 

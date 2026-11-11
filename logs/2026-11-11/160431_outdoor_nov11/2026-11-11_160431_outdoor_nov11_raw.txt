@@ -1,0 +1,104 @@
+# label outdoor_nov11  fob none  relay COM14  forward on
+2026-11-11 16:04:31.316 INFO  RELAY connected on COM14
+2026-11-11 16:17:39.034 RELAY SAFEPING_MSG {"lat": 34723563, "p": 98819, "ctr": 265, "bat": 93, "lon": -86653971, "type": "SUSPICIOUS", "acc": 2, "id": "FOB-001", "sig": "b70159ff8115c8998c2137d01d790b817363f154a09a0147fd18eca7ab397fe0", "t": 1700, "ts": 1794435457, "v": 1}
+2026-11-11 16:17:39.093 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 30, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:17:39.035 RELAY from FOB-001 type SUSPICIOUS ctr 265 signal -87 dBm, snr 9.0
+2026-11-11 16:18:16.575 RELAY SAFEPING_MSG {"lat": 34723566, "p": 98821, "ctr": 266, "bat": 93, "lon": -86653976, "type": "SUSPICIOUS", "acc": 2, "id": "FOB-001", "sig": "9c74936063522d0130b59d6171d35cb47823fc637fe7657766aed85bed487aaf", "t": 1708, "ts": 1794435495, "v": 1}
+2026-11-11 16:18:16.637 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 31, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:18:16.577 RELAY from FOB-001 type SUSPICIOUS ctr 266 signal -88 dBm, snr 9.0
+2026-11-11 16:18:52.766 RELAY SAFEPING_MSG {"lat": 34723568, "p": 98821, "ctr": 267, "bat": 93, "lon": -86653971, "type": "SUSPICIOUS", "acc": 2, "id": "FOB-001", "sig": "9db601a75a73eedbe7924a76bf3aae72b5320e255a43961a2fc0ba1746e51299", "t": 1713, "ts": 1794435531, "v": 1}
+2026-11-11 16:18:52.823 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 32, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:18:52.768 RELAY from FOB-001 type SUSPICIOUS ctr 267 signal -88 dBm, snr 9.5
+2026-11-11 16:19:29.737 RELAY SAFEPING_MSG {"lat": 34723565, "p": 98819, "ctr": 268, "bat": 92, "lon": -86653971, "type": "SUSPICIOUS", "acc": 3, "id": "FOB-001", "sig": "7295e1b892fc927f7e9d224ef75efa56c6e3ba16134e0c953a01bd1e4d325264", "t": 1713, "ts": 1794435568, "v": 1}
+2026-11-11 16:19:29.798 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 33, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:19:29.739 RELAY from FOB-001 type SUSPICIOUS ctr 268 signal -86 dBm, snr 9.75
+2026-11-11 16:20:06.439 RELAY SAFEPING_MSG {"lat": 34723563, "p": 98815, "ctr": 269, "bat": 92, "lon": -86653971, "type": "SUSPICIOUS", "acc": 2, "id": "FOB-001", "sig": "49d3ee51e671e04509bbb906873a7cffcfaf19504f1f437e6e539590c512c958", "t": 1706, "ts": 1794435605, "v": 1}
+2026-11-11 16:20:06.485 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 34, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:20:06.440 RELAY from FOB-001 type SUSPICIOUS ctr 269 signal -86 dBm, snr 9.5
+2026-11-11 16:20:36.593 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:21:57.299 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:22:05.599 RELAY SAFEPING_MSG {"lat": 34723171, "p": 98823, "ctr": 270, "bat": 91, "lon": -86653546, "type": "MEDICAL", "acc": 2, "id": "FOB-001", "sig": "6c0a3a040c1b5a31b48cb2417aa8ee33042bec94bfc2e107c7bc654816e5d96b", "t": 1600, "ts": 1794435724, "v": 1}
+2026-11-11 16:22:05.665 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 35, 'type': 'MEDICAL', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:22:05.604 RELAY from FOB-001 type MEDICAL ctr 270 signal -88 dBm, snr 9.25
+2026-11-11 16:22:35.690 RELAY SAFEPING_MSG {"lat": 34723171, "p": 98826, "ctr": 271, "bat": 91, "lon": -86653551, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "882ab670888c4184ae2c006abb06808fdb90c570f11fe85cfe925b8f5d043b18", "t": 1594, "ts": 1794435752, "v": 1}
+2026-11-11 16:22:35.741 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 36, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:22:35.691 RELAY from FOB-001 type STATUS ctr 271 signal -86 dBm, snr 8.75
+2026-11-11 16:24:00.769 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:24:14.952 RELAY SAFEPING_MSG {"lat": 34723508, "p": 98823, "ctr": 272, "bat": 90, "lon": -86654308, "type": "MEDICAL", "acc": 3, "id": "FOB-001", "sig": "18f913e85a8fde3b242cf4b5e27342e1e6d47917ea666611da08cb790affc575", "t": 1581, "ts": 1794435853, "v": 1}
+2026-11-11 16:24:15.008 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 37, 'type': 'MEDICAL', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:24:14.953 RELAY from FOB-001 type MEDICAL ctr 272 signal -86 dBm, snr 9.5
+2026-11-11 16:24:53.340 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:25:03.005 RELAY SAFEPING_MSG {"lat": 34723506, "p": 98821, "ctr": 273, "bat": 90, "lon": -86654311, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "7cd9817a204cdf6bf1dbec6b8019db058219e33fcab867ffb9df84006bf5125d", "t": 1552, "ts": 1794435901, "v": 1}
+2026-11-11 16:25:03.058 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 38, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:25:03.007 RELAY from FOB-001 type STATUS ctr 273 signal -86 dBm, snr 9.25
+2026-11-11 16:26:06.453 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:26:16.053 RELAY SAFEPING_MSG {"lat": 34724021, "p": 98821, "ctr": 274, "bat": 90, "lon": -86654310, "type": "SILENT", "acc": 3, "id": "FOB-001", "sig": "15a8c6a89c642576d04a007ea554d2ff6d15dca0f30da9b3ec4aaed6d482c037", "t": 1542, "ts": 1794435974, "v": 1}
+2026-11-11 16:26:16.106 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 39, 'type': 'SILENT', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:26:16.055 RELAY from FOB-001 type SILENT ctr 274 signal -86 dBm, snr 9.5
+2026-11-11 16:26:37.695 RELAY SAFEPING_MSG {"lat": 34724020, "p": 98821, "ctr": 275, "bat": 89, "lon": -86654310, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "65a1d8a3cfc1aeeed86d8f2697def730af50d8ca63f3a52a67b36cda26045529", "t": 1542, "ts": 1794435996, "v": 1}
+2026-11-11 16:26:37.750 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 40, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:26:37.697 RELAY from FOB-001 type STATUS ctr 275 signal -85 dBm, snr 9.25
+2026-11-11 16:27:32.435 RELAY SAFEPING_MSG {"lat": 34724133, "p": 98814, "ctr": 276, "bat": 89, "lon": -86654136, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "da704b1ed0e88aa67f8610b95929b604bcf4c3005f13ac8c9ecba8581be004bc", "t": 1518, "ts": 1794436050, "v": 1}
+2026-11-11 16:27:32.497 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 41, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:27:32.437 RELAY from FOB-001 type STATUS ctr 276 signal -93 dBm, snr 7.5
+2026-11-11 16:27:55.046 RELAY SAFEPING_MSG {"lat": 34724133, "p": 98815, "ctr": 277, "bat": 89, "lon": -86654136, "type": "SUSPICIOUS", "acc": 3, "id": "FOB-001", "sig": "b144c16a931073c3fa6aba23e87243d5187778e31fc301383d18a5089d95c8dd", "t": 1514, "ts": 1794436073, "v": 1}
+2026-11-11 16:27:55.092 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 42, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:27:55.048 RELAY from FOB-001 type SUSPICIOUS ctr 277 signal -92 dBm, snr 8.0
+2026-11-11 16:29:19.992 RELAY SAFEPING_MSG {"lat": 34724488, "p": 98814, "ctr": 278, "bat": 88, "lon": -86654140, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "7cb66f7386371e09eec783fb22d34becdcffeee522041e9f019dbaf9145ada59", "t": 1532, "ts": 1794436158, "v": 1}
+2026-11-11 16:29:20.025 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 43, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:29:19.993 RELAY from FOB-001 type STATUS ctr 278 signal -87 dBm, snr 10.0
+2026-11-11 16:29:46.182 RELAY SAFEPING_MSG {"lat": 34724488, "p": 98815, "ctr": 279, "bat": 88, "lon": -86654141, "type": "MEDICAL", "acc": 3, "id": "FOB-001", "sig": "a1aaa4b3508a93c39cc5cc01dee5f4a84c5bba078f1ff7bfbbc02a9e69ef495b", "t": 1529, "ts": 1794436184, "v": 1}
+2026-11-11 16:29:46.244 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 44, 'type': 'MEDICAL', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:29:46.184 RELAY from FOB-001 type MEDICAL ctr 279 signal -86 dBm, snr 9.25
+2026-11-11 16:30:40.123 RELAY SAFEPING_MSG {"lat": 34724648, "p": 98814, "ctr": 280, "bat": 87, "lon": -86653828, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "bc6184823f2f7afb02acdac107878549413d5051641061563f7fecac06567482", "t": 1524, "ts": 1794436238, "v": 1}
+2026-11-11 16:30:40.162 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 45, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:30:40.124 RELAY from FOB-001 type STATUS ctr 280 signal -86 dBm, snr 9.5
+2026-11-11 16:31:02.054 RELAY SAFEPING_MSG {"lat": 34724645, "p": 98817, "ctr": 281, "bat": 87, "lon": -86653828, "type": "SILENT", "acc": 3, "id": "FOB-001", "sig": "ea1719055004d516e334eef7c85eda7c3db7ecc70669e995ca2e089a311917e3", "t": 1531, "ts": 1794436260, "v": 1}
+2026-11-11 16:31:02.116 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 46, 'type': 'SILENT', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:31:02.056 RELAY from FOB-001 type SILENT ctr 281 signal -85 dBm, snr 9.0
+2026-11-11 16:31:08.178 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:33:13.656 RELAY SAFEPING_MSG {"lat": 34724850, "p": 98804, "ctr": 282, "bat": 86, "lon": -86654093, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "d2ec19cb706ea6bb236186c6cbf3681f8e92ecbfd99a06d849019c39863d66eb", "t": 1521, "ts": 1794436392, "v": 1}
+2026-11-11 16:33:13.711 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 47, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:33:13.658 RELAY from FOB-001 type STATUS ctr 282 signal -98 dBm, snr 4.5
+2026-11-11 16:34:13.286 RELAY SAFEPING_MSG {"lat": 34724973, "p": 98808, "ctr": 283, "bat": 86, "lon": -86653905, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "fa4e8741809bd29a13d37887a3149c5ad7a9c5e6bcb459d40ea58f34b2fd67f4", "t": 1529, "ts": 1794436452, "v": 1}
+2026-11-11 16:34:13.338 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 48, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:34:13.287 RELAY from FOB-001 type STATUS ctr 283 signal -96 dBm, snr 5.5
+2026-11-11 16:34:28.263 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 16:34:36.738 RELAY SAFEPING_MSG {"lat": 34724971, "p": 98808, "ctr": 284, "bat": 86, "lon": -86653905, "type": "MEDICAL", "acc": 3, "id": "FOB-001", "sig": "ccd964455adce1906d5fde49610383440707eb08f360dbf5cd8822bf1ea4e79a", "t": 1518, "ts": 1794436475, "v": 1}
+2026-11-11 16:34:36.795 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 49, 'type': 'MEDICAL', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:34:36.740 RELAY from FOB-001 type MEDICAL ctr 284 signal -95 dBm, snr 6.5
+2026-11-11 16:35:23.909 RELAY SAFEPING_MSG {"lat": 34725103, "p": 98806, "ctr": 285, "bat": 85, "lon": -86654091, "type": "SUSPICIOUS", "acc": 3, "id": "FOB-001", "sig": "19f04674d50974394aabb29e1c8446475096b38be0988e938f3dbc23c78bb1c5", "t": 1519, "ts": 1794436517, "v": 1}
+2026-11-11 16:35:23.955 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 50, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:35:23.911 RELAY from FOB-001 type SUSPICIOUS ctr 285 signal -100 dBm, snr 1.5
+2026-11-11 16:37:51.370 RELAY SAFEPING_MSG {"lat": 34725480, "p": 98803, "ctr": 288, "bat": 84, "lon": -86654145, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "76d5163e30b1b773f1677a2cee82561296b6e588fc1a04bbc05c4b6725d2e5da", "t": 1542, "ts": 1794436667, "v": 1}
+2026-11-11 16:37:51.423 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 53, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:37:51.372 RELAY from FOB-001 type STATUS ctr 288 signal -101 dBm, snr -1.25
+2026-11-11 16:38:22.132 RELAY SAFEPING_MSG {"lat": 34725480, "p": 98799, "ctr": 289, "bat": 84, "lon": -86654145, "type": "SUSPICIOUS", "acc": 3, "id": "FOB-001", "sig": "59228cb86cb5b0b073e2cf927e460121cba5e513d445a1517b85552c8d732d69", "t": 1557, "ts": 1794436697, "v": 1}
+2026-11-11 16:38:22.205 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 54, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:38:22.135 RELAY from FOB-001 type SUSPICIOUS ctr 289 signal -102 dBm, snr -2.75
+2026-11-11 16:40:11.873 RELAY SAFEPING_MSG {"lat": 34725640, "p": 98769, "ctr": 290, "bat": 83, "lon": -86654411, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "a3ddf2687807e2977cf0119ae84fed7a3b7317f4de1e24d2a789b55f564878d5", "t": 1475, "ts": 1794436810, "v": 1}
+2026-11-11 16:40:11.923 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 55, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:40:11.874 RELAY from FOB-001 type STATUS ctr 290 signal -90 dBm, snr 8.0
+2026-11-11 16:40:40.964 RELAY SAFEPING_MSG {"lat": 34725640, "p": 98763, "ctr": 291, "bat": 83, "lon": -86654413, "type": "SILENT", "acc": 3, "id": "FOB-001", "sig": "14bd8a74d2e8b18ade3071bcd1a3b6e77b3b2d210a8b87695c51cf3bd1aca739", "t": 1449, "ts": 1794436839, "v": 1}
+2026-11-11 16:40:41.022 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 56, 'type': 'SILENT', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:40:40.966 RELAY from FOB-001 type SILENT ctr 291 signal -95 dBm, snr 6.5
+2026-11-11 16:42:19.825 RELAY SAFEPING_MSG {"lat": 34725425, "p": 98754, "ctr": 292, "bat": 82, "lon": -86654790, "type": "STATUS", "acc": 4, "id": "FOB-001", "sig": "0745c027e92700d02a6f2c011c593c8c50d7d0c3e3959d583f1156f3f88d7850", "t": 1427, "ts": 1794436938, "v": 1}
+2026-11-11 16:42:19.875 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 57, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:42:19.827 RELAY from FOB-001 type STATUS ctr 292 signal -84 dBm, snr 9.25
+2026-11-11 16:42:39.717 RELAY SAFEPING_MSG {"lat": 34725426, "p": 98757, "ctr": 293, "bat": 82, "lon": -86654790, "type": "SUSPICIOUS", "acc": 3, "id": "FOB-001", "sig": "5652101660d00a0575460dff73b5f1114c623061f00b2b76690a76c0fd64f0d0", "t": 1435, "ts": 1794436958, "v": 1}
+2026-11-11 16:42:39.782 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 58, 'type': 'SUSPICIOUS', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:42:39.719 RELAY from FOB-001 type SUSPICIOUS ctr 293 signal -96 dBm, snr 5.25
+2026-11-11 16:43:32.107 RELAY SAFEPING_MSG {"lat": 34725473, "p": 98772, "ctr": 294, "bat": 81, "lon": -86655036, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "af212dee6845b0f6160dfb88b054b653ac4ed2de99d2e5bfe3b9f0cfab843e49", "t": 1387, "ts": 1794437010, "v": 1}
+2026-11-11 16:43:32.149 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 59, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:43:32.109 RELAY from FOB-001 type STATUS ctr 294 signal -77 dBm, snr 6.75
+2026-11-11 16:44:19.648 RELAY SAFEPING_MSG {"lat": 34725663, "p": 98770, "ctr": 295, "bat": 81, "lon": -86655050, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "218f7790cc33ec558475ddf9b5ed0b806770cec5fc525eac16023a0300f24133", "t": 1424, "ts": 1794437058, "v": 1}
+2026-11-11 16:44:19.686 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 60, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:44:19.650 RELAY from FOB-001 type STATUS ctr 295 signal -87 dBm, snr 9.0
+2026-11-11 16:46:25.931 RELAY SAFEPING_MSG {"lat": 34725488, "p": 98703, "ctr": 296, "bat": 79, "lon": -86655666, "type": "STATUS", "acc": 3, "id": "FOB-001", "sig": "8c603b2f6ff781aae57a594abbe4cc12ea39490cb837fe67dad49efa474c9aef", "t": 1535, "ts": 1794437184, "v": 1}
+2026-11-11 16:46:25.978 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 61, 'type': 'STATUS', 'source': 'gps', 'floor': None, 'sms': None, 'late': None}
+2026-11-11 16:46:25.933 RELAY from FOB-001 type STATUS ctr 296 signal -78 dBm, snr 9.5
+2026-11-11 16:46:51.902 RELAY SAFEPING_MSG {"lat": 34725486, "p": 98710, "ctr": 297, "bat": 79, "lon": -86655668, "type": "MEDICAL", "acc": 5, "id": "FOB-001", "sig": "b17a01dd39a8f001f010cde1f0dc7c4c48773577531a0de4819f0b9908b0d96b", "t": 1552, "ts": 1794437207, "v": 1}
+2026-11-11 16:46:51.943 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 62, 'type': 'MEDICAL', 'source': 'gps', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-11 16:46:51.903 RELAY from FOB-001 type MEDICAL ctr 297 signal -78 dBm, snr 9.75
+2026-11-11 16:54:19.831 RELAY ignored a packet that is not a SafePing alert
+2026-11-11 17:00:11.983 RELAY ignored a packet that is not a SafePing alert

@@ -1,0 +1,50 @@
+SafePing field test summary
+label: features_boot
+start: 2026-11-11 15:07:25.725
+end:   2026-11-11 15:27:35.302
+length: 1210 s
+
+Fob alerts printed:          2
+  sent over WiFi:            2
+  sent over LoRa:            0
+  not sent (Fob said so):    0
+  cancelled taps:            0
+  LoRa had a problem:        2  (ctr 236, 238)
+  with a GPS position:       0
+Relay received (of LoRa):    0 of 0
+Confirmed:                   2 of 2  (WiFi 2, LoRa 0)
+  LoRa needed a resend:      0
+  NOT confirmed:             0
+  not confirmed but Relay had it (ack lost): 0
+WiFi not used, by reason:    none
+Duplicates at the Relay:     0
+Fake or wrong acks rejected: 0
+LOST (sent, never heard):    0
+Relay only (not in Fob log): 0
+Changed on the way:          0
+Not-SafePing packets heard:  6
+
+Send time (ms):  min 1370  max 2926  avg 2148
+  (from SEND_RESULT: the send decision to the result, after any cancel window.)
+Signal (dBm):  none
+SNR (dB):      none
+Fob print to Relay print (s): none
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)
+
+Self-check 1:                all passed  (wifi ok, fw 2026.11.11)
+Self-check 2:                FAILED pressure  (wifi ok, fw 2026.11.11)
+Self-check 3:                FAILED pressure  (wifi ok, fw 2026.11.11)
+Self-check 4:                FAILED pressure  (wifi ok, fw 2026.11.11)
+Self-check 5:                all passed  (wifi ok, fw 2026.11.11)
+Self-check 6:                FAILED gps  (wifi ok, fw 2026.11.11)
+Boot reports:                6 sent, 5 confirmed
+Retry queue:                 0 queued
+  tries:                     0
+  got through:               0
+  gave up:                   0
+  still waiting at the end:  0
+  stopped by a press:        0
+Help received (WiFi):        0
+  ms after the confirm:      none
+  stopped listening (2 min): 1
+  wrong help messages ignored: 0

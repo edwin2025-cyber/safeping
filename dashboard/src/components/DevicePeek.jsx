@@ -6,7 +6,7 @@ import { Select } from "./Controls.jsx";
 import { Battery, BatteryTag, batteryLevel, deviceName } from "./DevicesPage.jsx";
 import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
-import { LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
+import { LateTag, LinkTag, StatusDot, Tag, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 // How the device panel lays out its facts.
@@ -80,6 +80,7 @@ function History({ history, historyFailed, nowServer, timeFormat }) {
                   <span className="history-when">
                     <span>{formatDateTime(a.timestamp, timeFormat, false)}</span>
                     <span className="muted">{ago(nowServer - a.timestamp)}</span>
+                    <LateTag alert={a} timeFormat={timeFormat} />
                   </span>
                 </td>
                 <td>{placeText(a) || <span className="muted">Unknown</span>}</td>
@@ -95,12 +96,118 @@ function History({ history, historyFailed, nowServer, timeFormat }) {
   );
 }
 
+/** "All checks passed" or the failed parts in plain words, from one boot report. */
+export function BootResult({ boot }) {
+  if (boot.all_passed) return <span>All checks passed</span>;
+  return <span className="tone-orange">{boot.failed.join(", ")}</span>;
+}
+
+/** Why the Fob started (machine.reset_cause() in the BOOT report): "Power on",
+    "Restarted after a crash" (orange), and so on. Older firmware did not send it. */
+function ResetWords({ boot }) {
+  if (!boot.reset_words) return <span className="muted">Not reported</span>;
+  return <span className={boot.crashed ? "tone-orange" : undefined}>{boot.reset_words}</span>;
+}
+
+/** WiFi at start is information only: no WiFi is not a failure, LoRa still works. */
+function bootWifi(boot) {
+  if (boot.wifi === null || boot.wifi === undefined) return "WiFi not reported";
+  return boot.wifi ? "WiFi joined" : "No WiFi at start (LoRa still works)";
+}
+
+/** The Fob's last start and its self-check, then the last 10 starts. From the BOOT
+    report the Fob sends at power on (see docs/message-format.md, Boot report). */
+function Starts({ device, boots, bootsFailed, nowServer, timeFormat }) {
+  const last = device.last_boot;
+  return (
+    <section className="history starts" aria-labelledby="starts-title">
+      <div className="history-head">
+        <h3 id="starts-title">
+          <Icon icon={icons.boot} />
+          Starts and self-checks
+          {boots && boots.length > 0 && <span className="history-count num">{boots.length}</span>}
+        </h3>
+      </div>
+      {!last ? (
+        <p className="loading">No start reported yet. Fobs with the new firmware report each power on.</p>
+      ) : (
+        <dl className="kv starts-last">
+          <div className="kv-row">
+            <dt>Last start</dt>
+            <dd className="num">
+              {formatDateTime(last.time, timeFormat)} <span className="muted">({ago(nowServer - last.time)})</span>
+            </dd>
+          </div>
+          <div className="kv-row">
+            <dt>Why it started</dt>
+            <dd>
+              <ResetWords boot={last} />
+            </dd>
+          </div>
+          <div className="kv-row">
+            <dt>Self-check</dt>
+            <dd>
+              <BootResult boot={last} />
+            </dd>
+          </div>
+          <div className="kv-row">
+            <dt>WiFi</dt>
+            <dd className="muted">{bootWifi(last)}</dd>
+          </div>
+          <div className="kv-row">
+            <dt>Firmware</dt>
+            <dd className="num">{last.firmware || <span className="muted">Not reported</span>}</dd>
+          </div>
+        </dl>
+      )}
+      {boots === null || boots === undefined ? (
+        last && <p className="loading">{bootsFailed ? "Waiting for the server." : "Loading starts."}</p>
+      ) : (
+        boots.length > 1 && (
+          <table className="table history-table starts-table">
+            <thead>
+              <tr>
+                <th scope="col">Started</th>
+                <th scope="col">Why</th>
+                <th scope="col">Self-check</th>
+                <th scope="col">WiFi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {boots.map((b) => (
+                <tr key={b.counter + "-" + b.time}>
+                  <td className="num">{formatDateTime(b.time, timeFormat, false)}</td>
+                  <td>
+                    <ResetWords boot={b} />
+                  </td>
+                  <td>
+                    <BootResult boot={b} />
+                  </td>
+                  <td>
+                    {b.wifi ? (
+                      <Tag color="wifi" icon={icons.wifi}>
+                        Joined
+                      </Tag>
+                    ) : (
+                      <span className="muted">No</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      )}
+    </section>
+  );
+}
+
 // ---------- "sections" layout ----------
 
 // The word under the battery bar, as a tag in the bar's color.
 const BATTERY_CARD_WORD = { good: "Good", low: "Low, under 20%", critical: "Very low, under 10%" };
 
-function SectionsBody({ device, nowServer, timeFormat, history, historyFailed }) {
+function SectionsBody({ device, nowServer, timeFormat, history, historyFailed, boots, bootsFailed }) {
   const isRef = device.role === "REF";
   const level = batteryLevel(device.battery);
   return (
@@ -193,6 +300,7 @@ function SectionsBody({ device, nowServer, timeFormat, history, historyFailed })
         )}
       </div>
 
+      {!isRef && <Starts device={device} boots={boots} bootsFailed={bootsFailed} nowServer={nowServer} timeFormat={timeFormat} />}
       {!isRef && <History history={history} historyFailed={historyFailed} nowServer={nowServer} timeFormat={timeFormat} />}
     </article>
   );
@@ -200,7 +308,7 @@ function SectionsBody({ device, nowServer, timeFormat, history, historyFailed })
 
 // ---------- "list" layout (the panel before the sections) ----------
 
-function ListBody({ device, nowServer, timeFormat, history, historyFailed }) {
+function ListBody({ device, nowServer, timeFormat, history, historyFailed, boots, bootsFailed }) {
   const isRef = device.role === "REF";
   return (
     <article className="peek-page">
@@ -241,12 +349,13 @@ function ListBody({ device, nowServer, timeFormat, history, historyFailed }) {
           </Prop>
         )}
       </dl>
+      {!isRef && <Starts device={device} boots={boots} bootsFailed={bootsFailed} nowServer={nowServer} timeFormat={timeFormat} />}
       {!isRef && <History history={history} historyFailed={historyFailed} nowServer={nowServer} timeFormat={timeFormat} />}
     </article>
   );
 }
 
-export default function DevicePeek({ device, crumb = "Devices", history, historyFailed, nowServer, timeFormat, onClose, returnFocus }) {
+export default function DevicePeek({ device, crumb = "Devices", history, historyFailed, boots, bootsFailed, nowServer, timeFormat, onClose, returnFocus }) {
   const Body = DEVICE_LAYOUT === "list" ? ListBody : SectionsBody;
   return (
     <Modal onClose={onClose} labelledBy="device-title" className="peek" returnFocus={returnFocus}>
@@ -268,7 +377,15 @@ export default function DevicePeek({ device, crumb = "Devices", history, history
       </div>
 
       <div className="peek-scroll">
-        <Body device={device} nowServer={nowServer} timeFormat={timeFormat} history={history} historyFailed={historyFailed} />
+        <Body
+          device={device}
+          nowServer={nowServer}
+          timeFormat={timeFormat}
+          history={history}
+          historyFailed={historyFailed}
+          boots={boots}
+          bootsFailed={bootsFailed}
+        />
       </div>
     </Modal>
   );

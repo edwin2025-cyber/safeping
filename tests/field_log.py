@@ -16,8 +16,12 @@ Before you run it
   * The Fob must have the Fob program saved as main.py.
   * The Relay must have firmware/relay/main.py saved as main.py.
 
-Run it (from the safeping-bench folder):
-  python tests/field_log.py --label spotA
+Run it (from the safeping folder):
+  python tests/field_log.py --label spotA --relay COM14          Fob and Relay
+  python tests/field_log.py --label spotA --relay COM14 --no-fob  Relay only
+  python tests/field_log.py --label spotA                         Fob only
+Add --forward to also send each Relay alert to the server, the same way
+server/serial_bridge.py does, so the website shows them during the test.
 Stop it with Ctrl+C. The summary prints at the end.
 
 How a lost packet is found
@@ -49,7 +53,14 @@ CSV_COLUMNS = [
     "lat", "lon", "acc_m", "lat_deg", "lon_deg", "rssi_dbm", "snr_db", "same_message",
     "lora_retry", "p_pa", "t_c", "bat_pct", "confirmed", "ack_try",
     "path", "result", "ms", "reason",          # from the Fob's SEND_RESULT line
+    "retry_tries", "retry_result",             # from RETRY_* lines (retry queue)
+    "help_ms",                                 # from HELP_RECEIVED: ms after the confirm
 ]
+# Fob lines that mean the LoRa radio had trouble during a send. "LoRa fallback on" and
+# "LoRa acks: ..." are boot lines, not problems.
+LORA_PROBLEM = ("LoRa failed", "LoRa check", "LoRa: setting the radio up again", "LoRa worked after")
+RETRY_TAGS = ("RETRY_QUEUED", "RETRY_TRY", "RETRY_DONE", "RETRY_GAVE_UP", "RETRY_STOPPED")
+HELP_TAGS = ("HELP_RECEIVED", "HELP_TIMEOUT", "HELP_LISTEN", "HELP ignored", "HELP_LISTEN_END")
 
 
 def parse_send_result(line):
@@ -60,6 +71,17 @@ def parse_send_result(line):
             name, value = part.split("=", 1)
             out[name] = value
     return out
+
+
+MSG_PREFIX = "SAFEPING_MSG "
+
+
+def msg_text(line):
+    """The JSON after the LAST "SAFEPING_MSG " in a line (same rule as
+    server/serial_bridge.message_text). A board can put bytes left over from an earlier
+    print in front of a message (64 bytes from the Relay on 2026-11-11, selfcheck_b4)."""
+    at = line.rfind(MSG_PREFIX)
+    return None if at < 0 else line[at + len(MSG_PREFIX):]
 
 
 def now_text(t):
@@ -77,10 +99,11 @@ def micro_to_deg(e6):
 class Session:
     """Keeps track of every alert. Knows nothing about serial ports, so it can be tested alone."""
 
-    def __init__(self, label, base_path, fob_logged=True):
+    def __init__(self, label, base_path, fob_logged=True, relay_logged=True):
         self.label = label
         self.base = base_path
         self.fob_logged = fob_logged   # False with --no-fob: Relay only, Fob columns stay empty
+        self.relay_logged = relay_logged   # False without --relay: Fob only, Relay columns stay empty
         self.start = time.time()
         self.fob = {}             # ctr -> dict with Fob side
         self.relay = {}           # ctr -> dict with Relay side
@@ -93,6 +116,13 @@ class Session:
         self.cancelled = 0
         self.warned = set()
         self.notes = []
+        self.self_checks = []     # one dict per SELF_CHECK line (one per boot)
+        self.boots = {}           # ctr -> BOOT message and its SEND_RESULT
+        self.retry = {}           # ctr -> {"queued", "tries", "result", "reason"}
+        self.retry_stopped = 0
+        self.help = {}            # ctr -> ms after confirm
+        self.help_timeouts = []
+        self.help_ignored = 0
 
     # ---------- Fob lines ----------
     def fob_line(self, t, line):
@@ -102,7 +132,11 @@ class Session:
                 self.notes.append("{} Fob printed a SAFEPING_MSG line that is not valid JSON".format(now_text(t)))
                 return None
             ctr = msg["ctr"]
-            self.fob[ctr] = {"time": t, "msg": msg, "raw": line[13:], "result": "waiting"}
+            if msg.get("type") == "BOOT":            # a boot report, not an alert
+                self.boots[ctr] = {"time": t, "msg": msg}
+                self.last_fob_ctr = ctr
+                return "FOB  boot report ctr {} fail={} fw={}".format(ctr, msg.get("fail"), msg.get("fw"))
+            self.fob[ctr] = {"time": t, "msg": msg, "raw": msg_text(line), "result": "waiting"}
             self._seen(ctr)
             self.last_fob_ctr = ctr
             return "FOB  sent ctr {} {}{}".format(ctr, msg.get("type"), self._gps_text(msg))
@@ -112,8 +146,43 @@ class Session:
                 ctr = int(fields.get("ctr", ""))
             except ValueError:
                 ctr = None
-            if ctr in self.fob:
+            if ctr in self.boots:
+                self.boots[ctr]["send"] = fields
+            elif "try" in fields:                    # a retry: the first result stays as it was
+                if ctr in self.retry:
+                    self.retry[ctr]["last"] = fields
+            elif ctr in self.fob:
                 self.fob[ctr]["send"] = fields
+            return "FOB  " + line
+        if line.startswith("SafePing Fob "):
+            # A new boot. The boot lines that follow ("LoRa fallback on", "LoRa acks: ...")
+            # belong to no alert. Before 2026-11-11 they were counted as "LoRa had a problem"
+            # for the last alert before the reboot (ctr 248, 250, 252, 254 in crashtest).
+            self.last_fob_ctr = None
+            return "FOB  " + line
+        if line.startswith("BOOT_STOPPED "):
+            ctr = self._ctr_of(line)
+            if ctr in self.boots:
+                self.boots[ctr]["stopped"] = True
+            return "FOB  " + line
+        if line.startswith("BOOT report stopped by a button press"):   # firmware before 2026.11.11c
+            if self.last_fob_ctr in self.boots:
+                self.boots[self.last_fob_ctr]["stopped"] = True
+            return "FOB  " + line
+        if line.startswith("BOOT_RESEND "):
+            ctr = self._ctr_of(line)
+            if ctr in self.boots:
+                self.boots[ctr]["resent"] = True
+            self.last_fob_ctr = None             # the lines that follow are about the BOOT report
+            return "FOB  " + line
+        if line.startswith("SELF_CHECK "):
+            self.self_checks.append(parse_send_result(line))
+            return "FOB  " + line
+        if line.startswith(RETRY_TAGS):
+            self._retry_line(line)
+            return "FOB  " + line
+        if line.startswith(HELP_TAGS):
+            self._help_line(line)
             return "FOB  " + line
         if line.startswith("falling back to LoRa") or line.startswith("no ack from server"):
             return "FOB  " + line
@@ -142,7 +211,7 @@ class Session:
             if line.startswith("NOT SENT"):
                 entry["result"] = "NOT SENT"
                 return "FOB  NOT SENT ctr {}".format(self.last_fob_ctr)
-            if line.startswith("LoRa"):      # failures, the radio check, and the retry
+            if line.startswith(LORA_PROBLEM):  # failures, the radio check, and the radio reset
                 if line.startswith("LoRa failed"):
                     entry["result"] = "LoRa failed"
                 entry["retried"] = True
@@ -154,11 +223,51 @@ class Session:
             return "FOB  " + line
         return None
 
+    @staticmethod
+    def _ctr_of(line):
+        try:
+            return int(parse_send_result(line).get("ctr", ""))
+        except ValueError:
+            return None
+
+    def _retry_line(self, line):
+        tag = line.split()[0]
+        fields = parse_send_result(line)
+        try:
+            ctr = int(fields.get("ctr", ""))
+        except ValueError:
+            return
+        r = self.retry.setdefault(ctr, {"tries": 0, "result": "queued", "reason": fields.get("reason", "")})
+        if tag == "RETRY_TRY":
+            r["tries"] = int(fields.get("try", r["tries"] + 1))
+            self.last_fob_ctr = None             # the lines that follow are about the retry
+        elif tag == "RETRY_DONE":
+            r["result"] = "got through"
+        elif tag == "RETRY_GAVE_UP":
+            r["result"] = "gave up ({})".format(fields.get("reason", "-"))
+        elif tag == "RETRY_STOPPED":
+            self.retry_stopped += 1
+
+    def _help_line(self, line):
+        fields = parse_send_result(line)
+        if line.startswith("HELP_RECEIVED"):
+            try:
+                self.help[int(fields["ctr"])] = int(fields.get("ms_after_confirm", 0))
+            except (KeyError, ValueError):
+                pass
+        elif line.startswith("HELP_TIMEOUT"):
+            self.help_timeouts.append(fields.get("ctr", "?"))
+        elif line.startswith("HELP ignored"):
+            self.help_ignored += 1
+
     # ---------- Relay lines ----------
     def relay_line(self, t, line):
         if line.startswith("SAFEPING_MSG "):
             msg = self._json(line)
-            self.relay_waiting = (t, msg, line[13:])
+            if line.rfind(MSG_PREFIX) > 0:
+                self.notes.append("{} Relay line had {} bytes left over in front of the message (ignored)".format(
+                    now_text(t), line.rfind(MSG_PREFIX)))
+            self.relay_waiting = (t, msg, msg_text(line))
             return None
         if line.startswith("from ") and self.relay_waiting:
             t0, msg, raw = self.relay_waiting
@@ -191,6 +300,8 @@ class Session:
     def overdue(self, t):
         """Fob alerts sent over LoRa that the Relay still has not printed."""
         out = []
+        if not self.relay_logged:
+            return out
         for ctr, f in self.fob.items():
             if ctr in self.relay or ctr in self.warned or f["result"] != "LoRa":
                 continue
@@ -217,7 +328,7 @@ class Session:
                 "fob_time": now_text(f["time"]) if f else "",
                 "fob_result": f["result"] if f else ("not in Fob log" if self.fob_logged else ""),
                 "relay_time": now_text(r["time"]) if r else "",
-                "received": "yes" if r else "no",
+                "received": ("yes" if r else "no") if self.relay_logged else "",
                 "delay_s": delay,
                 "lat": msg.get("lat", ""),
                 "lon": msg.get("lon", ""),
@@ -231,25 +342,33 @@ class Session:
                 "p_pa": msg.get("p", ""),
                 "t_c": "{:.2f}".format(msg["t"] / 100) if "t" in msg else "",
                 "bat_pct": msg.get("bat", ""),
-                "confirmed": ("yes" if f.get("confirmed") else "no") if f and f["result"] in ("LoRa", "not confirmed") else "",
+                "confirmed": self._confirmed_text(f),
                 "ack_try": f.get("ack_try", "") if f else "",
                 "path": f.get("send", {}).get("path", "") if f else "",
                 "result": f.get("send", {}).get("result", "") if f else "",
                 "ms": f.get("send", {}).get("ms", "") if f else "",
                 "reason": f.get("send", {}).get("reason", "") if f else "",
+                "retry_tries": self.retry[ctr]["tries"] if ctr in self.retry else "",
+                "retry_result": self.retry[ctr]["result"] if ctr in self.retry else "",
+                "help_ms": self.help.get(ctr, ""),
             })
         return rows
 
     def summary(self, end_t):
         if not self.fob_logged:
             return self._relay_summary(end_t)
-        sent_lora = [c for c, f in self.fob.items() if f["result"] in ("LoRa", "not confirmed")]
-        confirmed = [c for c, f in self.fob.items() if f.get("confirmed")]
-        unconfirmed = sorted(c for c, f in self.fob.items() if f["result"] == "not confirmed")
+        sent_wifi = sorted(c for c, f in self.fob.items() if self._path(f) == "wifi")
+        sent_lora = [c for c, f in self.fob.items() if self._path(f) == "lora"]
+        confirmed = sorted(c for c, f in self.fob.items() if self._is_confirmed(f))
+        confirmed_wifi = [c for c in confirmed if self._path(self.fob[c]) == "wifi"]
+        confirmed_lora = [c for c in confirmed if self._path(self.fob[c]) == "lora"]
+        unconfirmed = sorted(c for c, f in self.fob.items()
+                             if f["result"] == "not confirmed"
+                             or f.get("send", {}).get("result") in ("not_confirmed", "failed"))
         unconfirmed_but_heard = [c for c in unconfirmed if c in self.relay]
         needed_resend = sorted(c for c, f in self.fob.items() if f.get("ack_missing"))
         not_sent = [c for c, f in self.fob.items() if f["result"] in ("NOT SENT", "LoRa failed")]
-        lost = sorted(c for c in sent_lora if c not in self.relay)
+        lost = sorted(c for c in sent_lora if c not in self.relay) if self.relay_logged else []
         relay_only = sorted(c for c in self.relay if c not in self.fob)
         changed = sorted(c for c in self.relay if c in self.fob and self.fob[c]["raw"] != self.relay[c]["raw"])
         rssi = [r["rssi"] for r in self.relay.values() if r["rssi"] is not None]
@@ -258,6 +377,16 @@ class Session:
         with_gps = [c for c, f in self.fob.items() if "lat" in f["msg"]]
         received = len([c for c in sent_lora if c in self.relay])
         retried = sorted(c for c, f in self.fob.items() if f.get("retried"))
+        sent_any = len(sent_wifi) + len(sent_lora)
+        send_ms = [int(f["send"]["ms"]) for f in self.fob.values()
+                   if f.get("send", {}).get("ms", "").isdigit()]
+        reasons = {}
+        for f in self.fob.values():
+            reason = f.get("send", {}).get("reason")
+            if reason and reason != "-":
+                reasons[reason] = reasons.get(reason, 0) + 1
+        relay_text = "{} of {}".format(received, len(sent_lora)) if self.relay_logged \
+            else "unknown (Relay not logged, use --relay)"
 
         lines = [
             "SafePing field test summary",
@@ -267,16 +396,20 @@ class Session:
             "length: {:.0f} s".format(end_t - self.start),
             "",
             "Fob alerts printed:          {}".format(len(self.fob)),
+            "  sent over WiFi:            {}".format(len(sent_wifi)),
             "  sent over LoRa:            {}".format(len(sent_lora)),
             "  not sent (Fob said so):    {}{}".format(len(not_sent), self._list(not_sent)),
             "  cancelled taps:            {}".format(self.cancelled),
             "  LoRa had a problem:        {}{}".format(len(retried), self._list(retried)),
             "  with a GPS position:       {}".format(len(with_gps)),
-            "Relay received (of LoRa):    {} of {}".format(received, len(sent_lora)),
-            "Confirmed by ack:            {} of {}".format(len(confirmed), len(sent_lora)),
-            "  needed a resend:           {}{}".format(len(needed_resend), self._list(needed_resend)),
+            "Relay received (of LoRa):    {}".format(relay_text),
+            "Confirmed:                   {} of {}  (WiFi {}, LoRa {})".format(
+                len(confirmed), sent_any, len(confirmed_wifi), len(confirmed_lora)),
+            "  LoRa needed a resend:      {}{}".format(len(needed_resend), self._list(needed_resend)),
             "  NOT confirmed:             {}{}".format(len(unconfirmed), self._list(unconfirmed)),
             "  not confirmed but Relay had it (ack lost): {}".format(len(unconfirmed_but_heard)),
+            "WiFi not used, by reason:    {}".format(
+                ", ".join("{} {}".format(r, n) for r, n in sorted(reasons.items())) or "none"),
             "Duplicates at the Relay:     {}".format(self.duplicates),
             "Fake or wrong acks rejected: {}".format(self.acks_rejected),
             "LOST (sent, never heard):    {}{}".format(len(lost), self._list(lost)),
@@ -284,14 +417,53 @@ class Session:
             "Changed on the way:          {}{}".format(len(changed), self._list(changed)),
             "Not-SafePing packets heard:  {}".format(self.not_safeping),
             "",
+            "Send time (ms):  {}".format(self._range(send_ms, "{:.0f}")),
+            "  (from SEND_RESULT: the send decision to the result, after any cancel window.)",
             "Signal (dBm):  {}".format(self._range(rssi, "{:.0f}")),
             "SNR (dB):      {}".format(self._range(snr, "{:.2f}")),
             "Fob print to Relay print (s): {}".format(self._range(delays, "{:.2f}")),
             "  (laptop clock for both. Starts when the Fob prints, after any cancel window.)",
-        ]
+            "",
+        ] + self._extra_lines()
         if self.notes:
             lines += ["", "Notes:"] + ["  " + n for n in self.notes]
         return "\n".join(lines) + "\n"
+
+    def _extra_lines(self):
+        """Self-check, boot reports, retry queue and help messages."""
+        lines = []
+        if self.self_checks:
+            for i, sc in enumerate(self.self_checks, 1):
+                failed = [k for k, v in sc.items() if v == "fail" and k != "wifi"]
+                lines.append("Self-check {}:                {}  (wifi {}, reset {}, fw {})".format(
+                    i, "all passed" if not failed else "FAILED " + ", ".join(failed),
+                    sc.get("wifi", "?"), sc.get("reset", "not reported (firmware before 2026.11.11b)"),
+                    sc.get("fw", "?")))
+        else:
+            lines.append("Self-check:                  none seen (no boot during the log)")
+        confirmed = [c for c, b in self.boots.items() if b.get("send", {}).get("result") == "confirmed"]
+        lines.append("Boot reports:                {} made, {} confirmed".format(len(self.boots), len(confirmed)))
+        stopped = sorted(c for c, b in self.boots.items() if b.get("stopped"))
+        later = [c for c in stopped if self.boots[c].get("resent") and c in confirmed]
+        waiting = [c for c in stopped if c not in later]
+        lines.append("  stopped by a press, sent later: {}{}".format(len(later), self._list(later)))
+        lines.append("  stopped by a press, not sent yet: {}{}".format(len(waiting), self._list(waiting)))
+        done = sorted(c for c, r in self.retry.items() if r["result"] == "got through")
+        gave_up = sorted(c for c, r in self.retry.items() if r["result"].startswith("gave up"))
+        waiting = sorted(c for c, r in self.retry.items() if r["result"] == "queued")
+        lines += [
+            "Retry queue:                 {} queued{}".format(len(self.retry), self._list(sorted(self.retry))),
+            "  tries:                     {}".format(sum(r["tries"] for r in self.retry.values())),
+            "  got through:               {}{}".format(len(done), self._list(done)),
+            "  gave up:                   {}{}".format(len(gave_up), self._list(gave_up)),
+            "  still waiting at the end:  {}{}".format(len(waiting), self._list(waiting)),
+            "  stopped by a press:        {}".format(self.retry_stopped),
+            "Help received (WiFi):        {}{}".format(len(self.help), self._list(sorted(self.help))),
+            "  ms after the confirm:      {}".format(self._range(list(self.help.values()), "{:.0f}")),
+            "  stopped listening (2 min): {}".format(len(self.help_timeouts)),
+            "  wrong help messages ignored: {}".format(self.help_ignored),
+        ]
+        return lines
 
     def _relay_summary(self, end_t):
         """Summary for --no-fob runs. Nothing here needs the Fob log."""
@@ -329,6 +501,31 @@ class Session:
             f.write(self.summary(end_t))
 
     # ---------- helpers ----------
+    @staticmethod
+    def _path(f):
+        """"wifi", "lora", "none" or "" for one Fob alert. SEND_RESULT wins. Older logs
+        without it fall back to the lines the Fob printed."""
+        send = f.get("send")
+        if send and send.get("path"):
+            return send["path"]
+        if f["result"] in ("LoRa", "not confirmed"):
+            return "lora"
+        if f["result"] == "WiFi":
+            return "wifi"
+        return ""
+
+    @staticmethod
+    def _is_confirmed(f):
+        send = f.get("send")
+        if send and send.get("result"):
+            return send["result"] == "confirmed"
+        return bool(f.get("confirmed")) or f["result"] == "WiFi"
+
+    def _confirmed_text(self, f):
+        if not f or self._path(f) not in ("wifi", "lora", "none"):
+            return ""
+        return "yes" if self._is_confirmed(f) else "no"
+
     def _seen(self, ctr):
         if ctr not in self.order:
             self.order.append(ctr)
@@ -336,7 +533,7 @@ class Session:
     @staticmethod
     def _json(line):
         try:
-            msg = json.loads(line[13:])
+            msg = json.loads(msg_text(line))
             return msg if isinstance(msg, dict) else None
         except ValueError:
             return None
@@ -408,38 +605,75 @@ def reader(name, port, q, stop, quiet=False):
             time.sleep(2)
 
 
+SERVER_DIR = Path(__file__).resolve().parent.parent / "server"
+
+
+def load_forwarder():
+    """The serial bridge's own handle_line(), so --forward does exactly what
+    server/serial_bridge.py does: each Relay SAFEPING_MSG line goes to processor.process()
+    with source "lora", into the same database the website reads."""
+    # First on the path, so server/config.py is the config the server modules import.
+    sys.path.insert(0, str(SERVER_DIR))
+    import db
+    import serial_bridge
+    db.init_db()
+    return serial_bridge.handle_line
+
+
 def main():
     parser = argparse.ArgumentParser(description="Log the Fob and the Relay during a field test.")
     parser.add_argument("--label", default="test", help="short name for this run, like spotA")
     parser.add_argument("--fob", default="COM15")
-    parser.add_argument("--relay", default="COM14")
+    parser.add_argument("--relay", default=None,
+                        help="the Relay's port, like COM14. Left out: the Relay is not logged")
     parser.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "logs"))
     parser.add_argument("--no-fob", action="store_true",
                         help="do not open the Fob port at all. Log only the Relay. Fob-only columns stay empty")
+    parser.add_argument("--forward", action="store_true",
+                        help="also send each Relay alert to the server, like serial_bridge.py "
+                             "(the bridge cannot run while the logger holds the Relay port)")
     args = parser.parse_args()
 
     if serial is None:
         print("pyserial is not installed. Run: python -m pip install pyserial")
         sys.exit(1)
+    if args.no_fob and not args.relay:
+        print("Nothing to log: --no-fob needs --relay COM14 (or the Relay's port).")
+        sys.exit(1)
+    if args.forward and not args.relay:
+        print("--forward needs --relay COM14 (or the Relay's port).")
+        sys.exit(1)
+    forward = None
+    if args.forward:
+        try:
+            forward = load_forwarder()
+        except Exception as err:
+            print("--forward could not load the server code:", err)
+            sys.exit(1)
 
     label = re.sub(r"[^A-Za-z0-9_-]", "_", args.label)
     now = datetime.now()
     run_dir = Path(args.out) / now.strftime("%Y-%m-%d") / "{}_{}".format(now.strftime("%H%M%S"), label)
     run_dir.mkdir(parents=True, exist_ok=True)          # logs/<date>/<time>_<label>/
     base = run_dir / "{}_{}".format(now.strftime("%Y-%m-%d_%H%M%S"), label)
-    session = Session(label, base, fob_logged=not args.no_fob)
+    session = Session(label, base, fob_logged=not args.no_fob, relay_logged=bool(args.relay))
 
     q = queue.Queue()
     stop = threading.Event()
     if not args.no_fob:
         threading.Thread(target=reader, args=("FOB", args.fob, q, stop, True), daemon=True).start()
-    threading.Thread(target=reader, args=("RELAY", args.relay, q, stop), daemon=True).start()
+    if args.relay:
+        threading.Thread(target=reader, args=("RELAY", args.relay, q, stop), daemon=True).start()
 
     fob_text = "not logged (--no-fob)" if args.no_fob else args.fob
+    relay_text = args.relay or "not logged (no --relay)"
     print("Logging to", str(base) + "_*")
-    print("Fob", fob_text, " Relay on", args.relay, " Ctrl+C to stop")
+    print("Fob", fob_text, " Relay", relay_text, " Ctrl+C to stop")
+    if forward:
+        print("Forwarding Relay alerts to the server database (like serial_bridge.py)")
     raw_file = open(str(base) + "_raw.txt", "a", encoding="utf-8")
-    raw_file.write("# label {}  fob {}  relay {}\n".format(label, "none" if args.no_fob else args.fob, args.relay))
+    raw_file.write("# label {}  fob {}  relay {}{}\n".format(
+        label, "none" if args.no_fob else args.fob, args.relay or "none", "  forward on" if forward else ""))
 
     try:
         while True:
@@ -457,6 +691,15 @@ def main():
                 shown = session.fob_line(t, line)
             else:
                 shown = session.relay_line(t, line)
+                if forward:
+                    try:
+                        result = forward(line)
+                    except Exception as err:       # one bad line must never stop the logger
+                        result = {"ok": False, "reason": "forward error: {}".format(err)}
+                    if result is not None:
+                        raw_file.write("{} {:<5} {}\n".format(now_text(time.time()), "SERVR", result))
+                        raw_file.flush()
+                        print(now_text(time.time())[11:19], "SERVER", result)
             if shown:
                 print(now_text(t)[11:19], shown)
                 session.save()

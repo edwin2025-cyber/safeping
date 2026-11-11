@@ -132,7 +132,7 @@ function FontSelect({ labelledBy }) {
 export function fontRow() {
   return {
     section: "appearance",
-    group: "Testing",
+    group: "Development",
     id: "font",
     name: "Font (for testing)",
     desc: "Try the dashboard in another font. Saved in this browser. This setting will be removed.",

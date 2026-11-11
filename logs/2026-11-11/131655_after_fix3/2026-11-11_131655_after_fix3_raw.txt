@@ -1,0 +1,8 @@
+# label after_fix3  fob COM15  relay COM14
+2026-11-11 13:16:55.894 INFO  FOB connected on COM15
+2026-11-11 13:16:55.894 INFO  RELAY connected on COM14
+2026-11-11 13:17:08.120 FOB   no GPS fix, sending without a location
+2026-11-11 13:17:08.121 FOB   SAFEPING_MSG {"type": "STATUS", "p": 98855, "bat": 95, "sig": "856639aeb05725905ad7bd3a024870c18a37046867e2b7c34f6f373d7351198a", "t": 2080, "ctr": 231, "ts": 1794424627, "v": 1, "id": "FOB-001"}
+2026-11-11 13:17:10.157 FOB   sent STATUS ctr 231 over WiFi, confirmed by the server
+2026-11-11 13:17:10.158 FOB   SEND_RESULT ctr=231 kind=STATUS path=wifi result=confirmed ms=2107 reason=-
+2026-11-11 13:17:10.160 FOB   >>> [VIBRATE: ok]

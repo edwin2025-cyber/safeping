@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
+import { useNow } from "../lib/clock.js";
 import { icons } from "../lib/icons.js";
 import Icon from "./Icon.jsx";
 import Tooltip from "./Tooltip.jsx";
@@ -7,7 +8,6 @@ import { MOCK } from "../lib/api.js";
 import { agoShort, formatNumber, formatTime } from "../lib/format.js";
 
 const RELAY_RECENT_S = 15 * 60;
-const CLOCK_MS = 15000;
 
 // Hidden "widest" text under each value, so a value never changes the width of the bar.
 // Numbers are tabular, so 0 is as wide as any other digit.
@@ -60,14 +60,9 @@ function StatusItem({ color, label, value, widest, tip, className = "" }) {
   );
 }
 
-/** Server time, no seconds. Updates every 15 seconds. */
+/** Server time, no seconds. Updates with the shared clock (lib/clock.js). */
 function ServerClock({ skew, timeFormat }) {
-  const [now, setNow] = useState(() => Date.now() / 1000 + skew);
-  useEffect(() => {
-    setNow(Date.now() / 1000 + skew);
-    const timer = setInterval(() => setNow(Date.now() / 1000 + skew), CLOCK_MS);
-    return () => clearInterval(timer);
-  }, [skew]);
+  const now = useNow(skew);
   const text = formatTime(now, timeFormat);
   return (
     <Tooltip label="Server time">

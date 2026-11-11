@@ -76,13 +76,22 @@ Plug the Relay into COM14. For tests that log the Fob too, plug it into COM15. S
 
 ### Relay only (Fob on its battery, out in the field)
 ```
-python tests\field_log.py --label NAME --no-fob
+python tests\field_log.py --label NAME --relay COM14 --no-fob
 ```
 
 ### Relay and Fob (both on USB, at the desk)
 ```
+python tests\field_log.py --label NAME --relay COM14
+```
+
+### Fob only
+```
 python tests\field_log.py --label NAME
 ```
+
+The Relay port is opened only when `--relay` is given.
+
+Add `--forward` to send each Relay alert to the server too, the same way `serial_bridge.py` does. Use it when the website must show the alerts during a test. The bridge cannot run at the same time, because the logger holds the Relay's port.
 
 - Replace `NAME` with something short, like `dt10_run2` or `failover_pre_t1`.
 - Ctrl+C stops it and prints the summary.
@@ -100,9 +109,24 @@ cd server
 
 | What | Command |
 |---|---|
-| Security test (must say 16 of 16) | `python test_attacks.py` |
+| Security test (must say 19 of 19) | `python test_attacks.py` |
+| Duplicate and replay rule, counter window (must say 58 of 58) | `python test_duplicates.py` |
+| Serial bridge reads Relay lines with left-over bytes (must say 17 of 17) | `python test_serial_bridge.py` |
 | Register a device | `python add_device.py FOB-001 "Student name" --key <key from safeping-private>` |
 | Send a fake alert | `python fake_fob.py --direct` (see `--help` for options) |
+
+### Fob laptop tests (no board needed)
+From the `safeping` folder:
+
+| What | Command | Must say |
+|---|---|---|
+| WiFi budget and fallback | `python tests\test_sendpath.py` | 37 of 37 |
+| WiFi error reasons | `python tests\test_wifi_errors.py` | 58 of 58 |
+| Retry queue and button presses | `python tests\test_retry_queue.py` | 71 of 71 |
+| Help is coming (WiFi) | `python tests\test_help.py` | 51 of 51 |
+| Boot self-check, boot report, BOOT sent after a press | `python tests\test_selfcheck.py` | 57 of 57 |
+| LED colors (one meaning per color) | `python tests\test_led.py` | 30 of 30 |
+| No imports inside functions, no flash during HELP_LISTEN | `python tests\test_imports.py` | 26 of 26 |
 
 ### Start fresh before formal tests (archive the database)
 1. Stop the server.
@@ -239,3 +263,17 @@ Every press ends with one line, for example:
 SEND_RESULT ctr=212 kind=SUSPICIOUS path=wifi result=confirmed ms=840 reason=-
 ```
 `reason` says why WiFi was not used: `wifi_off`, `wifi_join_failed`, `dns_failed`, `tls_failed`, `connect_timeout`, `connect_failed`, `no_server_ack`, `clock_not_set`, `ca_missing`, `ackcheck_missing`, `budget_exceeded`, or `-`. `field_log.py` puts `path`, `result`, `ms` and `reason` in the CSV.
+
+Other lines the logger records (see `docs/message-format.md`):
+- `SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=ok wifi=ok fw=...` once per power on.
+- `RETRY_QUEUED`, `RETRY_TRY`, `RETRY_DONE`, `RETRY_GAVE_UP`, `RETRY_STOPPED` for the retry queue. A retry's `SEND_RESULT` ends with `try=N`.
+- `HELP_LISTEN`, `HELP_RECEIVED ctr=... ms_after_confirm=...`, `HELP_TIMEOUT`, `HELP ignored: ...` for "help is coming".
+- `BOOT_STOPPED ctr=...` when a press stops the boot report, and `BOOT_RESEND ctr=...` when it is sent later.
+
+### EMQX permissions for "help is coming"
+In the EMQX console (Access Control > Authorization):
+- `safeping-fob`: allow **subscribe** to `safeping/help/${clientid}`. The Fob's MQTT client id is its device id (`FOB-001`), so each Fob can only hear its own help messages. If you prefer fixed rules, add `safeping/help/FOB-001` (one rule per Fob).
+- `safeping-server`: allow **publish** to `safeping/help/#`.
+- All Fobs share the user name `safeping-fob`, so do not use `${username}` here.
+
+Until then the Fob logs "help topic refused by the broker" and alerts still work as before.

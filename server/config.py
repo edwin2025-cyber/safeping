@@ -19,14 +19,31 @@ MQTT_CA = _get("SAFEPING_MQTT_CA") or _get("MQTT_CA")
 MQTT_PORT = int(_get("SAFEPING_MQTT_PORT") or _get("MQTT_PORT") or ("8883" if MQTT_CA else "1883"))
 MQTT_USER = _get("SAFEPING_MQTT_USER") or _get("MQTT_USER")
 MQTT_PASS = _get("SAFEPING_MQTT_PASS") or _get("MQTT_PASS")
+# Fixed id for the server's persistent MQTT session (the broker holds alerts while it is down).
+MQTT_CLIENT_ID = _get("SAFEPING_MQTT_CLIENT_ID", "safeping-server")
 TOPIC_ALERTS = "safeping/alerts"            # old shared topic (fake_fob.py), still read
 TOPIC_ALERT_PREFIX = "safeping/alert/"      # + device id: the Fob publishes here
 TOPIC_ACK_PREFIX = "safeping/ack/"          # + device id: the server's signed ack
 TOPIC_REFERENCE = "safeping/reference"
 
-# The same message again (same id, counter and signature) within this many seconds of
-# being accepted is a "duplicate" (a Fob resend), not a "replay". See message-format.md.
-DUPLICATE_WINDOW_S = int(_get("DUPLICATE_WINDOW_S", "600"))
+# Replay and duplicate rule (message-format.md, "Counters, duplicates and replays").
+# A counter the server has not seen is accepted if it is no more than this many below
+# the highest counter seen for that Fob. Further below: "replay".
+COUNTER_WINDOW = int(_get("COUNTER_WINDOW", "32"))
+# An alert whose own time (ts) is older than this is still accepted, but tagged
+# "Sent late (over 15 min)" and counted as a yellow warning on Settings > Health.
+MAX_ALERT_AGE_S = int(_get("MAX_ALERT_AGE_S", "900"))
+# Seen counters are kept at least this many days. Counters inside COUNTER_WINDOW of the
+# highest are never pruned, so an exact copy inside the window is always a duplicate.
+SEEN_KEEP_DAYS = float(_get("SEEN_KEEP_DAYS", "7"))
+# Boot reports kept per device (the Devices page shows the newest).
+BOOT_REPORTS_KEPT = 10
+# "Sent late" tag: the alert reached the server more than this many seconds after the press.
+LATE_AFTER_S = 60
+
+# "Help is coming": the server publishes a signed help message here when staff press
+# Acknowledge. + device id.
+TOPIC_HELP_PREFIX = "safeping/help/"
 
 # Message rules (see message-format.md)
 MAX_PAYLOAD_BYTES = 512

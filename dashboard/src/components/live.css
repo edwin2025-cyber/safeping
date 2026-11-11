@@ -239,12 +239,22 @@
 }
 
 /* ---------- devices ---------- */
-.device-table .col-dname { width: 24%; }
-.device-table .col-did { width: 15%; }
-.device-table .col-seen { width: 15%; }
-.device-table .col-battery { width: 20%; }
-.device-table .col-link { width: 12%; }
+.device-table .col-dname { width: 20%; }
+.device-table .col-did { width: 12%; }
+.device-table .col-seen { width: 12%; }
+.device-table .col-battery { width: 17%; }
+.device-table .col-boot { width: 19%; }
+.device-table .col-link { width: 10%; }
 .device-table .col-open { width: 10%; }
+
+/* "Sent late": a small gray tag next to the time. Both times are in its tooltip. */
+.late-tag { display: inline-flex; margin-left: 6px; vertical-align: middle; }
+.late-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.late-line .late-tag { margin-left: 0; }
+
+/* Last start on the Devices page: when, then the self-check in plain words. */
+.boot-cell { display: inline-flex; flex-direction: column; gap: 2px; min-width: 0; }
+.boot-cell .boot-result { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .device-table .col-actions { width: 48px; }
 
 /* Battery: the number and a thin 40 px bar. Green 20% and up. Under 20% the bar is yellow and a

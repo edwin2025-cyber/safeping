@@ -1,0 +1,4 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try,path,result,ms,reason
+220,SUSPICIOUS,2026-11-11 12:36:39.722,LoRa,2026-11-11 12:36:40.457,yes,0.74,,,,,,-33,9.75,yes,,98917,21.94,100,yes,1,lora,confirmed,804,wifi_join_failed
+221,SUSPICIOUS,2026-11-11 12:36:55.443,LoRa,2026-11-11 12:36:56.048,yes,0.61,,,,,,-35,9.75,yes,,98912,21.93,100,yes,1,lora,confirmed,672,wifi_join_failed
+222,SUSPICIOUS,2026-11-11 12:37:09.993,LoRa,2026-11-11 12:37:10.598,yes,0.61,,,,,,-35,9.5,yes,,98915,21.90,100,yes,1,lora,confirmed,672,wifi_join_failed

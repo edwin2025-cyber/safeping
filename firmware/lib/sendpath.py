@@ -23,7 +23,7 @@ except ImportError:                                    # the laptop
 
 # Every reason a SEND_RESULT line can give. "-" means WiFi worked.
 REASONS = (
-    "wifi_off", "wifi_join_failed", "dns_failed", "tls_failed", "connect_timeout",
+    "wifi_off", "wifi_join_failed", "wifi_state_error", "dns_failed", "tls_failed", "connect_timeout",
     "connect_failed", "no_server_ack", "clock_not_set", "ca_missing", "ackcheck_missing",
     "budget_exceeded", "-",
 )
@@ -115,6 +115,7 @@ def classify_error(step, err, step_parts=None):
 PLAIN = {
     "wifi_off": "WiFi is switched off in config.py (WIFI_SSID is none)",
     "wifi_join_failed": "could not join the WiFi network (wrong name or password, or out of range)",
+    "wifi_state_error": "the WiFi chip was stuck (Wifi Internal State Error), and a reset did not fix it in time",
     "dns_failed": "could not look up the broker's address (DNS)",
     "tls_failed": "the secure connection to the broker failed (CA file, certificate or clock)",
     "connect_timeout": "the broker did not answer in time",
@@ -156,33 +157,105 @@ def plain_reason(reason, detail=None):
     return text
 
 
+MIN_JOIN_AFTER_RESET_MS = 1000     # a reset is only worth it if a join still fits after it
+
+
+def is_wifi_state_error(err):
+    """The ESP32 WiFi driver's "Wifi Internal State Error" (seen 2026-11-11 after several
+    failed joins in a row). MicroPython raises it as OSError with that text."""
+    return "internal state error" in str(err).lower()
+
+
+def join_wifi(budget, join_ms, start, wait, reset, reset_ms, log=None):
+    """Join WiFi inside the budget, with one reset if the driver is stuck.
+
+    start()     starts a join (may raise)
+    wait(ms)    waits up to ms, True if connected
+    reset()     disconnect, radio off, short wait, radio on (may raise)
+    reset_ms    how long reset() takes
+    Returns (connected, reason, detail).
+
+    A state error is fixed by one reset and one more try, but only if the reset and a
+    join still fit in the budget. If the press ends without WiFi after a state error,
+    the reason is wifi_state_error, so it shows in SEND_RESULT."""
+    state_error = None
+    for attempt in (1, 2):
+        try:
+            start()
+        except Exception as err:
+            if not is_wifi_state_error(err):
+                return False, "wifi_join_failed", err
+            state_error = err
+            if attempt == 2:
+                return False, "wifi_state_error", err
+            if budget.left() < reset_ms + MIN_JOIN_AFTER_RESET_MS:
+                if log:
+                    log("WiFi state error, no time left for a WiFi reset")
+                return False, "wifi_state_error", err
+            if log:
+                log("WiFi state error, resetting WiFi and trying once more")
+            try:
+                reset()
+            except Exception as err2:
+                return False, "wifi_state_error", err2
+            continue
+        if wait(budget.left(join_ms)):
+            return True, "-", None
+        if state_error is not None:
+            return False, "wifi_state_error", "the join after the WiFi reset did not connect"
+        return False, "wifi_join_failed", None
+    return False, "wifi_state_error", state_error
+
+
 def mqtt_attempt(client, addr, budget, ssl_context, host, ack_topic, alert_topic, payload,
-                 ack_wait_ms, got, step_parts=None):
+                 ack_wait_ms, got, step_parts=None, help_topic=None, keep_open=None, stop=None):
     """The MQTT half of a WiFi send, after the WiFi join and DNS: TCP connect, TLS, login,
     subscribe to the ack topic, publish, then wait for the server's ack.
 
     client is an umqtt_safe.MQTTClient whose callback appends to got when the right ack
     arrives. Every error is turned into a reason here, so the board and the laptop test
-    run the same code. Always disconnects.
+    run the same code. Disconnects, except as below.
+
+    help_topic: also subscribe to it, in the same packet as the ack topic. If the broker
+    refuses only that topic, the alert still goes out (the Fob just cannot hear "help").
+    keep_open: a list. When given, the help topic was granted and the alert is confirmed,
+    the client is left connected and appended to it (the caller then owns it).
+    stop: a function. While it returns True, the time left is 0, so the attempt ends at
+    its next step (a button press during a retry).
     Returns (confirmed, reason, published, detail, step)."""
     step = "connect"
     published = False
     ack_total = 0
+    help_ok = False
+    open_after = False
+    left = budget.left
+    if stop is not None:
+        left = lambda cap=None: 0 if stop() else budget.left(cap)    # noqa: E731
     try:
-        client.open(addr, budget.left, ssl_context, host)      # TCP, then TLS
+        client.open(addr, left, ssl_context, host)              # TCP, then TLS
         step = "mqtt"
         client.connect()
         step = "subscribe"
-        client.subscribe(ack_topic, qos=1)                     # subscribe BEFORE publishing
+        if help_topic is None:
+            client.subscribe(ack_topic, qos=1)                 # subscribe BEFORE publishing
+        else:
+            codes = client.subscribe_many([ack_topic, help_topic], qos=1)
+            if not codes or codes[0] == 0x80:
+                raise ValueError("broker refused the subscription")
+            help_ok = len(codes) > 1 and codes[1] != 0x80
+            if not help_ok:
+                print("help topic refused by the broker (EMQX permission), no help buzz this time")
         step = "publish"
         client.publish(alert_topic, payload, qos=1)            # returns at the broker's PUBACK
         published = True
         step = "ack"
         ack_budget = Budget(budget.left(ack_wait_ms))
         ack_total = ack_budget.total
-        client.left_ms = ack_budget.left
+        client.left_ms = ack_budget.left if stop is None else (
+            lambda: 0 if stop() else ack_budget.left())
         while not got:
             client.wait_msg()                                  # raises when the wait is over
+        open_after = help_ok and keep_open is not None
         return True, "-", True, None, step
     except Exception as err:
         if got:                     # the ack came in, then something failed: still confirmed
@@ -192,10 +265,13 @@ def mqtt_attempt(client, addr, budget, ssl_context, host, ack_topic, alert_topic
             detail = "no ack from server within {} ms".format(ack_total)
         return False, fail_reason(step, timed_out, budget.left()), published, detail, step
     finally:
-        try:
-            client.disconnect()
-        except Exception:
-            pass
+        if open_after:
+            keep_open.append(client)
+        else:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
 
 
 def lora_outcome(lora_result, wifi_published):

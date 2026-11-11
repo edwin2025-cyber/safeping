@@ -306,6 +306,38 @@ class MQTTClient:
                     raise _fail("mqtt", "broker refused the subscription")
                 return
 
+    def subscribe_many(self, topics, qos=0):
+        """Subscribe to several topics in ONE packet (no extra round trip). Returns the
+        broker's answer for each topic: 0 or 1 = granted, 0x80 = refused. A refused topic
+        does not raise here, so the caller decides which ones it really needs."""
+        topics = [t.encode() if isinstance(t, str) else t for t in topics]
+        self.pid += 1
+        size = 2 + sum(2 + len(t) + 1 for t in topics)
+        pkt = bytearray(b"\x82\0\0\0\0")
+        i = 1
+        while size > 0x7F:
+            pkt[i] = (size & 0x7F) | 0x80
+            size >>= 7
+            i += 1
+        pkt[i] = size
+        struct.pack_into("!H", pkt, i + 1, self.pid)
+        self._write(pkt, i + 3)
+        for t in topics:
+            self._send_str(t)
+            self._write(bytes([qos]))
+        while 1:                                  # wait for SUBACK
+            op = self.wait_msg()
+            if op == 0x90:
+                n = self._recv_len()
+                resp = self._read(n)
+                if (resp[0] << 8 | resp[1]) != self.pid:
+                    raise _fail("mqtt", "bad SUBACK")
+                return list(resp[2:])
+
+    def ping(self):
+        """PINGREQ. The PINGRESP is read later by wait_msg()."""
+        self._write(b"\xc0\0")
+
     def wait_msg(self):
         """Read one packet. A PUBLISH goes to the callback. Returns the packet type byte.
         Raises on timeout (from the budget) or a closed connection."""
