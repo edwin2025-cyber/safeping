@@ -78,7 +78,65 @@ CREATE TABLE IF NOT EXISTS help_sent (
     path      TEXT NOT NULL          -- wifi (MQTT). lora is Part E.
 );
 
+-- Last send and last error of each notification channel (pushover), for Settings > Health.
+-- One row per channel. Kept here, not in memory, because serial_bridge.py runs as its
+-- own program and sends too.
+CREATE TABLE IF NOT EXISTS notify_status (
+    channel          TEXT PRIMARY KEY,
+    last_send_at     REAL,
+    last_send_alert  INTEGER,
+    last_error_at    REAL,
+    last_error_alert INTEGER,
+    last_error       TEXT
+);
+
+-- Survey points from a Fob in survey mode (SURVEY messages). Never alerts. One row per
+-- (device, counter), so a copy sent twice is stored once. Kept until deleted by hand.
+CREATE TABLE IF NOT EXISTS survey_points (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id    TEXT NOT NULL,
+    counter      INTEGER NOT NULL,
+    timestamp    REAL NOT NULL,      -- when the server received it
+    device_ts    INTEGER,            -- the Fob's clock, the middle of the 3 s pressure window
+    pressure_dpa INTEGER,            -- tenths of a pascal, averaged
+    temperature  INTEGER,            -- hundredths of a degree C
+    samples      INTEGER NOT NULL,
+    battery      INTEGER,
+    gps_fix      INTEGER NOT NULL,
+    satellites   INTEGER NOT NULL,
+    latitude     REAL,
+    longitude    REAL,
+    accuracy     REAL,
+    aps          TEXT NOT NULL,      -- the "aps" list as JSON
+    ref_pressure REAL,               -- the Reference at device_ts (or arrival), pascals
+    ref_time     REAL,               -- the time the reference was taken for
+    link         TEXT NOT NULL DEFAULT 'unknown'
+);
+
+-- Texts sent through Textbelt (textbelt.py): one row per alert and number, so an alert is
+-- texted to a number at most once. The number itself is never stored: only a hash (to
+-- match it) and its last 2 digits (to show it). Rows also count toward the hourly cap.
+CREATE TABLE IF NOT EXISTS sms_sent (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    alert_id    INTEGER NOT NULL,
+    phone_hash  TEXT NOT NULL,
+    phone_last2 TEXT NOT NULL,
+    timestamp   REAL NOT NULL,
+    ok          INTEGER NOT NULL DEFAULT 0,
+    text_id     TEXT,               -- Textbelt's textId
+    error       TEXT,
+    quota       INTEGER             -- quotaRemaining from the reply
+);
+-- Numbers that have had a text, so "Reply STOP to opt out" goes only on the first one.
+CREATE TABLE IF NOT EXISTS sms_numbers (
+    phone_hash TEXT PRIMARY KEY,
+    first_at   REAL NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_alerts_time ON alerts (timestamp);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_alert_phone ON sms_sent (alert_id, phone_hash);
+CREATE INDEX IF NOT EXISTS idx_sms_time ON sms_sent (timestamp);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_survey_counter ON survey_points (device_id, counter);
 CREATE INDEX IF NOT EXISTS idx_accepted_sigs ON accepted_sigs (device_id, counter);
 CREATE INDEX IF NOT EXISTS idx_accepted_sigs_time ON accepted_sigs (timestamp);
 CREATE INDEX IF NOT EXISTS idx_boot_device ON boot_reports (device_id, id);
@@ -96,6 +154,20 @@ MIGRATIONS = [
     ("alerts", "temperature", "INTEGER"),                    # hundredths of a degree C, like "t"
     ("alerts", "counter", "INTEGER"),                        # the message's "ctr"
     ("boot_reports", "reset_cause", "INTEGER"),              # BOOT "rst", machine.reset_cause()
+    ("alerts", "cut_off", "INTEGER NOT NULL DEFAULT 0"),     # 1 = "cut": 1, press cut off by a restart
+    # Reference board (firmware/ref): which board, its clock, pressure to one decimal
+    ("reference_readings", "device_id", "TEXT"),
+    ("reference_readings", "device_ts", "INTEGER"),          # middle of the 30 s window
+    ("reference_readings", "pressure_dpa", "INTEGER"),       # tenths of a pascal
+    ("reference_readings", "samples", "INTEGER"),
+    ("reference_readings", "firmware", "TEXT"),
+    ("reference_readings", "ref_time", "REAL"),              # device_ts, or arrival without one
+    # The Reference at the alert's press time (message-format.md, "Reference readings")
+    ("alerts", "ref_pressure", "REAL"),                      # pascals, one decimal
+    ("alerts", "ref_diff", "REAL"),                          # alert pressure minus ref_pressure
+    ("alerts", "ref_offset", "REAL"),                        # the Fob's sensor offset, if calibrated
+    ("notify_status", "quota", "INTEGER"),                   # Textbelt quotaRemaining from the last reply
+    ("boot_reports", "sensor", "TEXT"),                      # Reference board BOOT: "BME280@0x77"
 ]
 
 
@@ -125,6 +197,9 @@ def init_db():
         # both claim a counter. The old rule only ever accepted rising counters, so an
         # existing database has no two rows with the same pair.
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_seen_counter ON accepted_sigs (device_id, counter)")
+        # After the migrations, so ref_time exists. Old rows get the time they arrived.
+        c.execute("UPDATE reference_readings SET ref_time = timestamp WHERE ref_time IS NULL")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_ref_reftime ON reference_readings (ref_time)")
 
 
 # ---------- devices ----------
@@ -144,13 +219,14 @@ def get_device(device_id):
 
 def list_devices():
     """One row per device for the dashboard. Never includes the secret key.
-    Reference readings do not store a device id, so a REF device's last seen
-    time is the newest reference reading."""
+    A REF device's last seen time is its newest reading (old readings with no device id
+    count for every REF device)."""
     with connect() as c:
         rows = c.execute(
             """SELECT d.device_id, d.role, d.student_name, d.last_counter,
                    CASE WHEN d.role = 'REF'
-                        THEN (SELECT MAX(r.timestamp) FROM reference_readings r)
+                        THEN (SELECT MAX(r.timestamp) FROM reference_readings r
+                               WHERE r.device_id = d.device_id OR r.device_id IS NULL)
                         ELSE (SELECT MAX(a.timestamp) FROM alerts a WHERE a.device_id = d.device_id)
                    END AS last_seen,
                    (SELECT a.battery FROM alerts a
@@ -239,16 +315,21 @@ def count_late(start, end, over_s):
 # ---------- alerts ----------
 
 def insert_alert(device_id, alert_type, received_at, device_ts, loc, pressure, battery,
-                 temperature=None, counter=None, link="unknown"):
+                 temperature=None, counter=None, link="unknown", cut_off=False, ref=None):
+    """ref: refmatch.for_pressure() output (ref_pressure, ref_diff, ref_offset) or None."""
+    ref = ref or {}
     with connect() as c:
         cur = c.execute(
             """INSERT INTO alerts
                (device_id, alert_type, timestamp, device_ts, latitude, longitude,
-                accuracy, floor, pressure, battery, temperature, counter, link)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                accuracy, floor, pressure, battery, temperature, counter, link, cut_off,
+                ref_pressure, ref_diff, ref_offset)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (device_id, alert_type, received_at, device_ts,
              loc.get("latitude"), loc.get("longitude"), loc.get("accuracy"),
-             loc.get("floor"), pressure, battery, temperature, counter, link),
+             loc.get("floor"), pressure, battery, temperature, counter, link,
+             1 if cut_off else 0,
+             ref.get("ref_pressure"), ref.get("ref_diff"), ref.get("ref_offset")),
         )
         return cur.lastrowid
 
@@ -256,6 +337,67 @@ def insert_alert(device_id, alert_type, received_at, device_ts, loc, pressure, b
 def mark_sms(alert_id, sent):
     with connect() as c:
         c.execute("UPDATE alerts SET sms_sent = ? WHERE id = ?", (1 if sent else 0, alert_id))
+
+
+# ---------- notification channels ----------
+
+def record_notify(channel, at, alert_id, error=None):
+    """A send that worked (error None) or failed (error is the reason)."""
+    with connect() as c:
+        c.execute("INSERT OR IGNORE INTO notify_status (channel) VALUES (?)", (channel,))
+        if error is None:
+            c.execute("UPDATE notify_status SET last_send_at = ?, last_send_alert = ? WHERE channel = ?",
+                      (at, alert_id, channel))
+        else:
+            c.execute("UPDATE notify_status SET last_error_at = ?, last_error_alert = ?, last_error = ?"
+                      " WHERE channel = ?", (at, alert_id, error, channel))
+
+
+def set_notify_quota(channel, quota):
+    with connect() as c:
+        c.execute("INSERT OR IGNORE INTO notify_status (channel) VALUES (?)", (channel,))
+        c.execute("UPDATE notify_status SET quota = ? WHERE channel = ?", (quota, channel))
+
+
+# ---------- texts (textbelt.py) ----------
+
+def sms_claim(alert_id, phone_hash, last2, at):
+    """Claim (alert, number) before the request goes out. False if it was already texted
+    or tried: one INSERT, so two programs (listener and serial bridge) cannot both send."""
+    with connect() as c:
+        cur = c.execute(
+            "INSERT OR IGNORE INTO sms_sent (alert_id, phone_hash, phone_last2, timestamp) VALUES (?, ?, ?, ?)",
+            (alert_id, phone_hash, last2, at))
+        return cur.rowcount == 1
+
+
+def sms_result(alert_id, phone_hash, ok, text_id, error, quota):
+    with connect() as c:
+        c.execute("UPDATE sms_sent SET ok = ?, text_id = ?, error = ?, quota = ? WHERE alert_id = ? AND phone_hash = ?",
+                  (1 if ok else 0, text_id, error, quota, alert_id, phone_hash))
+
+
+def sms_count_since(since):
+    """Texts tried since this time (they use credits when they go through)."""
+    with connect() as c:
+        return c.execute("SELECT COUNT(*) FROM sms_sent WHERE timestamp >= ?", (since,)).fetchone()[0]
+
+
+def sms_number_known(phone_hash):
+    with connect() as c:
+        return c.execute("SELECT 1 FROM sms_numbers WHERE phone_hash = ?", (phone_hash,)).fetchone() is not None
+
+
+def sms_number_seen(phone_hash, at):
+    with connect() as c:
+        c.execute("INSERT OR IGNORE INTO sms_numbers (phone_hash, first_at) VALUES (?, ?)", (phone_hash, at))
+
+
+def notify_status(channel):
+    """The channel's row as a dict, or None if it never sent or failed."""
+    with connect() as c:
+        row = c.execute("SELECT * FROM notify_status WHERE channel = ?", (channel,)).fetchone()
+    return dict(row) if row else None
 
 
 def list_alerts(limit=100, include_status=False, include_resolved=False):
@@ -552,14 +694,15 @@ def alerts_between(start, end):
 # ---------- boot reports ----------
 
 def insert_boot(device_id, received_at, device_ts, counter, failed, wifi, firmware, link="unknown",
-                reset_cause=None):
-    """Save one boot report, then keep only the newest BOOT_REPORTS_KEPT for this device."""
+                reset_cause=None, sensor=None):
+    """Save one boot report, then keep only the newest BOOT_REPORTS_KEPT for this device.
+    sensor: the Reference board's pressure sensor, like "BME280@0x77" (None for a Fob)."""
     with connect() as c:
         cur = c.execute(
             """INSERT INTO boot_reports
-               (device_id, timestamp, device_ts, counter, failed, wifi, firmware, link, reset_cause)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (device_id, received_at, device_ts, counter, failed, wifi, firmware, link, reset_cause),
+               (device_id, timestamp, device_ts, counter, failed, wifi, firmware, link, reset_cause, sensor)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (device_id, received_at, device_ts, counter, failed, wifi, firmware, link, reset_cause, sensor),
         )
         c.execute(
             """DELETE FROM boot_reports WHERE device_id = ? AND id NOT IN
@@ -612,20 +755,92 @@ def help_times(alert_ids):
 
 # ---------- reference readings ----------
 
-def insert_reference(received_at, pressure, temperature):
+def insert_reference(received_at, pressure, temperature, device_id=None, device_ts=None,
+                     pressure_dpa=None, samples=None, firmware=None):
+    """ref_time is the time the reading stands for: the board's ts (the middle of its
+    window), or the arrival time when it has no ts."""
+    ref_time = device_ts if device_ts is not None else received_at
     with connect() as c:
         c.execute(
-            "INSERT INTO reference_readings (timestamp, pressure, temperature) VALUES (?, ?, ?)",
-            (received_at, pressure, temperature),
+            """INSERT INTO reference_readings
+               (timestamp, pressure, temperature, device_id, device_ts, pressure_dpa, samples,
+                firmware, ref_time)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (received_at, pressure, temperature, device_id, device_ts, pressure_dpa, samples,
+             firmware, ref_time),
         )
 
 
-def latest_reference():
+def latest_reference(device_id=None):
+    """The newest reading (of one board, when device_id is given), or None."""
     with connect() as c:
-        row = c.execute(
-            "SELECT * FROM reference_readings ORDER BY id DESC LIMIT 1"
-        ).fetchone()
+        if device_id is None:
+            row = c.execute("SELECT * FROM reference_readings ORDER BY id DESC LIMIT 1").fetchone()
+        else:
+            row = c.execute(
+                """SELECT * FROM reference_readings WHERE device_id = ? OR device_id IS NULL
+                   ORDER BY id DESC LIMIT 1""", (device_id,)).fetchone()
     return dict(row) if row else None
+
+
+def reference_around(t, window_s):
+    """(the reading at or before t, the reading at or after t), each within window_s of t
+    by ref_time, or None."""
+    with connect() as c:
+        before = c.execute(
+            """SELECT * FROM reference_readings WHERE ref_time <= ? AND ref_time >= ?
+               ORDER BY ref_time DESC, id DESC LIMIT 1""", (t, t - window_s)).fetchone()
+        after = c.execute(
+            """SELECT * FROM reference_readings WHERE ref_time >= ? AND ref_time <= ?
+               ORDER BY ref_time ASC, id ASC LIMIT 1""", (t, t + window_s)).fetchone()
+    return (dict(before) if before else None), (dict(after) if after else None)
+
+
+def list_reference(start, end, limit=50000):
+    """Readings received in the range, oldest first."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT * FROM reference_readings WHERE timestamp >= ? AND timestamp < ?
+               ORDER BY ref_time, id LIMIT ?""", (start, end, limit)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def prune_reference(before):
+    """Delete readings received before this time. Returns how many."""
+    with connect() as c:
+        return c.execute("DELETE FROM reference_readings WHERE timestamp < ?", (before,)).rowcount
+
+
+# ---------- survey points ----------
+
+def insert_survey(device_id, counter, received_at, msg, aps_json, ref_pressure, ref_time, link="unknown"):
+    """Save one survey point. Returns its id, or None when this (device, counter) is
+    already stored (a copy that came back after its counter was pruned)."""
+    with connect() as c:
+        cur = c.execute(
+            """INSERT OR IGNORE INTO survey_points
+               (device_id, counter, timestamp, device_ts, pressure_dpa, temperature, samples,
+                battery, gps_fix, satellites, latitude, longitude, accuracy, aps, ref_pressure,
+                ref_time, link)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (device_id, counter, received_at, msg.get("ts"), msg.get("pd"), msg.get("t"),
+             msg["n"], msg.get("bat"), msg["fix"], msg["sats"],
+             None if msg.get("lat") is None else msg["lat"] / 1_000_000,
+             None if msg.get("lon") is None else msg["lon"] / 1_000_000,
+             msg.get("acc"), aps_json, ref_pressure, ref_time, link),
+        )
+        return cur.lastrowid if cur.rowcount == 1 else None
+
+
+def list_survey(start, end, device_id=None):
+    """Survey points received in the range, oldest first by the Fob's time."""
+    with connect() as c:
+        rows = c.execute(
+            """SELECT * FROM survey_points WHERE timestamp >= ? AND timestamp < ?
+                   AND (? IS NULL OR device_id = ?)
+               ORDER BY COALESCE(device_ts, timestamp), id""",
+            (start, end, device_id, device_id)).fetchall()
+    return [dict(r) for r in rows]
 
 
 # ---------- rejected messages ----------

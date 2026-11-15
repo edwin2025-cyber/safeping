@@ -19,12 +19,18 @@ MQTT_CA = _get("SAFEPING_MQTT_CA") or _get("MQTT_CA")
 MQTT_PORT = int(_get("SAFEPING_MQTT_PORT") or _get("MQTT_PORT") or ("8883" if MQTT_CA else "1883"))
 MQTT_USER = _get("SAFEPING_MQTT_USER") or _get("MQTT_USER")
 MQTT_PASS = _get("SAFEPING_MQTT_PASS") or _get("MQTT_PASS")
+# fake_fob.py's own broker login (point it at the Fob user, safeping-fob). The server's
+# user may not publish alerts on the locked-down broker.
+FAKEFOB_MQTT_USER = _get("SAFEPING_FAKEFOB_MQTT_USER")
+FAKEFOB_MQTT_PASS = _get("SAFEPING_FAKEFOB_MQTT_PASS")
 # Fixed id for the server's persistent MQTT session (the broker holds alerts while it is down).
 MQTT_CLIENT_ID = _get("SAFEPING_MQTT_CLIENT_ID", "safeping-server")
-TOPIC_ALERTS = "safeping/alerts"            # old shared topic (fake_fob.py), still read
+TOPIC_ALERTS = "safeping/alerts"            # old shared topic, still read. Nothing sends here now
 TOPIC_ALERT_PREFIX = "safeping/alert/"      # + device id: the Fob publishes here
 TOPIC_ACK_PREFIX = "safeping/ack/"          # + device id: the server's signed ack
-TOPIC_REFERENCE = "safeping/reference"
+TOPIC_REFERENCE = "safeping/reference"      # old Reference topic, still read. Nothing sends here now
+TOPIC_REF_PREFIX = "safeping/ref/"          # + device id: the Reference board publishes here (QoS 0)
+TOPIC_SURVEY_PREFIX = "safeping/survey/"    # + device id: a Fob in survey mode publishes here
 
 # Replay and duplicate rule (message-format.md, "Counters, duplicates and replays").
 # A counter the server has not seen is accepted if it is no more than this many below
@@ -47,6 +53,14 @@ TOPIC_HELP_PREFIX = "safeping/help/"
 
 # Message rules (see message-format.md)
 MAX_PAYLOAD_BYTES = 512
+SURVEY_MAX_BYTES = 2048          # a SURVEY carries up to 15 WiFi access points (WiFi only)
+SURVEY_MAX_APS = 15
+
+# Reference board (message-format.md, "Reference readings")
+REF_KEEP_DAYS = float(_get("REF_KEEP_DAYS", "14"))   # readings older than this are deleted
+REF_MATCH_S = int(_get("REF_MATCH_S", "60"))         # a reading this close to the press time counts
+# Fixed sensor offsets (Fob minus Reference), written by tests/ref_calibrate.py
+SENSOR_OFFSETS_PATH = _get("SAFEPING_SENSOR_OFFSETS", os.path.join(_here, "sensor_offsets.json"))
 
 # Location
 PA_PER_FLOOR = float(_get("PA_PER_FLOOR", "42"))   # calibrate with the walk-the-building test
@@ -54,11 +68,50 @@ MAX_FLOOR = int(_get("MAX_FLOOR", "4"))
 REF_MAX_AGE_S = int(_get("REF_MAX_AGE_S", "120"))   # ignore a Reference reading older than this
 PLACES_PATH = _get("SAFEPING_PLACES", os.path.join(_here, "places.json"))   # named campus places
 
-# Texts. If the Twilio values are missing the server prints the text instead (dry run).
-TWILIO_SID = _get("TWILIO_SID")
-TWILIO_TOKEN = _get("TWILIO_TOKEN")
-TWILIO_FROM = _get("TWILIO_FROM")
-DUTY_PHONES = [p.strip() for p in _get("DUTY_PHONES", "").split(",") if p.strip()]
+# Texts through Textbelt (server/textbelt.py). SAFEPING_SMS: off, dry (print the text,
+# send nothing, the default) or live. Numbers are 10 digits, comma separated.
+TEXTBELT_KEY = _get("TEXTBELT_KEY")
+
+
+def _sms_mode():
+    mode = (_get("SAFEPING_SMS") or "dry").strip().lower()
+    return mode if mode in ("off", "dry", "live") else "dry"
+
+
+def _sms_numbers():
+    """10-digit numbers. A leading 1 (11 digits) is dropped. Anything else is skipped."""
+    out = []
+    for part in (_get("SAFEPING_SMS_TO") or "").split(","):
+        digits = "".join(ch for ch in part if ch.isdigit())
+        if len(digits) == 11 and digits.startswith("1"):
+            digits = digits[1:]
+        if len(digits) == 10 and digits not in out:
+            out.append(digits)
+    return out
+
+
+SMS_MODE = _sms_mode()
+SMS_MODE_GIVEN = (_get("SAFEPING_SMS") or "").strip()      # for a warning when it is not a known word
+SMS_TO = _sms_numbers()
+SMS_TO_SKIPPED = len([p for p in (_get("SAFEPING_SMS_TO") or "").split(",") if p.strip()]) - len(SMS_TO)
+SMS_MAX_PER_HOUR = int(_get("SAFEPING_SMS_MAX_PER_HOUR") or "20")
+SMS_QUOTA_LOW = 25          # Settings > Health turns orange below this many credits
+# Not read from the environment, so the key can only ever go to Textbelt.
+# The tests point it at a fake endpoint on 127.0.0.1.
+TEXTBELT_URL = "https://textbelt.com/text"
+TEXTBELT_TIMEOUT_S = 10
+
+# Pushover phone notifications (server/pushover.py). If either is missing: "Pushover off".
+PUSHOVER_USER = _get("SAFEPING_PUSHOVER_USER")
+PUSHOVER_TOKEN = _get("SAFEPING_PUSHOVER_TOKEN")
+# Not read from the environment, so the token can only ever go to Pushover.
+# The tests point it at a fake endpoint on 127.0.0.1.
+PUSHOVER_API_URL = "https://api.pushover.net/1/messages.json"
+PUSHOVER_TIMEOUT_S = 5
+
+# The dashboard's own address as staff open it, for example "http://192.168.1.20:5000".
+# When set, each notification links to its alert. Unset: no link.
+PUBLIC_URL = (_get("SAFEPING_PUBLIC_URL") or "").strip().rstrip("/") or None
 
 # Dashboard
 DASHBOARD_PASSWORD = _get("DASHBOARD_PASSWORD")      # leave unset for no login

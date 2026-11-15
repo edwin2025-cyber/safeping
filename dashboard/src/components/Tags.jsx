@@ -67,6 +67,26 @@ export function LateTag({ alert, timeFormat }) {
   );
 }
 
+export const CUT_OFF_LABEL = "Press cut off by a restart";
+export const CUT_OFF_TEXT =
+  "The Fob restarted during this press and sent it after it started again. The type comes from the presses it had recorded.";
+
+/** "Press cut off by a restart" (gray), for an alert with "cut": 1 (message-format.md).
+    Nothing for other alerts. */
+export function CutOffTag({ alert }) {
+  if (!alert.cut_off) return null;
+  return (
+    <Tooltip label={CUT_OFF_TEXT}>
+      <span className="late-tag">
+        <Tag color="unknown" icon={icons.cutOff}>
+          {CUT_OFF_LABEL}
+        </Tag>
+        <span className="visually-hidden">. {CUT_OFF_TEXT}</span>
+      </span>
+    </Tooltip>
+  );
+}
+
 /** A dot and a word: Open (orange), Acknowledged (green), Resolved (gray). The word stays neutral. */
 export function StatusDot({ alert, state }) {
   const s = STATES[state || alertState(alert)];

@@ -119,14 +119,14 @@ This repo merged the bench repo `safeping-bench` on 2026-11-08. The bench repo i
 
 ### Settings
 
-Set these as environment variables. All are optional.
+Put these in `Documents\safeping-private\safeping.env` (one `NAME=value` per line), or set them as environment variables, which win over the file. All are optional. The full list and a template are in `docs/how-to-run.md`, section 0.
 
 | Name | What it does | Default |
 |---|---|---|
 | `MQTT_HOST`, `MQTT_PORT` | Where the broker is | `localhost`, `1883` |
 | `MQTT_USER`, `MQTT_PASS` | Broker login | none |
-| `TWILIO_SID`, `TWILIO_TOKEN`, `TWILIO_FROM` | Twilio account | none (texts are printed, not sent) |
-| `DUTY_PHONES` | Numbers to text, comma separated | none |
+| `SAFEPING_SMS` | Texts: `off`, `dry` (printed, not sent) or `live` (Textbelt) | `dry` |
+| `TEXTBELT_KEY`, `SAFEPING_SMS_TO` | Textbelt key, and 10-digit numbers to text, comma separated | none |
 | `PA_PER_FLOOR` | Pascals of pressure change per floor | 42 (calibrate it) |
 | `DASHBOARD_PASSWORD` | Turns on a shared dashboard login | no login |
 | `SAFEPING_DB` | Database file | `server/safeping.db` |

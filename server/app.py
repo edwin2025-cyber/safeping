@@ -7,16 +7,25 @@ The dashboard is the React build in ../dashboard/dist when it exists.
 If it does not exist, the old dashboard in server/static is served instead."""
 import functools
 import hmac
+import json
 import os
 import subprocess
 import time
 
 from flask import Flask, Response, abort, jsonify, request, send_from_directory
 
+if __name__ == "__main__":
+    # safeping.env, before any setting is read. Not when a test imports this file.
+    import envfile
+    envfile.load()
+
 import config
 import db
 import places
+import pushover
+import refmatch
 import stats
+import textbelt
 import validate
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
@@ -57,6 +66,8 @@ def _alert_out(alert, help_at=None):
     alert["acknowledged"] = bool(alert["acknowledged"])
     alert["sms_sent"] = bool(alert["sms_sent"])
     alert["resolved"] = bool(alert["resolved"])
+    # "Press cut off by a restart": the Fob restarted during the press and sent it after
+    alert["cut_off"] = bool(alert.get("cut_off"))
     pressed = alert.get("device_ts")
     alert["pressed_at"] = pressed
     alert["late_s"] = None if pressed is None else round(alert["timestamp"] - pressed)
@@ -64,6 +75,13 @@ def _alert_out(alert, help_at=None):
     # Over MAX_ALERT_AGE_S: "Sent late (over 15 min)" and a yellow warning on Health
     alert["late_over_max"] = alert["late_s"] is not None and alert["late_s"] > config.MAX_ALERT_AGE_S
     alert["help_sent_at"] = help_at
+    # The Reference at the press time (message-format.md, "Reference readings"):
+    # ref_pressure, ref_diff_pa (alert minus reference), ref_offset_pa (the Fob's sensor
+    # offset, if calibrated), ref_diff_adj_pa (offset taken off) and ref_height_m. No floor.
+    alert.update(refmatch.describe(alert.get("ref_pressure"), alert.get("ref_diff"),
+                                   alert.get("ref_offset"), alert.get("temperature")))
+    alert.pop("ref_diff", None)
+    alert.pop("ref_offset", None)
     return places.describe(alert)
 
 
@@ -88,6 +106,7 @@ def _boot_out(boot):
         "reset_cause": boot.get("reset_cause"),
         "reset_words": validate.reset_words(boot.get("reset_cause")),
         "crashed": boot.get("reset_cause") == 2,
+        "sensor": boot.get("sensor"),         # Reference board only: "BME280@0x77"
     }
 
 
@@ -243,7 +262,9 @@ def api_status():
     return jsonify({
         "server_time": now,
         "reference_age_s": None if ref is None else round(now - ref["timestamp"]),
-        "reference_pressure": None if ref is None else ref["pressure"],
+        "reference_pressure": None if ref is None else refmatch.reading_pa(ref),
+        "reference_temperature": None if ref is None else ref.get("temperature"),
+        "reference_id": None if ref is None else ref.get("device_id"),
         "unacknowledged": db.count_unacknowledged(),
         "rejected_total": db.count_rejected(),
         "last_lora_age_s": None if last_lora is None else round(now - last_lora),
@@ -281,7 +302,69 @@ def api_devices():
         if device["link"] is None:
             device["link"] = "unknown"
         device["last_boot"] = _boot_out(boots.get(device["device_id"]))
+        device["reference"] = None
+        if device["role"] == "REF":
+            ref = db.latest_reference(device["device_id"])
+            device["reference"] = None if ref is None else {
+                "time": ref["timestamp"],
+                "pressure": refmatch.reading_pa(ref),          # Pa, one decimal
+                "temperature": ref.get("temperature"),         # hundredths of C
+                "samples": ref.get("samples"),
+                "firmware": ref.get("firmware"),
+            }
     return jsonify({"server_time": time.time(), "devices": devices})
+
+
+def _range_args(default_hours=24):
+    """start and end as Unix seconds from ?start=&end=. Default: the last default_hours."""
+    now = time.time()
+    try:
+        end = float(request.args.get("end", now))
+        start = float(request.args.get("start", end - default_hours * 3600))
+    except ValueError:
+        return None
+    return (start, end) if start < end else None
+
+
+@app.route("/api/reference")
+@require_login
+def api_reference():
+    """Reference readings received between ?start= and ?end= (Unix seconds), oldest first.
+    For tests/ref_calibrate.py and tests/survey_analyze.py. Default: the last 24 hours."""
+    span = _range_args()
+    if span is None:
+        return jsonify({"ok": False, "error": "start and end must be Unix seconds, start before end"}), 400
+    rows = db.list_reference(*span)
+    readings = [{"device_id": r["device_id"], "received": r["timestamp"], "time": r["ref_time"],
+                 "pressure": refmatch.reading_pa(r), "temperature": r["temperature"],
+                 "samples": r["samples"], "firmware": r["firmware"]} for r in rows]
+    return jsonify({"server_time": time.time(), "readings": readings})
+
+
+@app.route("/api/survey")
+@require_login
+def api_survey():
+    """Survey points received between ?start= and ?end= (Unix seconds), oldest first,
+    with each SSID as text. ?device= limits it to one Fob. Default: the last 7 days."""
+    span = _range_args(default_hours=24 * 7)
+    if span is None:
+        return jsonify({"ok": False, "error": "start and end must be Unix seconds, start before end"}), 400
+    points = []
+    for r in db.list_survey(span[0], span[1], request.args.get("device") or None):
+        aps = []
+        for bssid, rssi, ch, ssid_hex in json.loads(r["aps"]):
+            aps.append({"bssid": bssid, "rssi": rssi, "channel": ch,
+                        "ssid": bytes.fromhex(ssid_hex).decode("utf-8", "replace")})
+        points.append({
+            "id": r["id"], "device_id": r["device_id"], "counter": r["counter"],
+            "received": r["timestamp"], "time": r["device_ts"],
+            "pressure": None if r["pressure_dpa"] is None else r["pressure_dpa"] / 10,
+            "temperature": r["temperature"], "samples": r["samples"], "battery": r["battery"],
+            "gps_fix": bool(r["gps_fix"]), "satellites": r["satellites"],
+            "latitude": r["latitude"], "longitude": r["longitude"], "accuracy": r["accuracy"],
+            "ref_pressure": r["ref_pressure"], "ref_time": r["ref_time"], "aps": aps,
+        })
+    return jsonify({"server_time": time.time(), "points": points})
 
 
 @app.route("/api/devices/<device_id>/alerts")
@@ -312,7 +395,10 @@ def api_stats():
         first, last = stats.parse_range(request.args)
     except stats.BadRange as error:
         return jsonify({"ok": False, "error": str(error)}), 400
-    return jsonify(stats.build(first, last))
+    result = stats.build(first, last)
+    result["pushover"] = pushover.health()        # Settings > Health, not tied to the range
+    result["sms"] = textbelt.health()             # Settings > Health > Text messages
+    return jsonify(result)
 
 
 @app.route("/api/export.csv")
@@ -333,6 +419,8 @@ def api_export_csv():
 
 if __name__ == "__main__":
     db.init_db()
+    pushover.announce()
+    textbelt.announce()
     if os.environ.get("NO_MQTT") != "1":
         import mqtt_listener
         try:

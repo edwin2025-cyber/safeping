@@ -12,10 +12,11 @@ exact same signed message, every every_ms for for_ms. Then the Fob gives up.
   save() / load()   kept in flash (written to a .tmp file first, so a power cut in the
                     middle of a write cannot damage the queue)
 
-Drop order when full: the oldest STATUS first, then the oldest SUSPICIOUS, then SILENT.
-A MEDICAL is never dropped to make room for a lower type. All MEDICAL: the oldest is
-dropped. In general: never drop a higher type for a lower one, so a new STATUS is not
-queued when the queue is full of alerts.
+Drop order when full: the oldest BOOT report first, then STATUS, then SUSPICIOUS, then
+SILENT. A MEDICAL is never dropped to make room for a lower type. All MEDICAL: the oldest
+is dropped. In general: never drop a higher type for a lower one, so a new STATUS (or
+BOOT report) is not queued when the queue is full of alerts.
+A BOOT report is the lowest of all: it only tells the Devices page about a restart.
 
 Pure logic with injectable clock and files: tests/test_retry_queue.py runs it.
 """
@@ -40,7 +41,7 @@ try:
 except ImportError:                                       # pragma: no cover
     os = None
 
-RANK = {"STATUS": 0, "SUSPICIOUS": 1, "SILENT": 2, "MEDICAL": 3}
+RANK = {"BOOT": -1, "STATUS": 0, "SUSPICIOUS": 1, "SILENT": 2, "MEDICAL": 3}
 STOPPED_RETRY_MS = 5000      # after a button press stops a try, try again this soon
 
 

@@ -87,6 +87,18 @@ class BME280:
 
     def compensate(self, adc_p, adc_t):
         """Datasheet integer math. Returns (pascals, hundredths of C)."""
+        p, t = self.compensate_q8(adc_p, adc_t)
+        if p is None:
+            return None, t
+        return (p + 128) >> 8, t
+
+    def read_q8(self):
+        """One reading as (pascals times 256, hundredths of C). Keeps the fraction, so an
+        average can have decimals (baro.py). p is None if the reading failed."""
+        return self.compensate_q8(*self.read_raw())
+
+    def compensate_q8(self, adc_p, adc_t):
+        """Datasheet integer math. Returns (pascals times 256, hundredths of C)."""
         var1 = (((adc_t >> 3) - (self.T1 << 1)) * self.T2) >> 11
         var2 = (((((adc_t >> 4) - self.T1) * ((adc_t >> 4) - self.T1)) >> 12) * self.T3) >> 14
         t_fine = var1 + var2
@@ -105,7 +117,7 @@ class BME280:
         var1 = (self.P9 * (p >> 13) * (p >> 13)) >> 25
         var2 = (self.P8 * p) >> 19
         p = ((p + var1 + var2) >> 8) + (self.P7 << 4)    # pascals times 256
-        return (p + 128) >> 8, t
+        return p, t
 
     def read(self, samples=1):
         """(pascals, hundredths of C). samples > 1 averages several readings."""

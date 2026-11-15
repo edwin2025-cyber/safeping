@@ -6,9 +6,13 @@ __pycache__/
 venv/
 .venv/
 
-# Environment files
+# Environment files. Settings files (safeping.env) live in Documents\safeping-private,
+# never in the repo. Any *.env file is ignored, and server/envfile.py refuses to read one
+# that is inside the repo folder.
 .env
 .env.*
+*.env
+*.env.*
 
 # Database. It holds each device's secret key, so it must never be committed.
 *.db

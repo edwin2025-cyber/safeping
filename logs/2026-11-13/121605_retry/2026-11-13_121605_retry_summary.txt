@@ -1,0 +1,48 @@
+SafePing field test summary
+label: retry
+start: 2026-11-13 12:16:05.979
+end:   2026-11-13 12:34:29.233
+length: 1103 s
+
+Fob alerts printed:          10
+  sent over WiFi:            0
+  sent over LoRa:            10
+  not sent (Fob said so):    0
+  cancelled taps:            0
+  LoRa had a problem:        0
+  with a GPS position:       0
+Relay received (of LoRa):    7 of 10
+Confirmed:                   0 of 10  (WiFi 0, LoRa 0)
+  LoRa needed a resend:      10  (ctr 315, 316, 317, 318, 319, 321, 322, 323, 324, 326)
+  NOT confirmed:             10  (ctr 315, 316, 317, 318, 319, 321, 322, 323, 324, 326)
+  not confirmed but Relay had it (ack lost): 7
+WiFi not used, by reason:    clock_not_set 5, wifi_join_failed 5
+Duplicates at the Relay:     0
+Fake or wrong acks rejected: 0
+LOST (sent, never heard):    3  (ctr 315, 318, 319)
+Relay only (not in Fob log): 0
+Changed on the way:          0
+Not-SafePing packets heard:  0
+
+Send time (ms):  min 4207  max 4462  avg 4374
+  (from SEND_RESULT: the send decision to the result, after any cancel window.)
+Signal (dBm):  min -39  max -35  avg -37
+SNR (dB):      min 9.50  max 10.25  avg 9.75
+Fob print to Relay print (s): min 34.85  max 84.19  avg 62.17
+  (laptop clock for both. Starts when the Fob prints, after any cancel window.)
+
+Self-check 1:                all passed  (wifi fail, reset power_on, fw 2026.11.11c)
+Self-check 2:                all passed  (wifi fail, reset crash, fw 2026.11.11c)
+Boot reports:                2 made, 0 confirmed
+  stopped by a press, sent later: 0
+  stopped by a press, not sent yet: 1  (ctr 325)
+Retry queue:                 10 queued  (ctr 315, 316, 317, 318, 319, 321, 322, 323, 324, 326)
+  tries:                     21
+  got through:               7  (ctr 316, 317, 321, 322, 323, 324, 326)
+  gave up:                   3  (ctr 315, 318, 319)
+  still waiting at the end:  0
+  stopped by a press:        2
+Help received (WiFi):        0
+  ms after the confirm:      none
+  stopped listening (2 min): 0
+  wrong help messages ignored: 0

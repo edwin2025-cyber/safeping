@@ -27,13 +27,21 @@ export const MOCK_DEVICES = [
   { device_id: "MOCK-FOB-02", role: "FOB", student_name: "Mock Student Bravo", battery: 64 },
   { device_id: "MOCK-FOB-03", role: "FOB", student_name: "Mock Student Charlie", battery: 15 },
   { device_id: "MOCK-FOB-04", role: "FOB", student_name: "Mock Student Delta", battery: 8 },
+  // The Reference board (firmware/ref). No name, no battery, no alerts: it sends a reading every 30 s.
+  { device_id: "MOCK-REF-001", role: "REF", student_name: null, battery: null },
 ];
 
 export const MOCK_STATUS = {
-  reference_pressure: 101300,
-  reference_age_s: 20,
+  reference_pressure: 101300.4, // Pa, one decimal (pd / 10)
+  reference_temperature: 2105, // hundredths of a degree C
+  reference_id: "MOCK-REF-001",
+  reference_age_s: 20, // where the age starts when the page loads. It counts up and wraps every 30 s.
   rejected_total: 4,
 };
+
+// Fixed sensor offsets (Fob minus Reference) from tests/ref_calibrate.py, in Pa. Only one Fob
+// is calibrated in mock mode, so the alert panel shows both cases.
+export const MOCK_OFFSETS = { "MOCK-FOB-01": 1.8 };
 
 // Messages the server turned away, for System health on Overview. Minutes before the page loaded.
 export const MOCK_REJECTIONS = [
@@ -60,6 +68,8 @@ export const MOCK_BOOTS = {
     { minAgo: 60 * 44, failed: [], wifi: true },
   ],
   "MOCK-FOB-03": [{ minAgo: 60 * 6, failed: ["LoRa radio not answering", "Pressure sensor not reading"], wifi: true }],
+  // The Reference board reports its pressure sensor in its boot report.
+  "MOCK-REF-001": [{ minAgo: 60 * 30, failed: [], wifi: true, firmware: "ref-2026.11.15a", sensor: "BME280@0x77" }],
 };
 
 // The two at 34.7317, -86.5843 sit on the same spot, so the map shows a cluster.
@@ -72,7 +82,8 @@ export const MOCK_ALERTS = [
   { device: "MOCK-FOB-03", type: "STATUS", state: "open", minAgo: 10, link: "wifi", lat: 34.7262, lon: -86.5911, acc: 15 },
   // 21 minutes from press to arrival: "Sent late (over 15 min)" and the yellow Health row
   { device: "MOCK-FOB-04", type: "MEDICAL", state: "acknowledged", minAgo: 15, link: "lora", lat: 34.7298, lon: -86.5836, acc: 6, lateS: 1260 },
-  { device: "MOCK-FOB-01", type: "SUSPICIOUS", state: "acknowledged", minAgo: 25, link: "wifi", floor: 2 },
+  // cutOff: the Fob restarted during the press and sent it after ("Press cut off by a restart")
+  { device: "MOCK-FOB-01", type: "SUSPICIOUS", state: "acknowledged", minAgo: 25, link: "wifi", floor: 2, cutOff: true },
   { device: "MOCK-FOB-02", type: "SILENT", state: "resolved", minAgo: 120, link: "lora", lat: 34.7286, lon: -86.5884, acc: 10 },
   { device: "MOCK-FOB-04", type: "MEDICAL", state: "resolved", minAgo: 180, link: "unknown" },
 ];

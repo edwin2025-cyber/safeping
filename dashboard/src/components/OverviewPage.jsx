@@ -862,7 +862,7 @@ function PlacesPanel({ stats, fitKey, theme, settings, cartoKey, configLoaded, t
             fadeAnimation={!reducedMotion}
             markerZoomAnimation={!reducedMotion}
           >
-            {configLoaded && <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} />}
+            {configLoaded && <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} mapStyle={settings.mapStyle} />}
             <AttributionPrefix />
             <SizeWatcher />
             <WheelAfterClick />

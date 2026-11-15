@@ -1,0 +1,820 @@
+# label retry  fob COM15  relay COM14  forward on
+2026-11-13 12:16:05.982 INFO  FOB connected on COM15
+2026-11-13 12:16:05.982 INFO  RELAY connected on COM14
+2026-11-13 12:18:04.783 RELAY SAFEPING_MSG {"wifi": 0, "ctr": 314, "ts": 1794593754, "v": 1, "ignored a packet that is not a SafePing alert
+2026-11-13 12:18:12.659 INFO  RELAY problem on COM14: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-13 12:18:14.660 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:16.661 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:18.662 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:20.604 FOB   >>> [VIBRATE: one]
+2026-11-13 12:18:20.662 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:22.663 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:22.668 FOB   no GPS fix, sending without a location
+2026-11-13 12:18:22.669 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 99012, "bat": 100, "sig": "4389674205407e1876f93dfcb398ee9c7825b696c9782c5893ad30c3a90e6f31", "t": 2078, "ctr": 315, "ts": 1794593895, "v": 1, "id": "FOB-001"}
+2026-11-13 12:18:22.675 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:18:22.676 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:18:24.238 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:18:24.665 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:25.637 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:18:26.666 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:27.062 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:18:27.063 FOB   NOT CONFIRMED SUSPICIOUS ctr 315 (no ack from the Relay)
+2026-11-13 12:18:27.065 FOB   SEND_RESULT ctr=315 kind=SUSPICIOUS path=lora result=not_confirmed ms=4456 reason=wifi_join_failed
+2026-11-13 12:18:27.067 FOB   RETRY_QUEUED ctr=315 kind=SUSPICIOUS reason=wifi_join_failed queue=1 dropped=-
+2026-11-13 12:18:27.221 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:18:28.667 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:30.668 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:32.669 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:34.670 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:36.671 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:38.672 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:40.672 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:42.673 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:44.674 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:46.675 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:48.676 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:50.676 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:52.677 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:54.678 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:56.679 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:57.074 FOB   RETRY_TRY ctr=315 kind=SUSPICIOUS try=1 age_s=30
+2026-11-13 12:18:57.081 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:18:57.081 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:18:58.680 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:18:58.722 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:19:00.177 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:19:00.681 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:01.632 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:19:01.634 FOB   NOT CONFIRMED SUSPICIOUS ctr 315 (no ack from the Relay)
+2026-11-13 12:19:01.636 FOB   SEND_RESULT ctr=315 kind=SUSPICIOUS path=lora result=not_confirmed ms=4559 reason=wifi_join_failed try=1
+2026-11-13 12:19:02.681 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:04.682 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:06.683 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:08.684 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:10.685 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:12.686 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:14.686 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:16.687 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:18.688 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:20.690 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:22.691 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:24.692 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:26.693 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:28.694 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:30.695 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:31.649 FOB   RETRY_TRY ctr=315 kind=SUSPICIOUS try=2 age_s=64
+2026-11-13 12:19:31.654 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:19:31.655 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:19:32.696 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:33.280 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:19:34.697 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:34.730 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:19:36.183 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:19:36.185 FOB   NOT CONFIRMED SUSPICIOUS ctr 315 (no ack from the Relay)
+2026-11-13 12:19:36.186 FOB   SEND_RESULT ctr=315 kind=SUSPICIOUS path=lora result=not_confirmed ms=4538 reason=wifi_join_failed try=2
+2026-11-13 12:19:36.699 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:38.700 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:40.700 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:42.701 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:44.702 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:46.703 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:48.704 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:50.704 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:52.705 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:54.706 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:56.707 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:19:58.708 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:00.711 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:02.712 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:04.714 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:06.195 FOB   RETRY_TRY ctr=315 kind=SUSPICIOUS try=3 age_s=99
+2026-11-13 12:20:06.202 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:20:06.202 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:20:06.715 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:07.824 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:20:08.716 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:09.281 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:20:10.716 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:20:10.741 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:20:10.742 FOB   NOT CONFIRMED SUSPICIOUS ctr 315 (no ack from the Relay)
+2026-11-13 12:20:10.743 FOB   SEND_RESULT ctr=315 kind=SUSPICIOUS path=lora result=not_confirmed ms=4546 reason=wifi_join_failed try=3
+2026-11-13 12:20:12.719 INFO  RELAY connected on COM14
+2026-11-13 12:20:12.931 RELAY Listening for SafePing alerts. Press Ctrl+C to stop.
+2026-11-13 12:20:12.932 RELAY Ack keys for: FOB-001
+2026-11-13 12:20:27.070 FOB   RETRY_GAVE_UP ctr=315 kind=SUSPICIOUS try=3 reason=timeout
+2026-11-13 12:21:55.773 INFO  RELAY problem on COM14: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-13 12:21:57.775 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:21:59.776 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:00.398 FOB   >>> [VIBRATE: one]
+2026-11-13 12:22:01.777 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:02.469 FOB   no GPS fix, sending without a location
+2026-11-13 12:22:02.470 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 99006, "bat": 100, "sig": "8dec5c21a515baf2db1b0d6f65f4a3d3982291a35eefc1de66126496bc5d3af5", "t": 2106, "ctr": 316, "ts": 1794594115, "v": 1, "id": "FOB-001"}
+2026-11-13 12:22:02.476 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:22:02.477 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:22:03.778 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:04.031 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:22:05.447 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:22:05.778 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:06.850 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:22:06.851 FOB   NOT CONFIRMED SUSPICIOUS ctr 316 (no ack from the Relay)
+2026-11-13 12:22:06.853 FOB   SEND_RESULT ctr=316 kind=SUSPICIOUS path=lora result=not_confirmed ms=4453 reason=wifi_join_failed
+2026-11-13 12:22:06.855 FOB   RETRY_QUEUED ctr=316 kind=SUSPICIOUS reason=wifi_join_failed queue=1 dropped=-
+2026-11-13 12:22:07.082 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:22:07.779 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:09.780 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:11.780 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:22:13.783 INFO  RELAY connected on COM14
+2026-11-13 12:22:13.966 RELAY Listening for SafePing alerts. Press Ctrl+C to stop.
+2026-11-13 12:22:13.967 RELAY Ack keys for: FOB-001
+2026-11-13 12:22:36.857 FOB   RETRY_TRY ctr=316 kind=SUSPICIOUS try=1 age_s=30
+2026-11-13 12:22:36.864 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:22:36.864 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:22:37.509 RELAY SAFEPING_MSG {"type": "SUSPICIOUS", "p": 99006, "bat": 100, "sig": "8dec5c21a515baf2db1b0d6f65f4a3d3982291a35eefc1de66126496bc5d3af5", "t": 2106, "ctr": 316, "ts": 1794594115, "v": 1, "id": "FOB-001"}
+2026-11-13 12:22:37.570 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 77, 'type': 'SUSPICIOUS', 'source': 'none', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-13 12:22:37.512 RELAY from FOB-001 type SUSPICIOUS ctr 316 signal -38 dBm, snr 9.5
+2026-11-13 12:22:37.512 FOB   ACK received (try 1)
+2026-11-13 12:22:37.513 FOB   sent over LoRa SUSPICIOUS ctr 316 confirmed by the Relay
+2026-11-13 12:22:37.514 FOB   SEND_RESULT ctr=316 kind=SUSPICIOUS path=lora result=confirmed ms=656 reason=wifi_join_failed try=1
+2026-11-13 12:22:37.516 FOB   RETRY_DONE ctr=316 kind=SUSPICIOUS try=1 path=lora reason=wifi_join_failed
+2026-11-13 12:22:37.518 FOB   >>> [VIBRATE: ok]
+2026-11-13 12:23:32.714 INFO  RELAY problem on COM14: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-13 12:23:34.715 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:36.717 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:36.991 FOB   >>> [VIBRATE: short]
+2026-11-13 12:23:37.211 FOB   no GPS fix, sending without a location
+2026-11-13 12:23:37.211 FOB   SAFEPING_MSG {"type": "SILENT", "p": 99004, "bat": 100, "sig": "1371ffa5d757f4db56714d76a6857782f04acabc215a201661c4f0db394c7611", "t": 2107, "ctr": 317, "ts": 1794594209, "v": 1, "id": "FOB-001"}
+2026-11-13 12:23:37.217 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:23:37.218 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:23:38.718 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:38.788 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:23:40.198 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:23:40.718 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:41.592 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:23:41.593 FOB   NOT CONFIRMED SILENT ctr 317 (no ack from the Relay)
+2026-11-13 12:23:41.594 FOB   SEND_RESULT ctr=317 kind=SILENT path=lora result=not_confirmed ms=4451 reason=wifi_join_failed
+2026-11-13 12:23:41.597 FOB   RETRY_QUEUED ctr=317 kind=SILENT reason=wifi_join_failed queue=1 dropped=-
+2026-11-13 12:23:41.860 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:23:42.719 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:44.721 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:46.722 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:48.722 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:50.723 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:52.723 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:54.724 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:56.725 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:23:58.726 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:00.727 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:02.728 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:04.730 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:06.731 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:08.731 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:10.733 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:11.599 FOB   RETRY_TRY ctr=317 kind=SILENT try=1 age_s=30
+2026-11-13 12:24:11.607 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:24:11.608 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:24:12.733 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:13.220 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:24:14.666 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:24:14.734 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:16.133 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:24:16.134 FOB   NOT CONFIRMED SILENT ctr 317 (no ack from the Relay)
+2026-11-13 12:24:16.135 FOB   SEND_RESULT ctr=317 kind=SILENT path=lora result=not_confirmed ms=4534 reason=wifi_join_failed try=1
+2026-11-13 12:24:16.735 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:18.737 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:24:20.740 INFO  RELAY connected on COM14
+2026-11-13 12:24:20.922 RELAY Listening for SafePing alerts. Press Ctrl+C to stop.
+2026-11-13 12:24:20.922 RELAY Ack keys for: FOB-001
+2026-11-13 12:24:46.149 FOB   RETRY_TRY ctr=317 kind=SILENT try=2 age_s=64
+2026-11-13 12:24:46.156 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:24:46.156 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:24:46.812 RELAY SAFEPING_MSG {"type": "SILENT", "p": 99004, "bat": 100, "sig": "1371ffa5d757f4db56714d76a6857782f04acabc215a201661c4f0db394c7611", "t": 2107, "ctr": 317, "ts": 1794594209, "v": 1, "id": "FOB-001"}
+2026-11-13 12:24:46.871 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 78, 'type': 'SILENT', 'source': 'none', 'floor': None, 'sms': 'dry_run', 'late': 'late'}
+2026-11-13 12:24:46.813 RELAY from FOB-001 type SILENT ctr 317 signal -39 dBm, snr 10.25
+2026-11-13 12:24:46.815 FOB   ACK received (try 1)
+2026-11-13 12:24:46.815 FOB   sent over LoRa SILENT ctr 317 confirmed by the Relay
+2026-11-13 12:24:46.817 FOB   SEND_RESULT ctr=317 kind=SILENT path=lora result=confirmed ms=667 reason=wifi_join_failed try=2
+2026-11-13 12:24:46.819 FOB   RETRY_DONE ctr=317 kind=SILENT try=2 path=lora reason=wifi_join_failed
+2026-11-13 12:26:10.859 INFO  RELAY problem on COM14: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)). Retrying in 2 s
+2026-11-13 12:26:12.860 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:14.735 FOB   >>> [VIBRATE: one]
+2026-11-13 12:26:14.861 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:16.810 FOB   no GPS fix, sending without a location
+2026-11-13 12:26:16.811 FOB   SAFEPING_MSG {"type": "SUSPICIOUS", "p": 99005, "bat": 100, "sig": "15b8bda48604250762a52b4a72fdc89971b10b5210e7c0635aa6679327c687fc", "t": 2100, "ctr": 318, "ts": 1794594369, "v": 1, "id": "FOB-001"}
+2026-11-13 12:26:16.818 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:26:16.819 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:26:16.861 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:18.380 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:26:18.863 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:19.780 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:26:20.863 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:21.199 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:26:21.201 FOB   NOT CONFIRMED SUSPICIOUS ctr 318 (no ack from the Relay)
+2026-11-13 12:26:21.202 FOB   SEND_RESULT ctr=318 kind=SUSPICIOUS path=lora result=not_confirmed ms=4462 reason=wifi_join_failed
+2026-11-13 12:26:21.204 FOB   RETRY_QUEUED ctr=318 kind=SUSPICIOUS reason=wifi_join_failed queue=1 dropped=-
+2026-11-13 12:26:21.543 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:26:22.865 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:24.866 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:26.867 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:28.868 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:30.868 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:32.869 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:34.870 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:36.871 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:38.872 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:40.873 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:42.874 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:44.875 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:46.876 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:48.878 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:50.879 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:51.216 FOB   RETRY_TRY ctr=318 kind=SUSPICIOUS try=1 age_s=30
+2026-11-13 12:26:51.221 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:26:51.221 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:26:51.799 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:26:51.800 FOB   RETRY_STOPPED ctr=318 try=1 reason=button
+2026-11-13 12:26:52.881 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:53.550 FOB   no GPS fix, sending without a location
+2026-11-13 12:26:53.551 FOB   SAFEPING_MSG {"type": "STATUS", "p": 99004, "bat": 100, "sig": "10e01ab027c5c1ac7e4ba5f6f9a2b2b4f6f31500a13e386a08ca7f839b14c8a8", "t": 2109, "ctr": 319, "ts": 1794594406, "v": 1, "id": "FOB-001"}
+2026-11-13 12:26:53.562 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:26:53.562 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:26:54.881 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:55.108 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:26:56.503 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:26:56.882 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:57.914 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:26:57.916 FOB   NOT CONFIRMED STATUS ctr 319 (no ack from the Relay)
+2026-11-13 12:26:57.917 FOB   SEND_RESULT ctr=319 kind=STATUS path=lora result=not_confirmed ms=4443 reason=wifi_join_failed
+2026-11-13 12:26:57.919 FOB   RETRY_QUEUED ctr=319 kind=STATUS reason=wifi_join_failed queue=2 dropped=-
+2026-11-13 12:26:58.003 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:26:58.007 FOB   RETRY_TRY ctr=318 kind=SUSPICIOUS try=1 age_s=36
+2026-11-13 12:26:58.018 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:26:58.018 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:26:58.883 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:26:59.624 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:27:00.884 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:01.083 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:27:02.532 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:27:02.533 FOB   NOT CONFIRMED SUSPICIOUS ctr 318 (no ack from the Relay)
+2026-11-13 12:27:02.535 FOB   SEND_RESULT ctr=318 kind=SUSPICIOUS path=lora result=not_confirmed ms=4527 reason=wifi_join_failed try=1
+2026-11-13 12:27:02.884 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:04.885 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:06.886 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:08.887 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:10.888 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:12.888 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:14.889 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:16.890 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:18.891 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:20.892 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:22.894 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:24.895 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:26.896 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:27.926 FOB   RETRY_TRY ctr=319 kind=STATUS try=1 age_s=30
+2026-11-13 12:27:27.932 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:27:27.933 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:27:28.896 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:29.536 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:27:30.897 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:30.988 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:27:32.457 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:27:32.458 FOB   NOT CONFIRMED STATUS ctr 319 (no ack from the Relay)
+2026-11-13 12:27:32.459 FOB   SEND_RESULT ctr=319 kind=STATUS path=lora result=not_confirmed ms=4533 reason=wifi_join_failed try=1
+2026-11-13 12:27:32.637 FOB   RETRY_TRY ctr=318 kind=SUSPICIOUS try=2 age_s=71
+2026-11-13 12:27:32.648 FOB   falling back to LoRa: wifi_join_failed
+2026-11-13 12:27:32.648 FOB   WiFi problem: could not join the WiFi network (wrong name or password, or out of range)
+2026-11-13 12:27:32.900 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:34.271 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:27:34.901 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:35.744 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:27:36.901 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:37.202 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:27:37.203 FOB   NOT CONFIRMED SUSPICIOUS ctr 318 (no ack from the Relay)
+2026-11-13 12:27:37.205 FOB   SEND_RESULT ctr=318 kind=SUSPICIOUS path=lora result=not_confirmed ms=4567 reason=wifi_join_failed try=2
+2026-11-13 12:27:38.903 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:40.904 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:42.133 INFO  Fob disconnected, retrying quietly
+2026-11-13 12:27:42.904 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:44.136 INFO  Fob reconnected
+2026-11-13 12:27:44.905 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:46.746 FOB   SafePing Fob FOB-001 firmware 2026.11.11c
+2026-11-13 12:27:46.748 FOB   Reset cause: 1 power_on
+2026-11-13 12:27:46.748 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-13 12:27:46.749 FOB   Button: soft interrupt
+2026-11-13 12:27:46.750 FOB   GPS on
+2026-11-13 12:27:46.759 FOB   Sensors: pressure on, battery gauge on
+2026-11-13 12:27:46.761 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-13 12:27:46.906 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:47.014 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-13 12:27:48.907 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:50.907 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:52.909 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:54.392 FOB   WiFi not connected yet, will retry in the background
+2026-11-13 12:27:54.482 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=ok wifi=fail reset=power_on fw=2026.11.11c
+2026-11-13 12:27:54.910 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:55.499 FOB   RETRY_QUEUED ctr=318 kind=SUSPICIOUS age_s=76 reason=resumed_after_reboot queue=2
+2026-11-13 12:27:55.500 FOB   RETRY_QUEUED ctr=319 kind=STATUS age_s=39 reason=resumed_after_reboot queue=2
+2026-11-13 12:27:55.778 FOB   SAFEPING_MSG {"wifi": 0, "type": "BOOT", "fail": 0, "rst": 1, "fw": "2026.11.11c", "sig": "2d3706e69835cdf2e37e80db5f9a538eecaf4c70a29f21db53ea8aed937eab46", "ctr": 320, "id": "FOB-001", "bat": 99, "v": 1}
+2026-11-13 12:27:55.779 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:27:55.779 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:27:55.779 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:27:56.910 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:27:57.418 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:27:58.880 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:27:58.911 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:00.350 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:28:00.351 FOB   NOT CONFIRMED BOOT ctr 320 (no ack from the Relay)
+2026-11-13 12:28:00.352 FOB   SEND_RESULT ctr=320 kind=BOOT path=lora result=not_confirmed ms=4573 reason=clock_not_set
+2026-11-13 12:28:00.352 FOB   BOOT report not confirmed
+2026-11-13 12:28:00.416 FOB   RETRY_TRY ctr=318 kind=SUSPICIOUS try=3 age_s=80
+2026-11-13 12:28:00.417 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:28:00.418 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:28:00.418 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:28:00.911 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:01.870 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:28:02.912 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:03.324 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:28:04.797 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:28:04.798 FOB   NOT CONFIRMED SUSPICIOUS ctr 318 (no ack from the Relay)
+2026-11-13 12:28:04.799 FOB   SEND_RESULT ctr=318 kind=SUSPICIOUS path=lora result=not_confirmed ms=4382 reason=clock_not_set try=3
+2026-11-13 12:28:04.912 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:05.057 FOB   RETRY_TRY ctr=319 kind=STATUS try=2 age_s=48
+2026-11-13 12:28:05.058 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:28:05.060 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:28:05.060 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:28:06.511 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:28:06.913 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:07.980 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:28:08.914 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:09.433 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:28:09.434 FOB   NOT CONFIRMED STATUS ctr 319 (no ack from the Relay)
+2026-11-13 12:28:09.435 FOB   SEND_RESULT ctr=319 kind=STATUS path=lora result=not_confirmed ms=4377 reason=clock_not_set try=2
+2026-11-13 12:28:10.915 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:12.916 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:14.917 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:16.918 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:18.918 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:20.919 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:22.920 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:24.920 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:26.921 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:28.922 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:30.923 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:32.924 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:34.811 FOB   RETRY_TRY ctr=318 kind=SUSPICIOUS try=4 age_s=115
+2026-11-13 12:28:34.812 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:28:34.813 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:28:34.813 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:28:34.924 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:36.438 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:28:36.925 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:37.893 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:28:38.927 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:39.345 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:28:39.346 FOB   NOT CONFIRMED SUSPICIOUS ctr 318 (no ack from the Relay)
+2026-11-13 12:28:39.347 FOB   SEND_RESULT ctr=318 kind=SUSPICIOUS path=lora result=not_confirmed ms=4536 reason=clock_not_set try=4
+2026-11-13 12:28:39.672 FOB   RETRY_GAVE_UP ctr=318 kind=SUSPICIOUS try=4 reason=timeout
+2026-11-13 12:28:39.673 FOB   RETRY_TRY ctr=319 kind=STATUS try=3 age_s=83
+2026-11-13 12:28:39.675 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:28:39.675 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:28:39.675 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:28:40.928 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:41.126 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:28:42.577 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:28:42.929 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:44.039 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:28:44.040 FOB   NOT CONFIRMED STATUS ctr 319 (no ack from the Relay)
+2026-11-13 12:28:44.041 FOB   SEND_RESULT ctr=319 kind=STATUS path=lora result=not_confirmed ms=4367 reason=clock_not_set try=3
+2026-11-13 12:28:44.930 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:46.931 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:48.932 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:50.933 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:52.934 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:54.935 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:56.936 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:28:58.937 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:00.939 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:02.939 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:04.940 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:06.941 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:08.941 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:10.942 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:12.942 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:14.049 FOB   RETRY_TRY ctr=319 kind=STATUS try=4 age_s=117
+2026-11-13 12:29:14.050 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:29:14.051 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:29:14.051 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:29:14.943 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:15.656 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:29:16.944 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:17.112 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:29:18.582 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:29:18.583 FOB   NOT CONFIRMED STATUS ctr 319 (no ack from the Relay)
+2026-11-13 12:29:18.584 FOB   SEND_RESULT ctr=319 kind=STATUS path=lora result=not_confirmed ms=4534 reason=clock_not_set try=4
+2026-11-13 12:29:18.912 FOB   RETRY_GAVE_UP ctr=319 kind=STATUS try=4 reason=timeout
+2026-11-13 12:29:18.944 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:20.946 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:22.947 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:24.948 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:26.949 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:28.950 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:30.951 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:32.952 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:34.953 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:36.954 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:38.955 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:40.958 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:42.959 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:44.960 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:46.961 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:48.962 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:50.963 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:52.965 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:54.965 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:56.967 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:29:58.968 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:00.969 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:02.969 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:04.970 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:06.971 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:08.973 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:10.974 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:12.975 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:14.976 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:16.976 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:18.978 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:20.980 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:22.981 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:24.981 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:26.985 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:28.986 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:30.987 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:32.988 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:34.989 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:36.989 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:38.990 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:40.991 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:42.229 FOB   no GPS fix, sending without a location
+2026-11-13 12:30:42.230 FOB   SAFEPING_MSG {"ctr": 321, "t": 2103, "id": "FOB-001", "v": 1, "bat": 99, "p": 99004, "type": "STATUS", "sig": "d5aa8aa8c538cd4e2fbeb64d5e34254ecd46e76ac54279edcba6a4a6d2d3040b"}
+2026-11-13 12:30:42.231 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:30:42.232 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:30:42.233 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:30:42.992 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:43.773 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:30:44.993 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:45.142 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:30:46.512 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:30:46.513 FOB   NOT CONFIRMED STATUS ctr 321 (no ack from the Relay)
+2026-11-13 12:30:46.515 FOB   SEND_RESULT ctr=321 kind=STATUS path=lora result=not_confirmed ms=4362 reason=clock_not_set
+2026-11-13 12:30:46.517 FOB   RETRY_QUEUED ctr=321 kind=STATUS reason=clock_not_set queue=1 dropped=-
+2026-11-13 12:30:46.841 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:30:46.993 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:48.994 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:50.995 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:52.639 FOB   no GPS fix, sending without a location
+2026-11-13 12:30:52.639 FOB   SAFEPING_MSG {"ctr": 322, "t": 2109, "id": "FOB-001", "v": 1, "bat": 99, "p": 99001, "type": "STATUS", "sig": "3f3cd7e9958bb38fd140b513deaceef272d65c638846de0be87a5d7d73174989"}
+2026-11-13 12:30:52.641 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:30:52.641 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:30:52.642 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:30:52.996 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:54.012 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:30:54.997 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:55.384 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:30:56.773 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:30:56.774 FOB   NOT CONFIRMED STATUS ctr 322 (no ack from the Relay)
+2026-11-13 12:30:56.775 FOB   SEND_RESULT ctr=322 kind=STATUS path=lora result=not_confirmed ms=4207 reason=clock_not_set
+2026-11-13 12:30:56.777 FOB   RETRY_QUEUED ctr=322 kind=STATUS reason=clock_not_set queue=2 dropped=-
+2026-11-13 12:30:56.998 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:30:57.121 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:30:58.999 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:01.000 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:02.920 FOB   >>> [VIBRATE: one]
+2026-11-13 12:31:03.000 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:04.999 FOB   no GPS fix, sending without a location
+2026-11-13 12:31:05.000 FOB   SAFEPING_MSG {"ctr": 323, "t": 2115, "id": "FOB-001", "v": 1, "bat": 99, "p": 98998, "type": "SUSPICIOUS", "sig": "cfe032147940c40cbe3b35e51cef7a94b3dc799262ac9f863431f3e789bf0f7d"}
+2026-11-13 12:31:05.001 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:05.001 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:05.001 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:31:05.002 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:31:06.379 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:31:07.002 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:07.772 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:31:09.003 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:09.142 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:31:09.143 FOB   NOT CONFIRMED SUSPICIOUS ctr 323 (no ack from the Relay)
+2026-11-13 12:31:09.145 FOB   SEND_RESULT ctr=323 kind=SUSPICIOUS path=lora result=not_confirmed ms=4213 reason=clock_not_set
+2026-11-13 12:31:09.148 FOB   RETRY_QUEUED ctr=323 kind=SUSPICIOUS reason=clock_not_set queue=3 dropped=-
+2026-11-13 12:31:10.262 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:31:11.004 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:13.004 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:15.007 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:17.008 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:18.489 FOB   no GPS fix, sending without a location
+2026-11-13 12:31:18.489 FOB   SAFEPING_MSG {"ctr": 324, "t": 2121, "id": "FOB-001", "v": 1, "bat": 99, "p": 98998, "type": "MEDICAL", "sig": "ac1dac2ada4e86eb83df43a276c271b2317581e57515fa81aca654fab97306e0"}
+2026-11-13 12:31:18.491 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:18.492 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:31:18.492 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:31:19.009 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:20.036 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:31:21.010 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:21.407 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:31:22.777 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:31:22.778 FOB   NOT CONFIRMED MEDICAL ctr 324 (no ack from the Relay)
+2026-11-13 12:31:22.780 FOB   SEND_RESULT ctr=324 kind=MEDICAL path=lora result=not_confirmed ms=4352 reason=clock_not_set
+2026-11-13 12:31:22.783 FOB   RETRY_QUEUED ctr=324 kind=MEDICAL reason=clock_not_set queue=4 dropped=-
+2026-11-13 12:31:22.891 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:31:23.010 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:25.011 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:25.908 FOB   RETRY_TRY ctr=321 kind=STATUS try=1 age_s=39
+2026-11-13 12:31:25.909 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:25.910 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:31:25.910 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:31:27.013 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:27.331 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:31:28.760 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:31:29.014 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:30.184 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:31:30.185 FOB   NOT CONFIRMED STATUS ctr 321 (no ack from the Relay)
+2026-11-13 12:31:30.187 FOB   SEND_RESULT ctr=321 kind=STATUS path=lora result=not_confirmed ms=4278 reason=clock_not_set try=1
+2026-11-13 12:31:30.374 FOB   RETRY_TRY ctr=322 kind=STATUS try=1 age_s=33
+2026-11-13 12:31:30.375 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:30.375 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:31:30.376 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:31:30.829 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:31:30.829 FOB   RETRY_STOPPED ctr=322 try=1 reason=button
+2026-11-13 12:31:31.014 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:31.268 FOB   
+2026-11-13 12:31:31.268 FOB   A fatal error occurred. The crash dump printed below may be used to help
+2026-11-13 12:31:31.268 FOB   determine what caused it. If you are not already running the most recent
+2026-11-13 12:31:31.268 FOB   version of MicroPython, consider upgrading. New versions often fix bugs.
+2026-11-13 12:31:31.268 FOB   
+2026-11-13 12:31:31.268 FOB   To learn more about how to debug and/or report this crash visit the wiki
+2026-11-13 12:31:31.268 FOB   page at: https://github.com/micropython/micropython/wiki/ESP32-debugging
+2026-11-13 12:31:31.268 FOB   
+2026-11-13 12:31:31.268 FOB   MPY version : v1.27.0 on 2026-02-04
+2026-11-13 12:31:31.268 FOB   IDF version : v5.5.1-dirty
+2026-11-13 12:31:31.268 FOB   Machine     : SparkFun Thing Plus ESP32-C5 with ESP32C5
+2026-11-13 12:31:31.268 FOB   
+2026-11-13 12:31:31.268 FOB   Guru Meditation Error: Core  0 panic'ed (Cache error).
+2026-11-13 12:31:31.268 FOB   Cache access error
+2026-11-13 12:31:31.268 FOB   
+2026-11-13 12:31:31.268 FOB   Core  0 register dump:
+2026-11-13 12:31:31.268 FOB   MEPC    : 0x40000344  RA      : 0x4002a382  SP      : 0x4082af60  GP      : 0x40810b84
+2026-11-13 12:31:31.268 FOB   TP      : 0x4082bb40  T0      : 0x4002ccb0  T1      : 0x400000e2  T2      : 0x702e6566
+2026-11-13 12:31:31.268 FOB   S0/FP   : 0x40812a84  S1      : 0x00000020  A0      : 0x40812aa4  A1      : 0x4081afe0
+2026-11-13 12:31:31.268 FOB   A2      : 0x00000001  A3      : 0x08088000  A4      : 0x600c8000  A5      : 0x40000344
+2026-11-13 12:31:31.268 FOB   A6      : 0x40812a84  A7      : 0x00000000  S2      : 0x408352f8  S3      : 0x421b1170
+2026-11-13 12:31:31.268 FOB   S4      : 0x4085ffe4  S5      : 0x00000004  S6      : 0x00000020  S7      : 0x002003e0
+2026-11-13 12:31:31.268 FOB   S8      : 0x421b10dc  S9      : 0x00000000  S10     : 0x00000004  S11     : 0x00000000
+2026-11-13 12:31:31.268 FOB   T3      : 0x00000014  T4      : 0x4081b000  T5      : 0x4081b000  T6      : 0x0003ce05
+2026-11-13 12:31:31.268 FOB   MSTATUS : 0x00001881  MTVEC   : 0x40800003  MCAUSE  : 0x00000019  MTVAL   : 0x00000000
+2026-11-13 12:31:31.268 FOB   MHARTID : 0x00000000
+2026-11-13 12:31:31.268 FOB   
+2026-11-13 12:31:31.268 FOB   Stack memory:
+2026-11-13 12:31:31.268 FOB   4082af60: 0x408352f8 0x00000020 0x00000101 0x4002aad0 0x4204904a 0x4204d018 0x4082aff0 0x40812a84
+2026-11-13 12:31:31.268 FOB   4082af80: 0x4082bb40 0x4002d624 0x42188d64 0x00000020 0x00000004 0x00000000 0x421b10dc 0x000003e0
+2026-11-13 12:31:31.268 FOB   4082afa0: 0x00000003 0x00000004 0x421b10dc 0x421b1020 0x00000004 0x000003e0 0x421b1040 0x4206997c
+2026-11-13 12:31:31.268 FOB   4082afc0: 0x421b10dc 0x421b1170 0x00000020 0x00000001 0x4204d3fe 0x421b1040 0x00000000 0x00000000
+2026-11-13 12:31:31.268 FOB   4082afe0: 0x4082b06c 0x00000004 0x000003e6 0x4204906a 0x42188d64 0x00000001 0x00000020 0x421b1170
+2026-11-13 12:31:31.268 FOB   4082b000: 0x00000000 0x00000000 0xb0103008 0x4204d018 0x4082b070 0x00000004 0x00000000 0x00000000
+2026-11-13 12:31:31.268 FOB   4082b020: 0x00000000 0x000003e6 0x00000000 0x4082b280 0x00000000 0x4204ce52 0x00000002 0x00000000
+2026-11-13 12:31:31.268 FOB   4082b040: 0x00000000 0x00000000 0xdffffc08 0x4204d3c6 0x421b10dc 0x000003da 0x4082b280 0x1010340c
+2026-11-13 12:31:31.268 FOB   4082b060: 0x00000080 0x00000080 0x4085ffe4 0xdffffc08 0x00000000 0x000003de 0x4082b1e0 0x00000600
+2026-11-13 12:31:31.268 FOB   4082b080: 0x500ffc18 0x4082b308 0x00000001 0x00000000 0x00000000 0x00000000 0x00000000 0x4204e3b2
+2026-11-13 12:31:31.268 FOB   4082b0a0: 0x4082b154 0x00000000 0x00000000 0x00000000 0x00000000 0x4082b280 0x000001aa 0xa0204008
+2026-11-13 12:31:31.268 FOB   4082b0c0: 0x00000000 0x00000000 0x600ffc00 0x20000000 0x000d000c 0x00000001 0x4204e3b2 0x4082b154
+2026-11-13 12:31:31.268 FOB   4082b0e0: 0xa0204008 0x4082b070 0x00000000 0x000001ae 0x4082b140 0x421b1040 0x00000000 0x000003be
+2026-11-13 12:31:31.268 FOB   4082b100: 0x421bee78 0x421b2bd4 0x421b2a91 0x0000000c 0x4082b2a0 0x00000005 0x4082b2e8 0x4082b168
+2026-11-13 12:31:31.268 FOB   4082b120: 0x421b10dc 0x4082b1e0 0x421b10dc 0x4204f4f8 0x00000000 0x00000000 0x4204e3b2 0x4082b0e0
+2026-11-13 12:31:31.268 FOB   4082b140: 0x4082b140 0x0010340a 0x0010340a 0x00000001 0x4082b26e 0x421b10dc 0x4082b168 0xaff003e7
+2026-11-13 12:31:31.268 FOB   4082b160: 0x00000000 0x421b10dc 0x00000000 0x00000616 0x0010340a 0xd88e3f10 0x00000600 0x00000ff8
+2026-11-13 12:31:31.268 FOB   4082b180: 0x0000000a 0x4204de08 0x4082b214 0x000003be 0x421bee78 0x421b2bd4 0x421b2a91 0x0000000c
+2026-11-13 12:31:31.268 FOB   4082b1a0: 0x00000001 0x00000005 0x4082b2e8 0x4082b1e0 0x4082b2a0 0x421b10dc 0x421b10dc 0x4204f802
+2026-11-13 12:31:31.268 FOB   4082b1c0: 0x00000000 0x00000001 0x4204e3b2 0x4204e000 0x002ffc00 0x00000001 0x4082b2b8 0x42172000
+2026-11-13 12:31:31.268 FOB   4082b1e0: 0x00000000 0x00000001 0x00000059 0x00000600 0x500ffc18 0x00010012 0x0000033a 0x0000033b
+2026-11-13 12:31:31.268 FOB   4082b200: 0x500ffc18 0x4082b274 0x4082b26e 0x421b2a9b 0x421b10dc 0x421b10dc 0x421b2a91 0x0000000a
+2026-11-13 12:31:31.268 FOB   4082b220: 0x421bee78 0x421b2bd4 0x421b2a91 0x0000000c 0x00003000 0x0010300e 0x4082b280 0x00000000
+2026-11-13 12:31:31.268 FOB   4082b240: 0x0000000c 0x421b10dc 0x421b10dc 0x4204fc7e 0x0000000c 0x421b10dc 0x1010340c 0x42050354
+2026-11-13 12:31:31.268 FOB   4082b260: 0x421b2ad0 0x421b10dc 0x421b10dc 0x000d10ec 0x421b1161 0x421b2a91 0x00000059 0x00000600
+2026-11-13 12:31:31.268 FOB   4082b280: 0x00000000 0x00000001 0x00000059 0x00000600 0x500ffc18 0x00010013 0x0000033a 0x0000033b
+2026-11-13 12:31:31.331 FOB   4082b2a0: 0x00000000 0x00000001 0x00000059 0x00000600 0x500ffc18 0x00010013 0x0000033a 0x0000033b
+2026-11-13 12:31:31.331 FOB   4082b2c0: 0x00000000 0x421b2aa4 0x421bf730 0x00010502 0x421b2ad8 0x421b10dc 0x421b10dc 0x4204fc7e
+2026-11-13 12:31:31.331 FOB   4082b2e0: 0x421b2ad8 0x421b10dc 0x4ff03400 0x00000000 0x40103400 0x00000000 0x0010340a 0x421b2a91
+2026-11-13 12:31:31.331 FOB   4082b300: 0x1010340c 0x4082b280 0x4ff03000 0x00000000 0x421b1160 0x421b3f21 0x421bee77 0x0000000c
+2026-11-13 12:31:31.331 FOB   4082b320: 0x00000000 0x421b2c00 0x421bf730 0x421b30c0 0x421b1160 0x421b3f21 0x421b1030 0x4204a1e0
+2026-11-13 12:31:31.331 FOB   4082b340: 0x00000020 0x0000000b 0x421b2a90 0x42034100 0x421b2c04 0x4082b388 0x00000002 0x42048892
+2026-11-13 12:31:31.331 FOB   
+2026-11-13 12:31:31.331 FOB   
+2026-11-13 12:31:31.331 FOB   
+2026-11-13 12:31:31.331 FOB   ELF file SHA256: b82a9bb22
+2026-11-13 12:31:31.331 FOB   
+2026-11-13 12:31:31.331 FOB   Rebooting...
+2026-11-13 12:31:31.331 FOB   ESP-ROM:esp32c5-eco2-20250121
+2026-11-13 12:31:31.331 FOB   Build:Jan 21 2025
+2026-11-13 12:31:31.332 FOB   rst:0xc (SW_CPU),boot:0x19 (SPI_FAST_FLASH_BOOT)
+2026-11-13 12:31:31.332 FOB   Core0 Saved PC:0x4080dac6
+2026-11-13 12:31:31.333 FOB   SPI mode:DIO, clock div:1
+2026-11-13 12:31:31.334 FOB   load:0x408556b0,len:0xdfc
+2026-11-13 12:31:31.336 FOB   load:0x4084bba0,len:0xc4c
+2026-11-13 12:31:31.338 FOB   load:0x4084e5a0,len:0x2ee8
+2026-11-13 12:31:31.342 FOB   entry 0x4084bba0
+2026-11-13 12:31:33.016 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:34.857 FOB   
+2026-11-13 12:31:34.857 FOB   A fatal error occurred. The crash dump printed below may be used to help
+2026-11-13 12:31:34.857 FOB   determine what caused it. If you are not already running the most recent
+2026-11-13 12:31:34.857 FOB   version of MicroPython, consider upgrading. New versions often fix bugs.
+2026-11-13 12:31:34.857 FOB   
+2026-11-13 12:31:34.858 FOB   To learn more about how to debug and/or report this crash visit the wiki
+2026-11-13 12:31:34.858 FOB   page at: https://github.com/micropython/micropython/wiki/ESP32-debugging
+2026-11-13 12:31:34.858 FOB   
+2026-11-13 12:31:34.858 FOB   MPY version : v1.27.0 on 2026-02-04
+2026-11-13 12:31:34.858 FOB   IDF version : v5.5.1-dirty
+2026-11-13 12:31:34.858 FOB   Machine     : SparkFun Thing Plus ESP32-C5 with ESP32C5
+2026-11-13 12:31:34.858 FOB   
+2026-11-13 12:31:34.858 FOB   Guru Meditation Error: Core  0 panic'ed (Cache error).
+2026-11-13 12:31:34.858 FOB   Cache access error
+2026-11-13 12:31:34.858 FOB   
+2026-11-13 12:31:34.858 FOB   Core  0 register dump:
+2026-11-13 12:31:34.858 FOB   MEPC    : 0x40000344  RA      : 0x4002a382  SP      : 0x4082b1e0  GP      : 0x40810b84
+2026-11-13 12:31:34.858 FOB   TP      : 0x4082bb40  T0      : 0x4002ccb0  T1      : 0x400000e2  T2      : 0xffffffff
+2026-11-13 12:31:34.858 FOB   S0/FP   : 0x40812a84  S1      : 0x00000080  A0      : 0x40812aa4  A1      : 0x4081afe0
+2026-11-13 12:31:34.858 FOB   A2      : 0x00000001  A3      : 0x08088000  A4      : 0x600c8000  A5      : 0x40000344
+2026-11-13 12:31:34.858 FOB   A6      : 0x40812a84  A7      : 0x00000000  S2      : 0x4085f0ac  S3      : 0x421b1170
+2026-11-13 12:31:34.858 FOB   S4      : 0x4085ffe4  S5      : 0x00001000  S6      : 0x00000080  S7      : 0x002004c0
+2026-11-13 12:31:34.858 FOB   S8      : 0x421b10dc  S9      : 0x00000000  S10     : 0x00000006  S11     : 0x00000000
+2026-11-13 12:31:34.858 FOB   T3      : 0xffffffff  T4      : 0xffffffff  T5      : 0xffffffff  T6      : 0xffffffff
+2026-11-13 12:31:34.858 FOB   MSTATUS : 0x00001881  MTVEC   : 0x40800003  MCAUSE  : 0x00000019  MTVAL   : 0x00000000
+2026-11-13 12:31:34.858 FOB   MHARTID : 0x00000000
+2026-11-13 12:31:34.858 FOB   
+2026-11-13 12:31:34.858 FOB   Stack memory:
+2026-11-13 12:31:34.858 FOB   4082b1e0: 0x4085f0ac 0x00000080 0x00000101 0x4002aad0 0x4085f0ac 0x00000080 0x40812afc 0x40812a84
+2026-11-13 12:31:34.858 FOB   4082b200: 0x00000080 0x00000080 0x4085ffe4 0x00000080 0x00000006 0x00000000 0x421b10dc 0x000004c0
+2026-11-13 12:31:34.858 FOB   4082b220: 0x00000fff 0x00001000 0x421b10dc 0x421b1020 0x00000004 0x000004c0 0x421b1040 0x4206997c
+2026-11-13 12:31:34.858 FOB   4082b240: 0x00000020 0x421b1170 0x00000080 0x00000001 0x00000004 0x421b1040 0x00000000 0x00000000
+2026-11-13 12:31:34.858 FOB   4082b260: 0x4082b2da 0x00000006 0x000004c0 0x4204906a 0x42188d64 0x00000001 0x00000080 0x421b1170
+2026-11-13 12:31:34.858 FOB   4082b280: 0x00000008 0x421b1170 0x00000080 0x4204d018 0x4082b2e0 0x00000004 0x00000000 0x00000000
+2026-11-13 12:31:34.858 FOB   4082b2a0: 0x4082b2e0 0x00000008 0x000004be 0x00000000 0x00001000 0x421b10dc 0x421b10dc 0x4082b338
+2026-11-13 12:31:34.858 FOB   4082b2c0: 0x00000008 0x00000008 0x00000000 0x4204d790 0x4082b35c 0x8010480d 0x80100020 0x00000000
+2026-11-13 12:31:34.858 FOB   4082b2e0: 0x4082b2e0 0x8010480d 0x8010440d 0x000004be 0x00000000 0x000004ba 0x00000013 0x5ffffc08
+2026-11-13 12:31:34.858 FOB   4082b300: 0x00000004 0x421b10dc 0x4082b410 0x4204d9da 0x000003ff 0x00000002 0x00000001 0x78000000
+2026-11-13 12:31:34.858 FOB   4082b320: 0x00000004 0x4204de08 0x4082b3b4 0x4082b418 0x421b10dc 0x20002008 0xb6f8f684 0x5ffffc08
+2026-11-13 12:31:34.858 FOB   4082b340: 0x00000059 0x00000058 0x0000033a 0x0000033b 0x00000020 0x009354f4 0x00000000 0x000004a8
+2026-11-13 12:31:34.858 FOB   4082b360: 0xa5a5a5a5 0xa5a5a5a5 0xa5a5a5a5 0x4204e000 0x002ffc00 0x00000001 0x4082b428 0x42172000
+2026-11-13 12:31:34.858 FOB   4082b380: 0x00000001 0x421b1165 0x00000002 0x421b10dc 0x00000004 0x4082b410 0x421b1161 0x4204dd20
+2026-11-13 12:31:34.858 FOB   4082b3a0: 0x4085c5a0 0x4082b40c 0x00000000 0x421b1165 0x42189be0 0x421b10dc 0x421b1161 0x00000004
+2026-11-13 12:31:34.858 FOB   4082b3c0: 0x4080ddbc 0x000000a8 0x000000a7 0x4082b764 0x421baf1a 0x4082b768 0x40815000 0x421b1b00
+2026-11-13 12:31:34.858 FOB   4082b3e0: 0x00000000 0x00000464 0x00000000 0x00000464 0x4082b458 0x421b10dc 0x421b1030 0x42050482
+2026-11-13 12:31:34.858 FOB   4082b400: 0x4082bb40 0x4002d624 0x00000000 0x421b1161 0x00000000 0x00000001 0x00000059 0x000004a0
+2026-11-13 12:31:34.858 FOB   4082b420: 0x500ffc1e 0x00010012 0x0000033a 0x0000033b 0x408157f8 0x00000004 0x421b1030 0x4204a4a0
+2026-11-13 12:31:34.858 FOB   4082b440: 0x42189be0 0x421b78c0 0x42189be0 0x00000000 0x00000000 0x4082b5c0 0x421b2170 0x4205c87a
+2026-11-13 12:31:34.858 FOB   4082b460: 0x00000001 0x00000000 0x00000001 0x00000000 0x00000000 0x00000000 0x421b70e0 0x4205bd00
+2026-11-13 12:31:34.858 FOB   4082b480: 0x421b7f28 0x00000000 0x4082b72c 0x4205b07c 0x0000001d 0x00000000 0x00000001 0x00000000
+2026-11-13 12:31:34.858 FOB   4082b4a0: 0x00000032 0x421b85bc 0x00000001 0x00000000 0x421b85d0 0x00000001 0x4082b758 0x00000001
+2026-11-13 12:31:34.858 FOB   4082b4c0: 0x4203b1c0 0x4203b500 0x4082b540 0x40810b84 0x4203db42 0x4203dde6 0x4082b550 0x40810b84
+2026-11-13 12:31:34.858 FOB   4082b4e0: 0x4082bb40 0x00000464 0x00000000 0x00000464 0x408157f8 0x00000001 0x4082b5b0 0x42048fb6
+2026-11-13 12:31:34.858 FOB   4082b500: 0x00000000 0x0000027a 0x00000000 0x0000008a 0x4218d42c 0x4082b5c0 0x00000011 0x42035cb4
+2026-11-13 12:31:34.918 FOB   4082b520: 0x00000000 0x0000027a 0x00000000 0x4218d42c 0x421baf1a 0x4082b768 0x40815000 0x421b1b00
+2026-11-13 12:31:34.918 FOB   4082b540: 0x00000000 0x00000464 0x00000000 0x00000001 0x00000000 0x00000464 0x4082b5b0 0x42057e56
+2026-11-13 12:31:34.918 FOB   4082b560: 0x00000000 0x00000004 0x4082b5b0 0x42057ecc 0x408157f8 0x00000004 0x00000000 0x420581de
+2026-11-13 12:31:34.918 FOB   4082b580: 0x421b37e8 0x00000000 0x00000001 0x00000004 0x42186078 0x00000003 0x421b0f40 0x00000003
+2026-11-13 12:31:34.918 FOB   4082b5a0: 0x421b0f40 0x00000000 0x000000a7 0x00000030 0x00000080 0x00000004 0x4082b5c0 0x00000001
+2026-11-13 12:31:34.918 FOB   4082b5c0: 0x656d6974 0x6e696200 0x69637361 0x706d2e69 0x79700079 0x00000000 0x00000001 0x000000a6
+2026-11-13 12:31:34.918 FOB   
+2026-11-13 12:31:34.918 FOB   
+2026-11-13 12:31:34.918 FOB   
+2026-11-13 12:31:34.918 FOB   ELF file SHA256: b82a9bb22
+2026-11-13 12:31:34.918 FOB   
+2026-11-13 12:31:34.918 FOB   Rebooting...
+2026-11-13 12:31:34.918 FOB   ESP-ROM:esp32c5-eco2-20250121
+2026-11-13 12:31:34.918 FOB   Build:Jan 21 2025
+2026-11-13 12:31:34.919 FOB   rst:0xc (SW_CPU),boot:0x19 (SPI_FAST_FLASH_BOOT)
+2026-11-13 12:31:34.919 FOB   Core0 Saved PC:0x4080dac6
+2026-11-13 12:31:34.920 FOB   SPI mode:DIO, clock div:1
+2026-11-13 12:31:34.922 FOB   load:0x408556b0,len:0xdfc
+2026-11-13 12:31:34.924 FOB   load:0x4084bba0,len:0xc4c
+2026-11-13 12:31:34.926 FOB   load:0x4084e5a0,len:0x2ee8
+2026-11-13 12:31:34.930 FOB   entry 0x4084bba0
+2026-11-13 12:31:35.017 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:37.018 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:39.020 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:39.346 FOB   SafePing Fob FOB-001 firmware 2026.11.11c
+2026-11-13 12:31:39.347 FOB   Reset cause: 2 crash
+2026-11-13 12:31:39.347 FOB   LoRa fallback on: CS 26 RST 6
+2026-11-13 12:31:39.348 FOB   Button: soft interrupt
+2026-11-13 12:31:39.349 FOB   GPS on
+2026-11-13 12:31:39.359 FOB   Sensors: pressure on, battery gauge on
+2026-11-13 12:31:39.360 FOB   LoRa acks: signed, waiting up to 1000 ms, up to 3 tries
+2026-11-13 12:31:39.614 FOB   WiFi path: p35528d1.ala.us-east-1.emqxsl.com:8883 TLS on, budget 5000 ms (join 3000 ms, ack 2000 ms)
+2026-11-13 12:31:41.021 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:43.022 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:45.023 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:46.969 FOB   WiFi not connected yet, will retry in the background
+2026-11-13 12:31:47.024 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:47.056 FOB   SELF_CHECK key=ok counter=ok lora=ok gps=ok battery=ok pressure=ok wifi=fail reset=crash fw=2026.11.11c
+2026-11-13 12:31:48.077 FOB   RETRY_QUEUED ctr=321 kind=STATUS age_s=44 reason=resumed_after_reboot queue=4
+2026-11-13 12:31:48.078 FOB   RETRY_QUEUED ctr=322 kind=STATUS age_s=34 reason=resumed_after_reboot queue=4
+2026-11-13 12:31:48.080 FOB   RETRY_QUEUED ctr=323 kind=SUSPICIOUS age_s=21 reason=resumed_after_reboot queue=4
+2026-11-13 12:31:48.081 FOB   RETRY_QUEUED ctr=324 kind=MEDICAL age_s=8 reason=resumed_after_reboot queue=4
+2026-11-13 12:31:48.282 FOB   SAFEPING_MSG {"wifi": 0, "type": "BOOT", "fail": 0, "rst": 2, "fw": "2026.11.11c", "sig": "4fb8fa63b511c819cc8d6951ccab3c1da0874bd4bd3971b5ba0d0b232606048b", "ctr": 325, "id": "FOB-001", "bat": 99, "v": 1}
+2026-11-13 12:31:48.283 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:48.283 FOB   BOOT_STOPPED ctr=325 reason=button (sent after the press)
+2026-11-13 12:31:48.290 FOB   >>> [VIBRATE: short]
+2026-11-13 12:31:48.505 FOB   no GPS fix, sending without a location
+2026-11-13 12:31:48.506 FOB   SAFEPING_MSG {"ctr": 326, "t": 2128, "id": "FOB-001", "v": 1, "bat": 99, "p": 98991, "type": "SILENT", "sig": "4c2508e29d068c29c3ec28b3a8f91cfa102fc5fa52032733195d1e54e797fec3"}
+2026-11-13 12:31:48.508 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:48.508 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:31:48.509 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:31:49.025 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:50.051 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:31:51.026 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:51.420 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:31:52.788 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:31:52.789 FOB   NOT CONFIRMED SILENT ctr 326 (no ack from the Relay)
+2026-11-13 12:31:52.791 FOB   SEND_RESULT ctr=326 kind=SILENT path=lora result=not_confirmed ms=4346 reason=clock_not_set
+2026-11-13 12:31:52.793 FOB   RETRY_QUEUED ctr=326 kind=SILENT reason=clock_not_set queue=5 dropped=-
+2026-11-13 12:31:52.956 FOB   >>> [VIBRATE: fail]
+2026-11-13 12:31:53.026 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:55.027 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:55.965 FOB   BOOT_RESEND ctr=325 reason=stopped_by_press
+2026-11-13 12:31:55.967 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:31:55.967 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:31:55.968 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:31:57.029 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:31:57.455 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:31:58.927 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:31:59.030 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:32:00.394 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:32:00.396 FOB   NOT CONFIRMED BOOT ctr 325 (no ack from the Relay)
+2026-11-13 12:32:00.397 FOB   SEND_RESULT ctr=325 kind=BOOT path=lora result=not_confirmed ms=4431 reason=clock_not_set
+2026-11-13 12:32:00.398 FOB   BOOT report sent later: not confirmed
+2026-11-13 12:32:00.472 FOB   RETRY_TRY ctr=324 kind=MEDICAL try=1 age_s=20
+2026-11-13 12:32:00.473 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:32:00.473 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:32:00.474 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:32:01.031 INFO  RELAY problem on COM14: could not open port 'COM14': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2). Retrying in 2 s
+2026-11-13 12:32:01.897 FOB   ACK missing (try 1 of 3)
+2026-11-13 12:32:03.033 INFO  RELAY connected on COM14
+2026-11-13 12:32:03.320 FOB   ACK missing (try 2 of 3)
+2026-11-13 12:32:03.902 RELAY Listening for SafePing alerts. Press Ctrl+C to stop.
+2026-11-13 12:32:03.903 RELAY Ack keys for: FOB-001
+2026-11-13 12:32:04.759 FOB   ACK missing (try 3 of 3)
+2026-11-13 12:32:04.759 FOB   NOT CONFIRMED MEDICAL ctr 324 (no ack from the Relay)
+2026-11-13 12:32:04.761 FOB   SEND_RESULT ctr=324 kind=MEDICAL path=lora result=not_confirmed ms=4288 reason=clock_not_set try=1
+2026-11-13 12:32:04.993 FOB   RETRY_TRY ctr=323 kind=SUSPICIOUS try=1 age_s=38
+2026-11-13 12:32:04.994 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:32:04.995 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:32:04.995 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:32:05.437 RELAY SAFEPING_MSG {"ctr": 323, "t": 2115, "id": "FOB-001", "v": 1, "bat": 99, "p": 98998, "type": "SUSPICIOUS", "sig": "cfe032147940c40cbe3b35e51cef7a94b3dc799262ac9f863431f3e789bf0f7d"}
+2026-11-13 12:32:05.495 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 79, 'type': 'SUSPICIOUS', 'source': 'none', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-13 12:32:05.440 RELAY from FOB-001 type SUSPICIOUS ctr 323 signal -37 dBm, snr 9.75
+2026-11-13 12:32:05.440 FOB   ACK received (try 1)
+2026-11-13 12:32:05.441 FOB   sent over LoRa SUSPICIOUS ctr 323 confirmed by the Relay
+2026-11-13 12:32:05.442 FOB   SEND_RESULT ctr=323 kind=SUSPICIOUS path=lora result=confirmed ms=448 reason=clock_not_set try=1
+2026-11-13 12:32:05.444 FOB   RETRY_DONE ctr=323 kind=SUSPICIOUS try=1 path=lora reason=clock_not_set
+2026-11-13 12:32:05.447 FOB   >>> [VIBRATE: ok]
+2026-11-13 12:32:05.677 FOB   RETRY_TRY ctr=321 kind=STATUS try=2 age_s=61
+2026-11-13 12:32:05.679 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:32:05.679 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:32:05.679 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:32:06.422 RELAY SAFEPING_MSG {"ctr": 321, "t": 2103, "id": "FOB-001", "v": 1, "bat": 99, "p": 99004, "type": "STATUS", "sig": "d5aa8aa8c538cd4e2fbeb64d5e34254ecd46e76ac54279edcba6a4a6d2d3040b"}
+2026-11-13 12:32:06.475 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 80, 'type': 'STATUS', 'source': 'none', 'floor': None, 'sms': None, 'late': None}
+2026-11-13 12:32:06.424 RELAY from FOB-001 type STATUS ctr 321 signal -36 dBm, snr 9.75
+2026-11-13 12:32:06.425 FOB   ACK received (try 1)
+2026-11-13 12:32:06.425 FOB   sent over LoRa STATUS ctr 321 confirmed by the Relay
+2026-11-13 12:32:06.426 FOB   SEND_RESULT ctr=321 kind=STATUS path=lora result=confirmed ms=748 reason=clock_not_set try=2
+2026-11-13 12:32:06.428 FOB   RETRY_DONE ctr=321 kind=STATUS try=2 path=lora reason=clock_not_set
+2026-11-13 12:32:06.429 FOB   >>> [VIBRATE: ok]
+2026-11-13 12:32:06.679 FOB   RETRY_TRY ctr=322 kind=STATUS try=1 age_s=52
+2026-11-13 12:32:06.680 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:32:06.680 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:32:06.680 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:32:07.070 RELAY SAFEPING_MSG {"ctr": 322, "t": 2109, "id": "FOB-001", "v": 1, "bat": 99, "p": 99001, "type": "STATUS", "sig": "3f3cd7e9958bb38fd140b513deaceef272d65c638846de0be87a5d7d73174989"}
+2026-11-13 12:32:07.105 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 81, 'type': 'STATUS', 'source': 'none', 'floor': None, 'sms': None, 'late': None}
+2026-11-13 12:32:07.072 FOB   ACK received (try 1)
+2026-11-13 12:32:07.072 RELAY from FOB-001 type STATUS ctr 322 signal -36 dBm, snr 9.75
+2026-11-13 12:32:07.072 FOB   sent over LoRa STATUS ctr 322 confirmed by the Relay
+2026-11-13 12:32:07.073 FOB   SEND_RESULT ctr=322 kind=STATUS path=lora result=confirmed ms=394 reason=clock_not_set try=1
+2026-11-13 12:32:07.075 FOB   RETRY_DONE ctr=322 kind=STATUS try=1 path=lora reason=clock_not_set
+2026-11-13 12:32:07.078 FOB   >>> [VIBRATE: ok]
+2026-11-13 12:32:22.800 FOB   RETRY_TRY ctr=326 kind=SILENT try=1 age_s=30
+2026-11-13 12:32:22.801 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:32:22.801 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:32:22.804 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:32:23.351 RELAY SAFEPING_MSG {"ctr": 326, "t": 2128, "id": "FOB-001", "v": 1, "bat": 99, "p": 98991, "type": "SILENT", "sig": "4c2508e29d068c29c3ec28b3a8f91cfa102fc5fa52032733195d1e54e797fec3"}
+2026-11-13 12:32:23.405 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 82, 'type': 'SILENT', 'source': 'none', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-13 12:32:23.353 RELAY from FOB-001 type SILENT ctr 326 signal -36 dBm, snr 9.5
+2026-11-13 12:32:23.354 FOB   ACK received (try 1)
+2026-11-13 12:32:23.354 FOB   sent over LoRa SILENT ctr 326 confirmed by the Relay
+2026-11-13 12:32:23.355 FOB   SEND_RESULT ctr=326 kind=SILENT path=lora result=confirmed ms=555 reason=clock_not_set try=1
+2026-11-13 12:32:23.357 FOB   RETRY_DONE ctr=326 kind=SILENT try=1 path=lora reason=clock_not_set
+2026-11-13 12:32:34.767 FOB   RETRY_TRY ctr=324 kind=MEDICAL try=2 age_s=54
+2026-11-13 12:32:34.769 FOB   clock not set, WiFi skipped (TLS needs the date)
+2026-11-13 12:32:34.769 FOB   falling back to LoRa: clock_not_set
+2026-11-13 12:32:34.770 FOB   WiFi problem: the clock is not set yet, and the secure connection needs the date
+2026-11-13 12:32:35.161 RELAY SAFEPING_MSG {"ctr": 324, "t": 2121, "id": "FOB-001", "v": 1, "bat": 99, "p": 98998, "type": "MEDICAL", "sig": "ac1dac2ada4e86eb83df43a276c271b2317581e57515fa81aca654fab97306e0"}
+2026-11-13 12:32:35.207 SERVR {'ok': True, 'kind': 'alert', 'alert_id': 83, 'type': 'MEDICAL', 'source': 'none', 'floor': None, 'sms': 'dry_run', 'late': None}
+2026-11-13 12:32:35.163 RELAY from FOB-001 type MEDICAL ctr 324 signal -35 dBm, snr 9.75
+2026-11-13 12:32:35.164 FOB   ACK received (try 1)
+2026-11-13 12:32:35.165 FOB   sent over LoRa MEDICAL ctr 324 confirmed by the Relay
+2026-11-13 12:32:35.167 FOB   SEND_RESULT ctr=324 kind=MEDICAL path=lora result=confirmed ms=398 reason=clock_not_set try=2
+2026-11-13 12:32:35.168 FOB   RETRY_DONE ctr=324 kind=MEDICAL try=2 path=lora reason=clock_not_set
+2026-11-13 12:32:35.170 FOB   >>> [VIBRATE: ok]

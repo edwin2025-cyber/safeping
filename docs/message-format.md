@@ -9,10 +9,12 @@ Every device (Fob, Relay, Reference) and the server follow this one format. If y
 | Alerts from a Fob over WiFi | `safeping/alert/<id>` (for example `safeping/alert/FOB-001`) | Fob | 1 |
 | Signed acks for WiFi alerts | `safeping/ack/<id>` | Server | 1 |
 | "Help is coming" (staff pressed Acknowledge) | `safeping/help/<id>` | Server | 1 |
-| Alerts (old shared topic, still read) | `safeping/alerts` | `fake_fob.py`, or a future Relay forwarder | 1 |
-| Reference readings | `safeping/reference` | Reference | 1 |
+| Alerts (old shared topic, still read) | `safeping/alerts` | nothing (since 2026-11-15 `fake_fob.py` uses `safeping/alert/<id>`) | 1 |
+| Reference readings and the Reference board's BOOT report | `safeping/ref/<id>` (for example `safeping/ref/REF-001`) | Reference board | 0 |
+| Reference readings (old topic, still read) | `safeping/reference` | nothing | 1 |
+| Survey points (Fob in survey mode) | `safeping/survey/<id>` | Fob | 1 |
 
-The broker is EMQX Cloud Serverless. It takes **TLS only, on port 8883**, with a user name and password: `safeping-fob` for the Fobs and `safeping-server` for the server. Both sides check the broker's certificate against the CA file. Certificate checks are never turned off. The Fob checks the certificate date, so it needs a set clock (NTP). With the clock before 2026, it skips WiFi and uses LoRa (`clock_not_set`).
+The broker is EMQX Cloud Serverless. It takes **TLS only, on port 8883**, with a user name and password: `safeping-fob` for the Fobs, `safeping-ref` for the Reference board and `safeping-server` for the server. `safeping-ref` may only publish to `safeping/ref/#`. Both sides check the broker's certificate against the CA file. Certificate checks are never turned off. The Fob checks the certificate date, so it needs a set clock (NTP). With the clock before 2026, it skips WiFi and uses LoRa (`clock_not_set`).
 
 The Relay passes a LoRa packet on exactly as received. It does not edit or re-sign anything. The message is the same on every path. The server only records which path it came in on.
 
@@ -21,7 +23,7 @@ Two ways the Relay can pass alerts on:
 - **MQTT** (planned): the Relay republishes to `safeping/alerts`.
 - **USB serial bridge** (works now): the Relay is plugged into the server computer and prints each new alert as `SAFEPING_MSG <json>`. `server/serial_bridge.py` reads those lines and hands them to the same `processor.process()` the MQTT listener uses.
 
-Size limits: an MQTT payload must be under 512 bytes. A LoRa packet holds at most **255 bytes**, and that is the real limit. The largest realistic alert (GPS, pressure, temperature, battery) is about 241 bytes, so keep device IDs short and do not add fields without checking.
+Size limits: an MQTT payload must be under 512 bytes, except a `SURVEY` (up to 2048 bytes, WiFi only, never LoRa). A LoRa packet holds at most **255 bytes**, and that is the real limit. The largest realistic alert (GPS, pressure, temperature, battery) is about 241 bytes, and about 251 bytes with `"cut": 1`, so keep device IDs short and do not add fields without checking.
 
 ## Fields
 
@@ -31,7 +33,7 @@ All numbers are **integers**. This is on purpose. The ESP32 uses single-precisio
 |---|---|---|---|
 | `v` | Format version | yes | `1` |
 | `id` | Device ID | yes | text, up to 32 characters, such as `FOB-001` |
-| `type` | Message type | yes | `STATUS`, `SUSPICIOUS`, `MEDICAL`, `SILENT`, `BOOT` (Fob) or `REF` (Reference) |
+| `type` | Message type | yes | `STATUS`, `SUSPICIOUS`, `MEDICAL`, `SILENT`, `BOOT`, `SURVEY` (Fob) or `REF` (Reference) |
 | `ctr` | Counter, goes up by at least 1 every message | yes | whole number, 0 or more |
 | `ts` | Device clock at the press | no | Unix seconds. Set by NTP once WiFi works. Left out while the clock is not set. The server also stamps its own time |
 | `lat` | Latitude | no | microdegrees (34.730123 is `34730123`) |
@@ -43,8 +45,15 @@ All numbers are **integers**. This is on purpose. The ESP32 uses single-precisio
 | `sig` | Signature | yes | 64 lowercase hex characters |
 | `fail` | BOOT only: required self-checks that failed | BOOT: yes | bit mask, 0 = all passed (see Boot report) |
 | `wifi` | BOOT only: WiFi joined at power on | no | `1` or `0`. Information only, never a failure |
-| `fw` | BOOT only: firmware version | no | text, 1 to 16 of `A-Z a-z 0-9 . _ -`, such as `2026.11.11` |
+| `fw` | BOOT and REF: firmware version | no | text, 1 to 16 of `A-Z a-z 0-9 . _ -`, such as `2026.11.11` |
 | `rst` | BOOT only: why the Fob started, `machine.reset_cause()` | no | `1` power on (or RST button, or a battery dip), `2` after a crash, `3` watchdog, `4` deep sleep, `5` soft reset (Thonny), `0` unknown |
+| `sensor` | BOOT from the Reference board only: its pressure sensor, model and address | no | text, 1 to 24 of `A-Z a-z 0-9 @ . _ -`, such as `BME280@0x77`, or `none` when no sensor answered |
+| `cut` | Alerts only: the press was cut off by a restart, and the Fob sent it after it started again (see "Press cut off by a restart") | no | `1`. Left out on every other message |
+| `pd` | REF and SURVEY: average pressure over the window, to one decimal | REF (new firmware): yes. SURVEY: yes, unless the sensor gave no reading | tenths of a pascal (`988124` is 98812.4 Pa). `p` is the same value rounded to whole pascals |
+| `n` | REF and SURVEY: readings in the average | REF (new firmware), SURVEY: yes | 0 to 1000 (0 only on a SURVEY with no pressure) |
+| `fix` | SURVEY only: the GPS had a recent fix | SURVEY: yes | `1` or `0`. With `1`, `lat`, `lon` and `acc` are there too |
+| `sats` | SURVEY only: satellites in use | SURVEY: yes | 0 to 99 |
+| `aps` | SURVEY only: WiFi access points heard, strongest first, at most 15 | SURVEY: yes | list of `[bssid, rssi, channel, ssid]`: bssid 12 lowercase hex, rssi dBm (-127 to 0), channel 0 to 255, ssid as lowercase hex of its bytes (0 to 64 hex characters). An empty list is fine |
 
 Leave a field out when it has no value. Never send a name. Names live only on the server.
 
@@ -70,7 +79,27 @@ Example (a Silent alert with a GPS fix):
 
    A `BOOT` from firmware older than `2026.11.11b` has no `rst` and is signed without it (`... | fail | wifi | fw`). The server accepts both.
 
+   The Reference board's `BOOT` adds `sensor` at the end. A `BOOT` without it (every Fob) is signed as above:
+
+   `v | id | type | ctr | ts | lat | lon | acc | p | t | bat | fail | wifi | fw | rst | sensor`
+
+   An alert with `cut` adds it at the end. An alert without `cut` is signed exactly as before:
+
+   `v | id | type | ctr | ts | lat | lon | acc | p | t | bat | cut`
+
+   A `REF` with `pd` (firmware in `firmware/ref/`) adds three fields at the end. A `REF` without `pd` is signed as before:
+
+   `v | id | type | ctr | ts | lat | lon | acc | p | t | bat | pd | n | fw`
+
+   A `SURVEY` adds five fields at the end:
+
+   `v | id | type | ctr | ts | lat | lon | acc | p | t | bat | pd | n | fix | sats | aps`
+
+   `aps` in the signing string: each access point as `bssid,rssi,channel,ssid` (the four values as written in the message), joined by `;`. No access points: an empty string. Every part is hex or a whole number, so a `,` or `;` can never come from inside a value. Example: `a1b2c3d4e5f6,-58,6,5363686f6f6c;0a1b2c3d4e5f,-71,36,`
+
 2. `sig = HMAC-SHA256(secret_key, signing string)`, written as lowercase hex.
+
+The Fob, the Reference board and the server build the signing string with the same rules: `firmware/lib/msgsign.py` on the boards, `validate.signing_string()` on the server. `tests/test_ref.py` and `tests/test_survey.py` check that they agree.
 
 Each device has its own `secret_key`, made by `server/add_device.py`. The server keeps a copy so it can check the signature.
 
@@ -126,7 +155,9 @@ A counter higher than any seen is always inside the window, so a Fob whose count
 
 The record of seen counters lives in the database, so the rules work after a server restart. Entries older than `SEEN_KEEP_DAYS` (7 days) are pruned, at most once an hour, but a counter inside the window is never pruned. So an exact copy inside the window is always a `duplicate`, and an older copy is below the window and a `replay`. It is never stored twice.
 
-A Reference reading (`REF`) keeps the simple rule: its counter must go up, otherwise `replay`. It is never a duplicate.
+A Reference reading (`REF`) keeps the simple rule: its counter must go up, otherwise `replay`. It is never a duplicate. The Reference board's `BOOT` report uses the same counter and the same rule.
+
+A survey point (`SURVEY`) uses the Fob's counter and rules 1 and 2 (an exact copy is a `duplicate` and is acked again, a used counter with another signature is a `replay`). Rule 4 is skipped: a survey point that waited in the Fob's flash is accepted however far below the highest counter it is, so a long walk without WiFi never loses points. Its counter still counts as seen and raises the highest counter, like any Fob message. A copy that comes back after its counter was pruned is not stored twice (one row per device and counter in `survey_points`).
 
 Two copies of one message arriving at the same moment (WiFi and LoRa) cannot both be stored: claiming a counter is one database insert with a unique index on (device, counter).
 
@@ -140,10 +171,10 @@ With the counter window, such an alert is accepted even when a newer alert got i
 
 ## What the server checks, in this order
 
-1. Payload is under 512 bytes and is valid JSON. Otherwise `bad_json`.
-2. Fields are present, whole numbers, and in range. Otherwise `bad_format`.
+1. Payload is under 512 bytes (2048 for a `SURVEY`) and is valid JSON. Otherwise `bad_json`.
+2. Fields are present, whole numbers, and in range. `cut`, when present, is `1` on an alert type. `pd`, `n`, `fw`, `fix`, `sats` and `aps` follow the field table. Otherwise `bad_format`.
 3. The ID is registered. Otherwise `unknown_device`.
-4. The device is allowed to send this type (Fobs send alerts and `BOOT`, the Reference sends `REF`). Otherwise `wrong_role`.
+4. The device is allowed to send this type (Fobs send alerts, `BOOT` and `SURVEY`, the Reference sends `REF` and its own `BOOT`). Otherwise `wrong_role`.
 5. The signature matches. Otherwise `bad_signature`.
 6. The counter rule above: `duplicate` or `replay`, or accepted.
 
@@ -155,13 +186,31 @@ Every rejection is written to the `rejected` table with the reason. This is the 
 
 The Fob saves its counter to flash BEFORE every send, so a crash or power loss can never reuse a number. A cancelled alert does not use a counter. A `BOOT` report uses a counter like any message. A retry does NOT use a new counter: it is the same signed message.
 
+- **Crash-safe write.** `counter.txt` is written as `counter.txt.tmp` in full, then renamed over `counter.txt`. So the file is always the old or the new value. At read time the Fob takes the higher of the two files that read as a whole number.
+- **RTC copy.** Each new counter also goes into RTC memory (the same record as the press below) before the flash write. RTC memory survives a crash reset, not a power cut.
+- **Jump at boot.** On every boot, before the first send, the counter jumps ahead by `COUNTER_BOOT_JUMP` (8) from the highest of: `counter.txt`, the RTC copy, a signed press in RTC memory, and every counter in the retry queue. So a lost write can never reuse a number. The log line is `COUNTER_JUMP from=... to=...`.
+- What the jump costs: the server's counter window is 32. A queued alert is retried for 10 minutes. If the Fob restarts 4 times in those 10 minutes (4 x 8 jumps plus the BOOT reports), an old queued alert falls below the window and the server rejects it as `replay`.
+
+## Press cut off by a restart (Fob)
+
+A crash can happen in the middle of a press, before the alert is sent. So the Fob keeps the press in RTC memory from the moment it sees it, before any flash write. After the restart it sends it.
+
+| What the Fob had when it restarted | What it sends after the restart |
+|---|---|
+| A signed alert | The same message, from the retry queue (same `ctr`, same `sig`, no `cut`) |
+| A decided type (STATUS, SILENT, or SUSPICIOUS or MEDICAL in the cancel window) | That type, with a new counter and `"cut": 1` |
+| A press pattern not finished | From the presses recorded so far: 3 or more = MEDICAL, 2 = SUSPICIOUS, a hold that started = SILENT, 1 = STATUS. With a new counter and `"cut": 1` |
+
+A press that is still down counts as one more press, unless it has been down for `CUT_HOLD_MS` (1 s). Then it is a hold that started. The dashboard shows "Press cut off by a restart" on alerts with `cut`. Log lines: `PRESS_FOUND`, `PRESS_RESUMED`, and `PRESS_DROPPED` when the same record was found on 3 boots in a row (it is dropped on the 4th, so it cannot make the Fob restart forever).
+
 ## Retry queue (Fob)
 
 An alert that ends NOT confirmed on both paths (WiFi, then LoRa) is kept and sent again.
 
 - The alert is signed once, at the press. Every retry sends the exact same message (same `ctr`, `ts` and `sig`). Extra copies are `duplicate` at the server.
 - A retry every `RETRY_EVERY_MS` (30 s) for `RETRY_FOR_MS` (10 minutes), then the Fob gives up. Each retry uses the normal WiFi-then-LoRa logic and budget. 10 minutes is inside the server's `MAX_ALERT_AGE_S` (15 minutes), so a retry shows "Sent late", never "over 15 min", when the Fob's clock is right. At most 5 alerts wait, well inside the 32 counter window.
-- At most `RETRY_MAX` (5) alerts. When full, the oldest STATUS is dropped first, then the oldest SUSPICIOUS, then SILENT. A MEDICAL is never dropped to make room for a lower type. All MEDICAL: the oldest MEDICAL is dropped and the Fob says so. In general a higher type is never dropped for a lower one, so a new alert of a lower type than everything queued is not queued.
+- A `BOOT` report that is not confirmed on both paths is queued too, as the lowest kind of all, so the Devices page still learns about the restart. It gets no light or buzz when it gets through.
+- At most `RETRY_MAX` (5) alerts. When full, the oldest BOOT report is dropped first, then the oldest STATUS, then the oldest SUSPICIOUS, then SILENT. A MEDICAL is never dropped to make room for a lower type. All MEDICAL: the oldest MEDICAL is dropped and the Fob says so. In general a higher type is never dropped for a lower one, so a new alert of a lower type than everything queued is not queued.
 - Kept in flash (`queue.json`). Each save writes `queue.json.tmp` in full, then renames it over `queue.json`, so a power cut leaves either the old or the new queue. After a reboot, entries still inside their 10 minutes are tried again. The age comes from `ts` when the clock is set, otherwise from the age saved at the last write (time the Fob was off is not known, so this can be too young).
 - A button press always wins. A retry runs only while the Fob is idle, and any button activity stops it at once (`RETRY_STOPPED`). The press is handled first. A stopped try does not count.
 - When a retry gets through: the normal confirm light and buzz, except SILENT, which gets nothing at all.
@@ -199,7 +248,7 @@ Example:
 
 `rst` comes from `machine.reset_cause()`. On the ESP32 port of MicroPython 1.27, a crash (ESP-IDF `ESP_RST_PANIC`) and a software restart (`ESP_RST_SW`, `machine.reset()`) both give `2`. The Fob never calls `machine.reset()`, so the dashboard shows `2` as "Restarted after a crash". The RST button and a battery dip (brownout) both give `1` ("Power on"). Restarts are boot reports, never alerts.
 
-It goes WiFi first, then LoRa, with the same budget as alerts, and is acked like an alert. It is not put in the retry queue. A button press stops it (`BOOT_STOPPED ctr=... reason=button`). The Fob then sends the SAME signed message later, once the press is handled and the Fob is idle (`BOOT_RESEND ctr=...`, and a `SEND_RESULT ... kind=BOOT ... resend=1` line). If the press was an alert confirmed over WiFi, the Fob is listening for help on that connection, so the BOOT report goes on the same connection and listening never stops. If that connection does not carry it, the Fob uses the normal WiFi-then-LoRa send. A BOOT report sent later that still ends unconfirmed is not tried again. The server stores it on the device (`boot_reports`, the newest 10 per device), never as an alert: it never counts toward Overview, the chart, Live, texts or exports.
+It goes WiFi first, then LoRa, with the same budget as alerts, and is acked like an alert. Not confirmed on both paths: it goes in the retry queue as the lowest kind (see "Retry queue"). A button press stops it (`BOOT_STOPPED ctr=... reason=button`). The Fob then sends the SAME signed message later, once the press is handled and the Fob is idle (`BOOT_RESEND ctr=...`, and a `SEND_RESULT ... kind=BOOT ... resend=1` line). If the press was an alert confirmed over WiFi, the Fob is listening for help on that connection, so the BOOT report goes on the same connection and listening never stops. If that connection does not carry it, the Fob uses the normal WiFi-then-LoRa send. A BOOT report sent later that still ends unconfirmed goes in the retry queue too. The server stores it on the device (`boot_reports`, the newest 10 per device), never as an alert: it never counts toward Overview, the chart, Live, texts or exports.
 
 ## "Help is coming" (WiFi)
 
@@ -231,13 +280,51 @@ Over LoRa (Part E) is not built yet.
 | `SUSPICIOUS` | 2 presses | yes | yes |
 | `MEDICAL` | 3 or more presses | yes | yes |
 | `SILENT` | hold (2 s on the bench, `HOLD_MS`; the PDR said 5 s) | yes | yes |
-| `REF` | Reference pressure reading | no | status strip only |
+| `REF` | Reference pressure reading | no | top bar "Reference", Devices page (last reading) |
 | `BOOT` | Fob self-check at power on | no | Devices page only ("Last start"), never as an alert |
+| `SURVEY` | Fob in survey mode: one survey point (1 press) | no | never. Stored in `survey_points`, read by `tests/survey_analyze.py` |
+
+## Reference readings (`REF`)
+
+The Reference board (`firmware/ref/`) sits on academic building floor 1, on USB power and school WiFi. It reads its pressure sensor every 2 s and every 30 s publishes one signed `REF` to `safeping/ref/<id>` at QoS 0:
+
+```json
+{"v":1,"id":"REF-001","type":"REF","ctr":4100,"ts":1794754815,"p":98812,"t":2150,
+ "pd":988124,"n":15,"fw":"ref-2026.11.14a","sig":"<64 hex characters>"}
+```
+
+- `pd` is the average of the window's readings in tenths of a pascal, `p` the same rounded to whole pascals, `t` the average temperature, `n` the readings in the average.
+- `ts` is the **middle** of the 30 s window (the time the average stands for). Left out while the clock is not set.
+- The counter is saved in blocks (`counter.txt` holds the highest counter the board may use, written through `counter.txt.tmp`). A restart starts above that number, so a counter is never used twice. It must go up at the server, like before.
+- At boot it publishes one signed `BOOT` report to the same topic, on its first broker connection, before any reading: `fail` uses the Fob's bits for the checks it has (key 1, counter 2, pressure 32), plus `wifi`, `fw`, `rst` and `sensor` (for example `BME280@0x77`). It is never acked (QoS 0) and not retried: the readings show the board is alive. The Devices page shows it as the board's Last start, with the sensor.
+- The server keeps readings for `REF_KEEP_DAYS` (14 days).
+
+The server uses the readings in two places:
+
+1. **Top bar "Reference"**: green with "updated 20 s ago" when a reading arrived in the last 2 minutes, orange otherwise.
+2. **Alerts with `p`**: the server stores the reference pressure at the press time and the difference (alert minus reference). The press time is the alert's `ts`, or the time it arrived when there is no `ts`. The reference is the two readings around that time, interpolated, if both are within 60 s (`REF_MATCH_S`), otherwise the nearest one within 60 s, otherwise none. If `server/sensor_offsets.json` has an offset for the Fob (from `tests/ref_calibrate.py`), it is stored too, and the dashboard shows the difference with the offset taken off. **No floor is worked out from this yet.** The old floor rule below still runs.
+
+## Survey points (`SURVEY`)
+
+With `SURVEY_MODE = True` in the Fob's `config.py`, a single press (STATUS) makes a survey point instead of an alert. Every other press type is a normal alert.
+
+```json
+{"v":1,"id":"FOB-001","type":"SURVEY","ctr":512,"ts":1794754821,"p":98760,"t":2210,"bat":80,
+ "pd":987603,"n":15,"fix":0,"sats":3,
+ "aps":[["a1b2c3d4e5f6",-58,6,"5363686f6f6c"],["0a1b2c3d4e5f",-71,36,""]],
+ "sig":"<64 hex characters>"}
+```
+
+- Pressure: the average of 15 readings over 3 s. `ts` is the middle of those 3 s.
+- GPS: `fix`, `sats`, and `lat`, `lon`, `acc` when there is a fix.
+- WiFi: one scan, the 15 strongest access points.
+- Sent over WiFi only, to `safeping/survey/<id>`, and acked by the server like an alert (`ACK <id> <ctr> <mac>` on `safeping/ack/<id>`). No WiFi, or no ack: the signed message is kept in the Fob's flash (`survey_q/`, one file per point) and sent again later, oldest first, while the Fob is idle. Never over LoRa, never a text, never Pushover, never on Live or Overview.
+- The server stores it in `survey_points` with the reference pressure at `ts` (same matching as alerts).
 
 ## How location is decided
 
 1. If the message has `lat` and `lon`, use them (with `acc`).
-2. Otherwise, if it has `p` and the latest Reference reading is less than 120 seconds old, the floor is
+2. Otherwise, if it has `p` and the latest Reference reading is less than 120 seconds old (any Reference board), the floor is
    `1 + round((reference p - fob p) / PA_PER_FLOOR)`. The Reference sits on the ground floor, which the server calls floor 1.
    `PA_PER_FLOOR` defaults to 42 Pa. The floor walk on 2026-11-07 measured about 55 Pa per floor, with uneven floors (ground to 1st 68 Pa, then 54, then 42), so start the server with `PA_PER_FLOOR=55`. A per-floor table would be more accurate (planned).
 3. Otherwise the alert is stored with no location.

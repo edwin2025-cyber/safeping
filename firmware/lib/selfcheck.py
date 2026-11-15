@@ -63,9 +63,12 @@ def fail_mask(results):
     return mask
 
 
-def summary_line(results, fw, reset=None):
+def summary_line(results, fw, reset=None, checks=None):
+    """checks: the check names to print, in order. None = the Fob's REQUIRED checks.
+    The Reference board passes its own (key, counter, pressure)."""
     parts = ["SELF_CHECK"]
-    for name, _ in REQUIRED:
+    names = [name for name, _ in REQUIRED] if checks is None else list(checks)
+    for name in names:
         parts.append("{}={}".format(name, results.get(name, "fail")))
     parts.append("wifi={}".format(results.get("wifi", "fail")))
     if reset is not None:

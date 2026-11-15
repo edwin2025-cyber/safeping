@@ -123,6 +123,8 @@ class Session:
         self.help = {}            # ctr -> ms after confirm
         self.help_timeouts = []
         self.help_ignored = 0
+        self.survey_points = []   # one dict per SURVEY_POINT line (survey mode)
+        self.survey_sent_later = 0
 
     # ---------- Fob lines ----------
     def fob_line(self, t, line):
@@ -177,6 +179,17 @@ class Session:
             return "FOB  " + line
         if line.startswith("SELF_CHECK "):
             self.self_checks.append(parse_send_result(line))
+            return "FOB  " + line
+        if line.startswith("SURVEY_POINT "):                 # survey mode: a point, never an alert
+            self.survey_points.append(parse_send_result(line))
+            self.last_fob_ctr = None
+            return "FOB  " + line
+        if line.startswith("SURVEY_MSG "):
+            return None                                      # the full point is in the raw file
+        if line.startswith(("SURVEY_SENT ", "SURVEY_SEND_STOPPED ", "SURVEY_FAIL ", "SURVEY_DROPPED ",
+                            "SURVEY_MODE ")):
+            if line.startswith("SURVEY_SENT "):
+                self.survey_sent_later += 1
             return "FOB  " + line
         if line.startswith(RETRY_TAGS):
             self._retry_line(line)
@@ -463,6 +476,15 @@ class Session:
             "  stopped listening (2 min): {}".format(len(self.help_timeouts)),
             "  wrong help messages ignored: {}".format(self.help_ignored),
         ]
+        if self.survey_points:
+            by = {}
+            for sp in self.survey_points:
+                by[sp.get("sent", "?")] = by.get(sp.get("sent", "?"), 0) + 1
+            lines += [
+                "Survey points:               {} ({})".format(
+                    len(self.survey_points), ", ".join("{} {}".format(n, k) for k, n in sorted(by.items()))),
+                "  sent later from flash:     {}".format(self.survey_sent_later),
+            ]
         return lines
 
     def _relay_summary(self, end_t):
@@ -617,7 +639,17 @@ def load_forwarder():
     import db
     import serial_bridge
     db.init_db()
+    serial_bridge.pushover.announce()
+    serial_bridge.processor.textbelt.announce()       # forwarded alerts are texted like the bridge's
     return serial_bridge.handle_line
+
+
+def load_settings():
+    """safeping.env (server/envfile.py), before anything reads a setting."""
+    if str(SERVER_DIR) not in sys.path:
+        sys.path.insert(0, str(SERVER_DIR))
+    import envfile
+    envfile.load()
 
 
 def main():
@@ -633,6 +665,7 @@ def main():
                         help="also send each Relay alert to the server, like serial_bridge.py "
                              "(the bridge cannot run while the logger holds the Relay port)")
     args = parser.parse_args()
+    load_settings()
 
     if serial is None:
         print("pyserial is not installed. Run: python -m pip install pyserial")

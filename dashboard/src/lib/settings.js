@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   showStatus: false,
   autoZoom: true,
   mapLabels: true,
+  mapStyle: "default", // default (light or dark), streets, satellite, hybrid
   timeFormat: "12", // 12 or 24
   sightRadius: null, // 25, 50 or 100
   cameraBefore: null, // minutes

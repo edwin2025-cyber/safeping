@@ -43,6 +43,7 @@ import {
   faFileExcel,
   faFilter,
   faFire,
+  faFont,
   faGauge,
   faGear,
   faHashtag,
@@ -137,13 +138,15 @@ export const icons = {
   history: faClockRotateLeft,
   late: faHourglassHalf,
   boot: faPowerOff,
+  cutOff: faPowerOff, // "Press cut off by a restart"
 
   // Map
   zoomIn: faPlus,
   zoomOut: faMinus,
   fitAll: faExpand,
   center: faLocationCrosshairs,
-  mapLabels: faLayerGroup,
+  mapLabels: faFont,
+  mapLayers: faLayerGroup,
 
   // Live views and empty states
   split: faTableColumns,

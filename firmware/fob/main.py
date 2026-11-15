@@ -45,6 +45,13 @@ Button
   Every edge of the button is recorded by an interrupt (presslog.py), so a press during
   a slow network call is never lost, and its timing is the real one.
 
+Survey mode (SURVEY_MODE = True, off by default)
+  A single press makes a survey point instead of a STATUS alert: pressure averaged over
+  3 s, GPS fix info and a WiFi scan, sent as a signed SURVEY message over WiFi only
+  (survey.py). No WiFi: it waits in flash (survey_q/) and goes later. Two short green
+  blinks when it is sent or stored. Every other press type is a normal alert. A long
+  blue blink at boot means survey mode is on.
+
 Settings come from config.py (see config.example.py). Anything missing uses the
 default below. Pin numbers are for the ESP32 board in Wokwi. Change them for the
 real board.
@@ -69,8 +76,18 @@ import presslog                      # button edges by interrupt (presslog.py)
 import retryq                        # the retry queue (retryq.py)
 import selfcheck                     # the boot self-check (selfcheck.py)
 import helplisten                    # "help is coming" over WiFi (helplisten.py)
+import pressrec                      # a press kept in RTC memory through a crash (pressrec.py)
+import counterfile                   # counter.txt written through a .tmp file (counterfile.py)
+import msgsign                       # the signing string, shared with the Reference board (msgsign.py)
 
-FW_VERSION = "2026.11.11c"           # sent in the BOOT report. Change it when main.py changes.
+FW_VERSION = "2026.11.15a"           # sent in the BOOT report. Change it when main.py changes.
+
+# Survey mode only. The Fob runs without them (survey mode then stays off).
+try:
+    import survey                    # survey points (survey.py)
+    import baro                      # pressure averaged to one decimal (baro.py)
+except ImportError as _err:
+    survey, baro, SURVEY_IMPORT_ERROR = None, None, _err
 
 try:
     from umqtt_safe import MQTTClient, step_parts     # our MQTT client with timeouts
@@ -150,6 +167,8 @@ WATCHDOG_MS = _cfg("WATCHDOG_MS", 30000)
 SECRET_KEY = _cfg("SECRET_KEY", "paste-the-key-from-add_device.py")
 SECRET_KEY_LEN = _cfg("SECRET_KEY_LEN", 32)      # add_device.py makes 32 hex characters
 COUNTER_FILE = _cfg("COUNTER_FILE", "counter.txt")
+COUNTER_BOOT_JUMP = _cfg("COUNTER_BOOT_JUMP", 8)   # every boot, the counter jumps ahead this much
+CUT_HOLD_MS = _cfg("CUT_HOLD_MS", 1000)          # a press down this long, cut off by a restart, is a hold (SILENT)
 
 # Retry queue (alerts not confirmed on both paths)
 RETRY_EVERY_MS = _cfg("RETRY_EVERY_MS", 30000)   # try again this often
@@ -162,6 +181,18 @@ HELP_LISTEN_MS = _cfg("HELP_LISTEN_MS", 120000)
 HELP_TOPIC = "safeping/help/" + DEVICE_ID
 HELP_KINDS = ("SUSPICIOUS", "MEDICAL", "SILENT")   # STATUS is not acknowledged by staff
 
+# Survey mode (message-format.md, "Survey points"). Off unless config.py turns it on.
+SURVEY_MODE = _cfg("SURVEY_MODE", False)         # True: a single press makes a survey point
+SURVEY_TOPIC = "safeping/survey/" + DEVICE_ID
+SURVEY_SAMPLES = _cfg("SURVEY_SAMPLES", 15)      # pressure readings in one point
+SURVEY_WINDOW_MS = _cfg("SURVEY_WINDOW_MS", 3000)   # spread over this long
+SURVEY_TOP_APS = _cfg("SURVEY_TOP_APS", 15)      # strongest access points kept
+SURVEY_DIR = _cfg("SURVEY_DIR", "survey_q")      # points waiting for WiFi, one file each
+SURVEY_MAX_STORED = _cfg("SURVEY_MAX_STORED", 100)   # full: a new point is not kept (orange)
+SURVEY_RETRY_MS = _cfg("SURVEY_RETRY_MS", 30000)     # try a waiting point again this often
+SURVEY_AUTO_MS = _cfg("SURVEY_AUTO_MS", 0)       # > 0: a point by itself this often (calibration)
+SURVEY_BOOT_BLINK_MS = 2000                      # the long blue blink at boot
+
 # Boot self-check
 GPS_CHECK_MS = _cfg("GPS_CHECK_MS", 5000)        # the GPS must send data within this after start
 CHECK_OK_MS = 1000                               # green this long when every check passed
@@ -173,6 +204,11 @@ LED_TYPE = _cfg("LED_TYPE", "rgb")            # "rgb" (Wokwi RGB LED) or "neopix
 RGB_PINS = _cfg("RGB_PINS", (2, 4, 5))        # red, green, blue
 RGB_COMMON_ANODE = _cfg("RGB_COMMON_ANODE", False)
 NEOPIXEL_PIN = _cfg("NEOPIXEL_PIN", 8)
+# A second NeoPixel in the case (Adafruit NeoPixel Mini PCB, power from VBAT, data from a
+# GPIO). None = not fitted. It shows the same colors and patterns as the board's own LED
+# (docs/led-patterns.md), at LED_BRIGHTNESS_EXTERNAL percent of the same brightness.
+LED_PIN_EXTERNAL = _cfg("LED_PIN_EXTERNAL", None)
+LED_BRIGHTNESS_EXTERNAL = _cfg("LED_BRIGHTNESS_EXTERNAL", 30)
 MOTOR_PIN = _cfg("MOTOR_PIN", 18)             # drives the PN2222 base (or a stand-in LED in Wokwi)
 MOTOR_STRENGTH = _cfg("MOTOR_STRENGTH", 100)  # percent. PWM duty while the motor is on
 MOTOR_FREQ = _cfg("MOTOR_FREQ", 200)          # PWM switching speed in Hz
@@ -252,36 +288,18 @@ IDLE, DOWN, COUNT, PENDING, LOCKOUT = "IDLE", "DOWN", "COUNT", "PENDING", "LOCKO
 
 
 # ---------- signing (message-format.md) ----------
-SIGNED_FIELDS = ("v", "id", "type", "ctr", "ts", "lat", "lon", "acc", "p", "t", "bat")
-BOOT_FIELDS = ("fail", "wifi", "fw", "rst")      # signed after the others, BOOT only
-
-
 class PressStop(Exception):
     """A button press stopped a retry or the boot report. No __init__ (MicroPython 1.27)."""
     pass
 
 
-def hmac_sha256(key, message):
-    """HMAC-SHA256. MicroPython has no hmac module, so it is written out here."""
-    block = 64
-    if len(key) > block:
-        key = hashlib.sha256(key).digest()
-    key = key + b"\x00" * (block - len(key))
-    inner = hashlib.sha256(bytes(b ^ 0x36 for b in key) + message).digest()
-    return hashlib.sha256(bytes(b ^ 0x5C for b in key) + inner).digest()
-
-
 def signing_string(msg):
-    parts = []
-    for name in SIGNED_FIELDS + BOOT_FIELDS if msg.get("type") == "BOOT" else SIGNED_FIELDS:
-        value = msg.get(name)
-        parts.append("" if value is None else str(value))
-    return "|".join(parts)
+    """The fields joined by "|" for this message's type. Shared code: msgsign.py."""
+    return msgsign.signing_string(msg)
 
 
 def sign(msg):
-    digest = hmac_sha256(SECRET_KEY.encode(), signing_string(msg).encode())
-    return binascii.hexlify(digest).decode()
+    return msgsign.sign(SECRET_KEY, msg)
 
 
 # ---------- clock ----------
@@ -296,22 +314,47 @@ def unix_time():
 
 
 # ---------- counter, saved in flash ----------
+_counter = counterfile.CounterFile(COUNTER_FILE)
+_counter_rec = [None]           # the Fob's pressrec.PressRecord (RTC copy of the counter), set by Fob()
+
+
+def _counter_last():
+    """The last counter in flash. A damaged file falls back to the highest of the RTC
+    copy and the clock, so the server does not see a replay."""
+    last, state = _counter.read()
+    if last is not None:
+        return last
+    if state == "new":
+        return -1                       # first boot, no file yet
+    rec = _counter_rec[0]
+    last = counterfile.jump_base(None, [unix_time(), None if rec is None else rec.ctr])
+    print("counter file damaged, restarting from", last)
+    return last
+
+
+def _counter_save(n):
+    """The RTC copy first (RAM, no flash), then counter.txt through counter.txt.tmp."""
+    if _counter_rec[0] is not None:
+        _counter_rec[0].counter(n)
+    _counter.write(n)
+
+
 def next_counter():
     """Add 1, save it, then return it. Saved first so a crash never reuses a number."""
-    try:
-        with open(COUNTER_FILE) as f:
-            last = int(f.read().strip())
-    except OSError:
-        last = -1                       # first boot, no file yet
-    except ValueError:
-        # File damaged. Jump ahead using the clock so the server does not see a replay.
-        now = unix_time()
-        last = now if now else 0
-        print("counter file damaged, restarting from", last)
-    counter = last + 1
-    with open(COUNTER_FILE, "w") as f:
-        f.write(str(counter))
+    counter = _counter_last() + 1
+    _counter_save(counter)
     return counter
+
+
+def jump_counter(others):
+    """Boot only, before the first send: jump COUNTER_BOOT_JUMP ahead of the highest
+    counter known (the file, plus others: the RTC copy, a signed press, the queue).
+    A write lost in a crash can then never make the Fob reuse a number.
+    Returns (from, to)."""
+    base = counterfile.jump_base(_counter_last(), others)
+    to = base + COUNTER_BOOT_JUMP
+    _counter_save(to)
+    return base, to
 
 
 # ---------- sensors (stubs until the hardware is on the bench) ----------
@@ -548,8 +591,11 @@ def lora_send_confirmed(payload, ctr, sig, stop=None):
 
 
 # ---------- the message ----------
-def build_message(kind):
+def build_message(kind, cut=False):
+    """cut: the press was cut off by a restart ("cut": 1, signed, message-format.md)."""
     msg = {"v": 1, "id": DEVICE_ID, "type": kind, "ctr": next_counter()}
+    if cut:
+        msg["cut"] = 1
     ts = unix_time()
     if ts is not None:
         msg["ts"] = ts
@@ -779,31 +825,18 @@ def tls_context():
     Loads the CA as given (PEM or DER). If the board refuses PEM, it is turned into DER."""
     global _tls_ctx
     if _tls_ctx is None:
-        if ssl is None:
-            raise OSError("ssl module missing")
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ctx.verify_mode = ssl.CERT_REQUIRED
-        with open(MQTT_CA_FILE, "rb") as f:
-            data = f.read()
-        try:
-            ctx.load_verify_locations(cadata=data)
-        except Exception as err:
-            der = sendpath.pem_to_der(data)
-            if der is data:
-                raise
-            print("CA as PEM refused ({}), loading it as DER".format(err))
-            ctx.load_verify_locations(cadata=der)
-        _tls_ctx = ctx
+        _tls_ctx = sendpath.tls_context(ssl, MQTT_CA_FILE, print)   # shared with the Reference board
     return _tls_ctx
 
 
-def wifi_send(payload, ctr, sig, budget, service=None, keep_open=None, stop=None):
+def wifi_send(payload, ctr, sig, budget, service=None, keep_open=None, stop=None, topic=None):
     """One WiFi/MQTT attempt inside the budget. Never retries.
     Returns (confirmed, reason, published, detail).
     published = the broker took it (PUBACK). detail = the error behind a failure, or None.
     keep_open: a list. If given, the Fob also subscribes to its help topic, and after a
     confirm the open client is put in the list (for the help listener).
-    stop: a function that ends the attempt early when it returns True (retries only)."""
+    stop: a function that ends the attempt early when it returns True (retries only).
+    topic: where to publish. None = the alert topic. Survey points use SURVEY_TOPIC."""
     reason = sendpath.skip_reason(WIFI_SSID, MQTTClient is not None, ACK_KEY is not None,
                                   MQTT_TLS, (not MQTT_TLS) or ca_present(), clock_year())
     if reason:
@@ -845,7 +878,7 @@ def wifi_send(payload, ctr, sig, budget, service=None, keep_open=None, stop=None
     client.set_callback(on_message)
     listen = keep_open is not None and HELP_KEY is not None and HELP_LISTEN_MS > 0
     confirmed, reason, published, detail, step = sendpath.mqtt_attempt(
-        client, addr, budget, ctx, MQTT_HOST, ACK_TOPIC, ALERT_TOPIC, payload,
+        client, addr, budget, ctx, MQTT_HOST, ACK_TOPIC, ALERT_TOPIC if topic is None else topic, payload,
         MQTT_ACK_WAIT_MS, got, step_parts, help_topic=HELP_TOPIC if listen else None,
         keep_open=keep_open if listen else None, stop=stop)
     if not confirmed:
@@ -859,6 +892,14 @@ def wifi_send(payload, ctr, sig, budget, service=None, keep_open=None, stop=None
 
 
 # ---------- LED ----------
+def external_pin_conflict(pin):
+    """What already uses this pin, or None. The external LED must have a pin of its own."""
+    used = {BUTTON_PIN: "button", MOTOR_PIN: "motor", NEOPIXEL_PIN: "board LED", LORA_SCK: "LoRa SCK",
+            LORA_MOSI: "LoRa MOSI", LORA_MISO: "LoRa MISO", LORA_CS: "LoRa CS", LORA_RST: "LoRa RST",
+            GPS_TX: "GPS TX", GPS_RX: "GPS RX", I2C_SDA: "I2C SDA", I2C_SCL: "I2C SCL"}
+    return used.get(pin)
+
+
 class Led:
     def __init__(self):
         self.scale = 100                  # percent, lowered when the battery is low
@@ -876,6 +917,19 @@ class Led:
         else:
             self.pixel = None
             self.pwm = [PWM(Pin(p), freq=1000) for p in RGB_PINS]
+        self.external = None
+        self.ext_pct = max(0, min(100, LED_BRIGHTNESS_EXTERNAL))
+        if LED_PIN_EXTERNAL is not None:
+            taken = external_pin_conflict(LED_PIN_EXTERNAL)
+            if taken:
+                print("WARNING: LED_PIN_EXTERNAL {} is already the {}. External LED off.".format(LED_PIN_EXTERNAL, taken))
+            elif neopixel is None:
+                print("WARNING: neopixel module missing, external LED off")
+            else:
+                try:
+                    self.external = neopixel.NeoPixel(Pin(LED_PIN_EXTERNAL), 1)
+                except Exception as err:
+                    print("external LED off:", err)
         self._write(OFF)
 
     def _write(self, rgb):
@@ -883,6 +937,9 @@ class Led:
             return
         self.shown = rgb
         r, g, b = [c * self.scale // 100 for c in rgb]
+        if self.external is not None:
+            self.external[0] = (r * self.ext_pct // 100, g * self.ext_pct // 100, b * self.ext_pct // 100)
+            self.external.write()
         if self.pixel is not None:
             self.pixel[0] = (r, g, b)
             self.pixel.write()
@@ -1091,6 +1148,22 @@ class Fob:
         self.help = None
         if HELP_KEY is not None and HELP_LISTEN_MS > 0 and not sendpath.wifi_off(WIFI_SSID):
             self.help = helplisten.HelpListener(DEVICE_ID, HELP_KEY, HELP_LISTEN_MS)
+        # A press kept in RTC memory until it is confirmed or saved in the queue file,
+        # so a crash in a flash write cannot lose it (pressrec.py, 2026-11-13 crash).
+        self.rec_error = None
+        try:
+            store = pressrec.RtcStore(machine)
+        except Exception as err:
+            store = None
+            self.rec_error = err
+        self.rec = pressrec.PressRecord(store)
+        self.rec_found = None            # the record a crash left behind, read first thing at boot
+        _counter_rec[0] = self.rec       # each new counter goes to RTC memory before flash
+        # Survey mode (survey.py): points waiting for WiFi, and when to try them again
+        self.survey_store = survey.SurveyStore(SURVEY_DIR, SURVEY_MAX_STORED) if survey else None
+        self.survey_n = 0                # survey points since boot (the n= in SURVEY_POINT)
+        self.next_survey_flush = 0
+        self.next_survey_auto = 0
 
     # --- start up ---
     def service(self, now):
@@ -1107,12 +1180,23 @@ class Fob:
             time.sleep_ms(LOOP_MS)
 
     def boot(self):
+        self.rec_found = self.rec.load()                 # RAM only, before anything else
         try:
             self.reset_cause = machine.reset_cause()     # why the Fob started (selfcheck.py)
         except Exception:
             self.reset_cause = 0
         print("SafePing Fob", DEVICE_ID, "firmware", FW_VERSION)
+        try:
+            print("MicroPython", os.uname().release)    # 1.27.0 now, 1.29.0 after the upgrade
+        except Exception:
+            pass
         print("Reset cause:", self.reset_cause, selfcheck.reset_name(self.reset_cause))
+        if self.rec.on():
+            print("Press record: RTC memory, kept through a crash")
+        else:
+            print("WARNING: press record off (no RTC memory):", self.rec_error)
+        if self.rec_found is not None:
+            print("PRESS_FOUND stage={} boots={}".format(self.rec_found["stage"], self.rec_found["boots"]))
         print("LoRa fallback on: CS", LORA_CS, "RST", LORA_RST)
         print("Button:", self.btn.mode)
         if SECRET_KEY.startswith("paste-the-key"):
@@ -1139,8 +1223,11 @@ class Fob:
         results = self.self_check(gps_on, gps_t0, wifi)
         print(selfcheck.summary_line(results, FW_VERSION, self.reset_cause))
         self.show_check(results)
+        self.survey_boot()
         self.refresh_battery()
         self.resume_queue()
+        self.boot_counter_jump()
+        self.resume_press(self.rec_found)
         self.send_boot_report(results)
         if watchdog_start():
             print("watchdog on:", WATCHDOG_MS, "ms")
@@ -1177,11 +1264,8 @@ class Fob:
     def self_check(self, gps_on, gps_t0, wifi):
         results = {"wifi": wifi}
         results["key"] = "ok" if selfcheck.key_ok(SECRET_KEY, SECRET_KEY_LEN) else "fail"
-        try:
-            with open(COUNTER_FILE) as f:
-                text = f.read()
-        except OSError:
-            text = None
+        value, state = _counter.read()           # counter.txt or counter.txt.tmp
+        text = None if state == "new" else ("" if value is None else str(value))
         results["counter"] = selfcheck.counter_state(text)
         try:
             radio = _lora_radio()                # begin() reads the version register
@@ -1235,10 +1319,19 @@ class Fob:
         try:
             ok, outcome, reason = self.deliver("BOOT", payload, ctr, msg["sig"], stop=self.btn.touched)
         except PressStop:
+            self.rec.started(self.btn.pressed_now())                   # the press, in RTC memory first
             self.boot_pending = (payload, ctr, msg["sig"])
             print("BOOT_STOPPED ctr={} reason=button (sent after the press)".format(ctr))
             return
         print("BOOT report", "confirmed" if ok else "not confirmed")
+        if outcome in ("not_confirmed", "failed"):
+            self.queue_boot(payload, ctr, msg["sig"], msg.get("ts"), reason)
+
+    def queue_boot(self, payload, ctr, sig, ts, reason):
+        """A BOOT report not confirmed on both paths goes in the retry queue as the lowest
+        kind (dropped first when the queue is full), so the Devices page still learns
+        about the restart. Retried like an alert, with no light or buzz when it gets through."""
+        self.queue_retry("BOOT", {"ctr": ctr, "sig": sig, "ts": ts}, payload, reason)
 
     def resend_boot(self):
         """Idle only, after a press stopped the BOOT report: send the same signed message.
@@ -1261,16 +1354,25 @@ class Fob:
                 print("BOOT report sent later: confirmed")
                 return
             if result == "stopped":
+                self.rec.started(self.btn.pressed_now())
                 print("BOOT_STOPPED ctr={} reason=button (sent after the press)".format(ctr))
                 return
             print("BOOT report: the help connection did not carry it, sending it the normal way")
         try:
             ok, outcome, reason = self.deliver("BOOT", payload, ctr, sig, stop=self.btn.touched)
         except PressStop:
+            self.rec.started(self.btn.pressed_now())
             print("BOOT_STOPPED ctr={} reason=button (sent after the press)".format(ctr))
             return
         self.boot_pending = None
         print("BOOT report sent later:", "confirmed" if ok else "not confirmed")
+        if outcome in ("not_confirmed", "failed"):
+            ts = None
+            try:
+                ts = json.loads(payload).get("ts")
+            except ValueError:
+                pass
+            self.queue_boot(payload, ctr, sig, ts, reason)
 
     def resume_queue(self):
         """Alerts still waiting from before the reboot, if they are inside RETRY_FOR_MS."""
@@ -1287,19 +1389,67 @@ class Fob:
         if resumed or gave_up:
             self.save_queue()
 
+    def boot_counter_jump(self):
+        """Before the first send: the counter jumps COUNTER_BOOT_JUMP ahead of every
+        counter the Fob knows (message-format.md, "The Fob's counter")."""
+        rtc = self.rec.ctr                       # the RTC copy from before the restart
+        others = [rtc] + [e["ctr"] for e in self.queue.entries]
+        found = self.rec_found
+        if found is not None and found.get("stage") == "signed":
+            others.append(found["ctr"])
+        try:
+            base, to = jump_counter(others)
+        except Exception as err:
+            print("COUNTER_JUMP failed:", err)
+            return
+        print("COUNTER_JUMP from={} to={} rtc={} queue={}".format(
+            base, to, "-" if rtc is None else rtc, len(self.queue)))
+
+    def resume_press(self, rec):
+        """A press that a crash interrupted (pressrec.py). Signed already: the same
+        message goes into the retry queue, due now. Not signed yet: that kind is sent now."""
+        if rec is None:
+            return
+        if rec.get("dropped"):
+            print("PRESS_DROPPED stage={} boots={} reason=crashed_too_often".format(rec["stage"], rec["boots"]))
+            return
+        if rec["stage"] == "signed":
+            ctr, kind = rec["ctr"], rec["kind"]
+            print("PRESS_RESUMED ctr={} kind={} stage=signed boots={}".format(ctr, kind, rec["boots"]))
+            msg = {"ctr": ctr, "sig": rec["sig"], "ts": rec.get("wall")}
+            in_flash = self.queue_retry(kind, msg, rec["payload"], "resumed_press")
+            for e in self.queue.entries:
+                if e["ctr"] == ctr:
+                    e["next"] = time.ticks_ms()         # try it at once, not in RETRY_EVERY_MS
+            if in_flash:
+                self.rec.clear()
+            return
+        kind = pressrec.resume_kind(rec)
+        print("PRESS_RESUMED kind={} stage={} taps={} down={} hold={} boots={} cut=1".format(
+            kind, rec["stage"], rec.get("taps", "-"), int(bool(rec.get("down"))),
+            int(bool(rec.get("hold"))), rec["boots"]))
+        ok = self.send(kind, cut=True)   # the record keeps its boot count until send() signs it
+        self.show_result(kind, ok)
+        self.wait(CONFIRM_MS)
+
     def save_queue(self):
         """Write the queue to flash, but never while the help listener holds a WiFi
         connection: then it is saved as soon as listening ends (help_step). Only "done"
         and "tried" changes can wait like this. A new queued alert is saved at once,
-        because a send that ends unconfirmed has already closed the listener."""
+        because a send that ends unconfirmed has already closed the listener.
+        Returns True only if the queue is in flash now."""
         if self.help is not None and self.help.active():
             self.queue_dirty = True
-            return
+            return False
         self.queue_dirty = False
         try:
             self.queue.save()
+            if self.rec.stage == "signed":
+                self.rec.clear()             # a signed press left from a failed save is in flash now
+            return True
         except Exception as err:
             print("retry queue could not be saved:", err)
+            return False
 
     def upkeep(self, now):
         """Idle-only WiFi upkeep, at most once a second: rejoin in the background, retry
@@ -1416,42 +1566,48 @@ class Fob:
         print(sendpath.result_line(ctr, kind, path, outcome, budget.used(), reason) + extra)
         return ok, outcome, reason
 
-    def send(self, kind):
+    def send(self, kind, cut=False):
         """Build, sign and send one alert. Returns True only if it was confirmed (or LoRa
-        acks are off and it was sent). Not confirmed on both paths: it goes in the retry queue."""
+        acks are off and it was sent). Not confirmed on both paths: it goes in the retry queue.
+        cut: a press a restart cut off, sent after the restart ("cut": 1)."""
         self.motor.before_send()           # motor off while the radio transmits
         self.show_sending(kind)
         budget = sendpath.Budget(WIFI_BUDGET_MS)   # starts at the press decision
         if self.help is not None:
             self.help.close("send")        # before the counter is written to flash
-        msg = build_message(kind)
+        msg = build_message(kind, cut)
         ctr, sig = msg["ctr"], msg["sig"]
         if "lat" in msg:
             print("location sent, accuracy about", msg["acc"], "m")
         else:
             print("no GPS fix, sending without a location")
         payload = json.dumps(msg)
+        self.rec.signed(kind, ctr, payload, sig, msg.get("ts"))   # RAM only, before the send
         print("SAFEPING_MSG " + payload)
         ok, outcome, reason = self.deliver(kind, payload, ctr, sig, budget)
+        safe = True
         if outcome in ("not_confirmed", "failed"):
-            self.queue_retry(kind, msg, payload, reason)
+            safe = self.queue_retry(kind, msg, payload, reason)
+        if safe:
+            self.rec.clear()                 # confirmed, or kept in queue.json now
         return ok
 
     # --- retry queue (retryq.py) ---
     def queue_retry(self, kind, msg, payload, reason):
+        """Returns False only when the alert is queued but not yet in flash."""
         ctr = msg["ctr"]
         queued, dropped = self.queue.add(ctr, kind, payload, msg["sig"], msg.get("ts"))
         if not queued:
             if dropped is not None:
                 print(retryq.line("RETRY_GAVE_UP", ctr=ctr, kind=kind, reason="queue_full"))
-            return
+            return True
         if dropped is not None:
             if dropped["kind"] == "MEDICAL":
                 print("retry queue full of MEDICAL alerts, dropping the oldest MEDICAL")
             print(retryq.line("RETRY_GAVE_UP", ctr=dropped["ctr"], kind=dropped["kind"], reason="queue_full"))
         print(retryq.line("RETRY_QUEUED", ctr=ctr, kind=kind, reason=reason, queue=len(self.queue),
                           dropped=None if dropped is None else dropped["ctr"]))
-        self.save_queue()
+        return self.save_queue()
 
     def run_retries(self):
         """Idle only. Gives up on old entries, then tries at most one that is due.
@@ -1476,6 +1632,7 @@ class Fob:
             ok, outcome, reason = self.deliver(entry["kind"], entry["payload"], entry["ctr"], entry["sig"],
                                                stop=self.btn.touched, try_no=n)
         except PressStop:
+            self.rec.started(self.btn.pressed_now())               # the press, in RTC memory before the flash write
             print(retryq.line("RETRY_STOPPED", ctr=entry["ctr"], try_no=n, reason="button"))
             self.queue.stopped(entry)
             self.motor.stop()
@@ -1485,7 +1642,7 @@ class Fob:
             self.queue.done(entry)
             print(retryq.line("RETRY_DONE", ctr=entry["ctr"], kind=entry["kind"], try_no=n,
                               path="wifi" if reason == "-" else "lora", reason=reason))
-            if entry["kind"] != "SILENT":             # SILENT: nothing at all
+            if entry["kind"] not in ("SILENT", "BOOT"):   # SILENT and a BOOT report: nothing at all
                 self.show_result(entry["kind"], True)
         else:
             self.queue.tried(entry)
@@ -1540,9 +1697,188 @@ class Fob:
             self.state = LOCKOUT
             self.lockout_until = time.ticks_add(time.ticks_ms(), COOLDOWN_MS)
 
+    # --- survey mode (survey.py, message-format.md "Survey points") ---
+    def survey_on(self):
+        return SURVEY_MODE and self.survey_store is not None
+
+    def survey_boot(self):
+        """Survey mode on: read the waiting points and show a long blue blink."""
+        if not SURVEY_MODE:
+            return
+        if not self.survey_on():
+            print("WARNING: SURVEY_MODE is on but survey.py or baro.py is missing:", SURVEY_IMPORT_ERROR)
+            return
+        try:
+            waiting = self.survey_store.load()
+        except Exception as err:
+            waiting = 0
+            print("survey store could not be read:", err)
+        print("SURVEY_MODE on: 1 press = survey point (not an alert), {} waiting, auto {}".format(
+            waiting, "every {} s".format(SURVEY_AUTO_MS // 1000) if SURVEY_AUTO_MS > 0 else "off"))
+        self.led.show(BLUE, duration_ms=SURVEY_BOOT_BLINK_MS)      # long blue blink: survey mode on
+        self.wait(SURVEY_BOOT_BLINK_MS)
+        self.led.off()
+        now = time.ticks_ms()
+        self.next_survey_flush = now
+        self.next_survey_auto = time.ticks_add(now, SURVEY_AUTO_MS)
+
+    def survey_pressure(self):
+        """SURVEY_SAMPLES readings spread over SURVEY_WINDOW_MS. Returns a baro.Window.
+        The LED, motor and GPS keep running meanwhile."""
+        win = baro.Window()
+        if _bme is None:
+            return win
+        read_q8 = getattr(_bme, "read_q8", None)        # an older bme280.py has only read()
+        gap = SURVEY_WINDOW_MS // max(1, SURVEY_SAMPLES)
+        start = time.ticks_ms()
+        for i in range(SURVEY_SAMPLES):
+            due = time.ticks_add(start, i * gap)
+            while time.ticks_diff(due, time.ticks_ms()) > 0:
+                self.service(time.ticks_ms())
+                watchdog_feed()
+                time.sleep_ms(LOOP_MS)
+            try:
+                if read_q8 is not None:
+                    p, t = read_q8()
+                else:
+                    p, t = _bme.read()
+                    p = None if p is None else p * 256
+            except Exception as err:
+                print("survey pressure read error:", err)
+                p, t = None, None
+            win.add(p, t, time.ticks_ms())
+        return win
+
+    def survey_scan(self):
+        """One WiFi scan. Returns the "aps" list (strongest first), empty on a failure."""
+        try:
+            if wifi_joining():
+                wifi_quiet()                     # a join in progress makes the scan fail
+            watchdog_feed()
+            found = _sta().scan()                # a few seconds, the radio is busy meanwhile
+            watchdog_feed()
+        except Exception as err:
+            print("survey WiFi scan failed:", err)
+            return []
+        return survey.ap_list(found, SURVEY_TOP_APS)
+
+    def survey_send(self, payload, ctr, sig, stop=None):
+        """One WiFi attempt to safeping/survey/<id>, acked by the server like an alert.
+        Never LoRa. Returns True if the server confirmed it. With stop, raises PressStop."""
+        budget = sendpath.Budget(WIFI_BUDGET_MS)
+        service = self.service if stop is None else self._stoppable(stop)
+        confirmed, reason, published, detail = wifi_send(payload, ctr, sig, budget, service,
+                                                         stop=stop, topic=SURVEY_TOPIC)
+        if not confirmed:
+            if stop is not None and stop():
+                raise PressStop()
+            print("survey point not sent:", sendpath.plain_reason(reason, detail))
+        print(sendpath.result_line(ctr, "SURVEY", "wifi" if confirmed else "none",
+                                   "confirmed" if confirmed else "not_confirmed", budget.used(), reason))
+        return confirmed
+
+    def survey_point(self, auto=False):
+        """One survey point: pressure, GPS, WiFi scan, signed SURVEY over WiFi, or kept in
+        flash for later. Never an alert. Two short green blinks when sent or stored."""
+        self.motor.before_send()
+        self.led.show(tuple(c * SENDING_DIM_PCT // 100 for c in WHITE))   # dim white: working
+        if self.help is not None:
+            self.help.close("send")              # one connection at a time, before the counter write
+        self.survey_n += 1
+        win = self.survey_pressure()
+        ts = win.mid_ts(unix_time(), time.ticks_ms(), time.ticks_diff)   # the middle of the 3 s
+        gps = read_gps()
+        sats = _gps.sats if _gps is not None else 0
+        aps = self.survey_scan()
+        try:
+            ctr = next_counter()
+        except Exception as err:
+            print("SURVEY_FAIL n={} reason=counter ({})".format(self.survey_n, err))
+            self.survey_feedback(False)
+            return
+        msg = survey.message(DEVICE_ID, ctr, ts, win.result(), gps, sats, read_battery(), aps)
+        msg["sig"] = sign(msg)
+        payload = json.dumps(msg)
+        print("SURVEY_MSG " + payload)           # the full point, for the laptop log
+        if win.n == 0:
+            print("survey point has no pressure (sensor missing or not reading)")
+        if self.survey_send(payload, ctr, msg["sig"]):
+            sent = "wifi"
+        else:
+            if not wifi_connected():
+                wifi_quiet()                     # stop a join that is still running before the flash write
+            try:
+                sent = "stored" if self.survey_store.add(ctr, payload) == "stored" else "full"
+            except Exception as err:
+                print("survey point could not be saved:", err)
+                sent = "failed"
+            if sent == "full":
+                print("survey store full ({} points), this point is NOT kept".format(SURVEY_MAX_STORED))
+            self.next_survey_flush = time.ticks_add(time.ticks_ms(), SURVEY_RETRY_MS)
+        print(survey.point_line(self.survey_n, msg, sent) + (" auto=1" if auto else ""))
+        self.survey_feedback(sent in ("wifi", "stored"))
+
+    def survey_feedback(self, ok):
+        """Two short green blinks: sent or stored. Orange and the long buzz: not kept."""
+        if ok:
+            self.led.show(GREEN, 150, 150, 600)
+        else:
+            self.led.show(ORANGE, duration_ms=CONFIRM_MS)
+            self.motor.play("fail", RESULT_GAP_MS)
+
+    def survey_flush(self):
+        """Idle only: send the oldest waiting point while WiFi is up. Alerts in the retry
+        queue go first. A button press stops the try at once (the point stays)."""
+        if not self.survey_on() or not len(self.survey_store) or len(self.queue):
+            return
+        now = time.ticks_ms()
+        if time.ticks_diff(now, self.next_survey_flush) < 0:
+            return
+        self.next_survey_flush = time.ticks_add(now, SURVEY_RETRY_MS)
+        if not wifi_connected() or (self.help is not None and self.help.active()):
+            return
+        ctr = self.survey_store.oldest()
+        payload = self.survey_store.read(ctr)
+        try:
+            sig = json.loads(payload)["sig"]
+        except Exception:
+            print("SURVEY_DROPPED ctr={} reason=unreadable".format(ctr))
+            self.survey_store.remove(ctr)
+            self.next_survey_flush = now
+            return
+        try:
+            ok = self.survey_send(payload, ctr, sig, stop=self.btn.touched)
+        except PressStop:
+            self.rec.started(self.btn.pressed_now())
+            print("SURVEY_SEND_STOPPED ctr={} reason=button".format(ctr))
+            return
+        if ok:
+            self.survey_store.remove(ctr)
+            print("SURVEY_SENT ctr={} from=store left={}".format(ctr, len(self.survey_store)))
+            self.next_survey_flush = time.ticks_add(time.ticks_ms(), 1000)   # the next one soon
+
+    def survey_auto(self):
+        """SURVEY_AUTO_MS > 0 (the side-by-side calibration): a point by itself."""
+        if not self.survey_on() or SURVEY_AUTO_MS <= 0:
+            return
+        now = time.ticks_ms()
+        if time.ticks_diff(now, self.next_survey_auto) < 0:
+            return
+        self.next_survey_auto = time.ticks_add(now, SURVEY_AUTO_MS)
+        self.survey_point(auto=True)
+
     # --- the three ways an alert starts ---
     def fire_now(self, kind):
-        """STATUS and SILENT are sent immediately."""
+        """STATUS and SILENT are sent immediately. In survey mode STATUS is a survey point."""
+        if kind == "STATUS" and self.survey_on():
+            self.count = 0
+            self.rec.clear()                     # a survey point is never an alert, even after a crash
+            self.led.off()
+            self.survey_point()
+            self.pending = None
+            self.state = IDLE
+            return
+        self.rec.kind(kind)
         self.count = 0
         if kind == "SILENT":
             self.led.off()
@@ -1552,6 +1888,7 @@ class Fob:
         self.finish(kind, self.send(kind))
 
     def start_pending(self, kind, now):
+        self.rec.kind(kind)              # a crash in the cancel window still sends it
         self.count = 0
         self.pending = kind
         self.pending_start = now
@@ -1570,6 +1907,7 @@ class Fob:
 
     def cancel_pending(self):
         print("CANCELLED", self.pending)
+        self.rec.clear()
         self.pending = None
         self.motor.stop()
         self.led.show(GREEN, 150, 150, 600)
@@ -1582,6 +1920,11 @@ class Fob:
         """Presses and releases come with the time they happened (presslog). Each one is
         handled in order, after the timers are checked at that moment, so a double tap
         recorded during a slow call still counts as a double tap."""
+        if self.state == IDLE:
+            if self.btn.touched():
+                self.rec.started(self.btn.pressed_now())           # RTC memory, before anything can write flash
+            elif self.rec.stage == "press":
+                self.rec.clear()             # it bounced and never became a press
         for t, down in self.btn.events(now):
             self.timers(t)
             self.on_button(t, down)
@@ -1595,6 +1938,10 @@ class Fob:
                     self.resend_boot()           # a BOOT report a press stopped
                 else:
                     self.run_retries()
+            if self.survey_on() and self.state == IDLE and not self.btn.touched():
+                self.survey_auto()               # calibration only (SURVEY_AUTO_MS)
+                if not self.btn.touched():
+                    self.survey_flush()          # points that waited for WiFi
 
     def on_button(self, t, down):
         self.down = down
@@ -1604,6 +1951,7 @@ class Fob:
         elif self.state == DOWN:
             if not down:
                 self.count += 1
+                self.rec.tap(self.count)
                 self.last_release = t
                 if self.count >= 3:
                     self.start_pending("MEDICAL", t)
@@ -1620,6 +1968,8 @@ class Fob:
         if self.state == DOWN:
             if self.down and time.ticks_diff(t, self.press_start) >= HOLD_MS:
                 self.fire_now("SILENT")
+            elif self.down and time.ticks_diff(t, self.press_start) >= CUT_HOLD_MS:
+                self.rec.hold()              # a hold that started: SILENT if a restart cuts it off
         elif self.state == COUNT:
             if time.ticks_diff(t, self.last_release) >= MULTI_WINDOW_MS:
                 taps = self.count
@@ -1635,6 +1985,7 @@ class Fob:
                 self.state = IDLE
 
     def press_down(self, t):
+        self.rec.pressing(self.count)    # down, with self.count releases before it
         self.state = DOWN
         self.press_start = t
         self.motor.play("tick")

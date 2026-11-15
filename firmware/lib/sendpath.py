@@ -6,6 +6,7 @@
   fail_reason()   turn a failed WiFi step into one short reason word
   lora_outcome()  turn the LoRa result into path, result and "ok" for the buzz
   result_line()   the one SEND_RESULT line printed after every send
+  tls_context()   the TLS settings with the broker's CA (Fob and Reference board)
   pem_to_der()    the CA certificate as DER, if the board's ssl wants DER
 """
 import binascii
@@ -89,12 +90,27 @@ def fail_reason(step, timed_out, budget_left_ms):
     return "connect_failed"
 
 
+TIMEOUT_CODES = (110, 116, 11, -26624)     # ETIMEDOUT, ETIMEDOUT (lwIP), EAGAIN, MBEDTLS_ERR_SSL_TIMEOUT
+
+
+def error_code(err):
+    """The first whole number in an OSError's args, or None. MicroPython 1.28 and later
+    can give TLS errors as (number, "MBEDTLS_ERR_...") or as the text alone."""
+    if isinstance(err, OSError):
+        for arg in err.args:
+            if isinstance(arg, int) and not isinstance(arg, bool):
+                return arg
+    return None
+
+
 def is_timeout(err):
     """True if an error means time ran out (MicroPython or laptop)."""
-    if isinstance(err, OSError) and err.args:
-        if err.args[0] in (110, 116, 11, "timed out"):    # ETIMEDOUT, ETIMEDOUT (lwIP), EAGAIN
-            return True
-    return "timed out" in str(err).lower()
+    if error_code(err) in TIMEOUT_CODES:
+        return True
+    if isinstance(err, OSError) and err.args and err.args[0] == "timed out":
+        return True
+    text = str(err).lower()
+    return "timed out" in text or "ssl_timeout" in text
 
 
 def classify_error(step, err, step_parts=None):
@@ -140,14 +156,29 @@ ERRNO_WORDS = {
     -9984: "the broker's certificate did not check out (CA file or clock)",
     -29312: "the broker closed the secure connection",
     -30592: "the secure handshake failed",
+    -26624: "the secure connection timed out",
 }
+
+# The same errors by name, as MicroPython 1.28 and later can write them (detailed TLS errors).
+MBEDTLS_WORDS = (
+    ("X509_CERT_VERIFY_FAILED", -9984),
+    ("PEER_CLOSE_NOTIFY", -29312),
+    ("FATAL_ALERT_MESSAGE", -30592),
+    ("SSL_TIMEOUT", -26624),
+)
 
 
 def plain_error(detail):
     """A short plain description of an error or message, with the original kept in brackets."""
-    if isinstance(detail, OSError) and detail.args and detail.args[0] in ERRNO_WORDS:
-        return "{} ({})".format(ERRNO_WORDS[detail.args[0]], detail)
-    return str(detail)
+    code = error_code(detail)
+    if code in ERRNO_WORDS:
+        return "{} ({})".format(ERRNO_WORDS[code], detail)
+    text = str(detail)
+    upper = text.upper()
+    for name, number in MBEDTLS_WORDS:
+        if name in upper:
+            return "{} ({})".format(ERRNO_WORDS[number], text)
+    return text
 
 
 def plain_reason(reason, detail=None):
@@ -306,6 +337,29 @@ def parse_result_line(line):
             name, value = part.split("=", 1)
             out[name] = value
     return out
+
+
+def tls_context(ssl_module, ca_file, log=None):
+    """A TLS client context that checks the broker's certificate against ca_file. Loads
+    the CA as given (PEM or DER). If the board refuses PEM, it is turned into DER.
+    Shared by the Fob and the Reference board. ssl_module is the board's ssl (passed in,
+    so this file stays importable on the laptop). Reads the file: call it while idle."""
+    if ssl_module is None:
+        raise OSError("ssl module missing")
+    ctx = ssl_module.SSLContext(ssl_module.PROTOCOL_TLS_CLIENT)
+    ctx.verify_mode = ssl_module.CERT_REQUIRED
+    with open(ca_file, "rb") as f:
+        data = f.read()
+    try:
+        ctx.load_verify_locations(cadata=data)
+    except Exception as err:
+        der = pem_to_der(data)
+        if der is data:
+            raise
+        if log:
+            log("CA as PEM refused ({}), loading it as DER".format(err))
+        ctx.load_verify_locations(cadata=der)
+    return ctx
 
 
 def pem_to_der(data):

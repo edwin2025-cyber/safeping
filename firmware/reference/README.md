@@ -1,5 +1,7 @@
 # Reference firmware (MicroPython)
 
+> Replaced on 2026-11-14 by `firmware/ref/` (the working firmware, topic `safeping/ref/<id>`, device `REF-001`). This folder holds only the first plan and can be removed.
+
 The Reference is a fixed device on the ground floor that measures the baseline air pressure. This folder holds its MicroPython code.
 
 What it will do (see [message-format.md](../../message-format.md)):

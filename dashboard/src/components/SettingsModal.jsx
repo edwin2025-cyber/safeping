@@ -10,6 +10,7 @@ import { Segmented, Select, Switch } from "./Controls.jsx";
 import { fontRow } from "./FontPicker.jsx"; // temporary font test
 import { suspiciousColorRow } from "./SuspiciousColorPicker.jsx"; // temporary Suspicious color test
 import Icon from "./Icon.jsx";
+import { MAP_STYLES } from "./mapParts.jsx";
 import Modal from "./Modal.jsx";
 import { Tag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
@@ -39,7 +40,7 @@ export const SECTIONS = [
     group: "System",
     label: "Health",
     icon: icons.health,
-    description: "Whether the system itself is working: the radio path, rejected messages, Fobs and the reference sensor.",
+    description: "Whether the system itself is working: the radio path, rejected messages, Fobs, the reference sensor and phone notifications.",
   },
   { id: "about", group: "System", label: "About", icon: icons.info, description: "Facts about this SafePing server." },
 ];
@@ -148,7 +149,54 @@ function healthRows({ health, preset, setPreset, refMaxAge }) {
       </HealthValue>
     ),
   });
+  // Pushover (server/pushover.py). Not tied to the range: the newest send and error ever.
+  const po = s ? s.pushover : null;
+  rows.push({
+    section: "health", group: "Notifications", id: "h-pushover", name: "Pushover",
+    desc: "Phone notifications for MEDICAL, SUSPICIOUS and SILENT alerts. Red when the newest one failed.",
+    value: !s ? loading : !po ? <span className="muted">Not tracked</span> : !po.enabled ? (
+      <HealthValue tone="orange" sub="SAFEPING_PUSHOVER_USER or SAFEPING_PUSHOVER_TOKEN not set">Off</HealthValue>
+    ) : (
+      <HealthValue
+        tone={po.failing ? "red" : null}
+        icon={po.failing ? icons.warning : null}
+        sub={po.last_error ? "Last error " + agoShort(po.last_error_age_s) + ": " + po.last_error : null}
+      >
+        {po.last_send_age_s === null || po.last_send_age_s === undefined ? "No sends yet" : "Last send " + agoShort(po.last_send_age_s)}
+      </HealthValue>
+    ),
+  });
+  // Text messages (server/textbelt.py). Mode, last send, last error and the credits left.
+  const sms = s ? s.sms : null;
+  rows.push({
+    section: "health", group: "Notifications", id: "h-sms", name: "Text messages",
+    desc: "Texts through Textbelt for MEDICAL, SUSPICIOUS and SILENT alerts. Orange under 25 credits left or when the newest text failed.",
+    value: !s ? loading : !sms ? <span className="muted">Not tracked</span> : smsValue(sms),
+  });
   return rows;
+}
+
+const SMS_MODE_WORDS = { off: "Off", dry: "Dry run (printed, not sent)", live: "Live" };
+
+/** Mode on the first line. Under it: last send, credits left, last error. */
+function smsValue(sms) {
+  const sent = sms.last_send_age_s === null || sms.last_send_age_s === undefined ? "no sends yet" : "last send " + agoShort(sms.last_send_age_s);
+  const credits = sms.quota_remaining === null || sms.quota_remaining === undefined ? null : sms.quota_remaining + " credits left";
+  const parts = [];
+  if (sms.mode === "live") {
+    parts.push(sent);
+    if (credits) parts.push(credits);
+    if (!sms.key_set) parts.push("TEXTBELT_KEY not set");
+    if (!sms.numbers) parts.push("no numbers in SAFEPING_SMS_TO");
+  }
+  if (sms.last_error) parts.push("last error " + agoShort(sms.last_error_age_s) + ": " + sms.last_error);
+  const warn = sms.mode === "live" && (sms.quota_low || sms.failing || !sms.key_set || !sms.numbers);
+  return (
+    <HealthValue tone={warn ? "orange" : null} icon={warn ? icons.warning : null} sub={parts.length ? parts.join(". ") : null}>
+      {SMS_MODE_WORDS[sms.mode] || sms.mode}
+      {sms.mode === "live" ? ", " + sms.numbers + (sms.numbers === 1 ? " number" : " numbers") : ""}
+    </HealthValue>
+  );
 }
 
 function Minutes({ value, onChange, labelledBy }) {
@@ -220,6 +268,16 @@ function buildRows({ settings, effective, update, reset, config, devices, soundN
       section: "map", id: "labels", name: "Map labels",
       desc: hasKey ? "Street and place names on the map." : "Needs a CARTO key. The OpenStreetMap tiles always show labels.",
       control: (id) => <Switch labelledBy={id} checked={settings.mapLabels} disabled={!hasKey} onChange={(v) => update({ mapLabels: v })} />,
+    },
+    {
+      section: "map", id: "style", name: "Map style",
+      desc: hasKey
+        ? "Light/Dark follows the theme. Hybrid is aerial photos with street names."
+        : "Streets and Hybrid need a CARTO key. Without one they show the default map and Satellite.",
+      control: (id) => (
+        <Select labelledBy={id} value={settings.mapStyle} onChange={(v) => update({ mapStyle: v })}
+          options={MAP_STYLES.map((s) => ({ value: s.value, label: s.label }))} />
+      ),
     },
     {
       section: "camera", group: "Area", id: "sight", name: "Sight radius",

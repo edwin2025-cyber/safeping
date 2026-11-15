@@ -72,9 +72,12 @@ def _is_timeout(err):
     parts = step_parts(err)
     if parts is not None:
         return parts[2]
-    if isinstance(err, OSError) and err.args:
-        return err.args[0] in (110, 116, 11, "timed out")    # ETIMEDOUT, ETIMEDOUT (lwIP), EAGAIN
-    return "timed out" in str(err)
+    # ETIMEDOUT, ETIMEDOUT (lwIP), EAGAIN, MBEDTLS_ERR_SSL_TIMEOUT. MicroPython 1.28 and
+    # later can add the error's name as text, or give the name alone.
+    if isinstance(err, OSError) and err.args and err.args[0] in (110, 116, 11, -26624, "timed out"):
+        return True
+    text = str(err).lower()
+    return "timed out" in text or "ssl_timeout" in text
 
 
 class MQTTClient:

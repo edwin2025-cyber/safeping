@@ -24,6 +24,7 @@ for sub in ("lib", "fob"):
 
 clock = [100000]                 # fake ticks_ms
 reset_cause = [1]                # what machine.reset_cause() returns (1 power on, 2 crash)
+rtc_memory = [b""]               # machine.RTC().memory(): kept through a load_fob() "reboot"
 
 
 class FakePin:
@@ -116,6 +117,15 @@ def _install():
             pass
     machine.SPI = SPI
 
+    class RTC:
+        def memory(self, data=None):
+            if data is None:
+                return rtc_memory[0]
+            if len(data) > 2048:                 # MICROPY_HW_RTC_USER_MEM_MAX
+                raise ValueError("buffer too long")
+            rtc_memory[0] = bytes(data)
+    machine.RTC = RTC
+
     class I2C:
         def __init__(self, *a, **k):
             raise OSError("no I2C on the laptop")
@@ -183,7 +193,7 @@ def load_fob(config_values=None, workdir=None):
     for k, v in values.items():
         setattr(cfg, k, v)
     sys.modules["config"] = cfg
-    for name in ("main", "presslog", "retryq", "helplisten", "selfcheck", "sendpath"):
+    for name in ("main", "presslog", "retryq", "helplisten", "selfcheck", "sendpath", "pressrec"):
         sys.modules.pop(name, None)
     button.level = 1
     button.handler = None

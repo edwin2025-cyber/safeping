@@ -11,6 +11,7 @@ import db
 ALERT_TYPES = {"STATUS", "SUSPICIOUS", "MEDICAL", "SILENT"}
 REF_TYPE = "REF"
 BOOT_TYPE = "BOOT"            # the Fob's boot report (self-check results). Never an alert.
+SURVEY_TYPE = "SURVEY"        # a Fob in survey mode: one survey point. Never an alert.
 
 # Order matters. The Fob signs the same fields in the same order.
 SIGNED_FIELDS = ("v", "id", "type", "ctr", "ts", "lat", "lon", "acc", "p", "t", "bat")
@@ -19,6 +20,20 @@ SIGNED_FIELDS = ("v", "id", "type", "ctr", "ts", "lat", "lon", "acc", "p", "t", 
 # and is signed with the first three only, so it still checks out.
 BOOT_FIELDS = ("fail", "wifi", "fw", "rst")
 BOOT_FIELDS_OLD = ("fail", "wifi", "fw")
+# The Reference board's BOOT also has "sensor" (model and address), signed at the end.
+# A BOOT without it (every Fob) is signed as before.
+SENSOR_FIELDS = ("sensor",)
+SENSOR_RE = re.compile(r"^[A-Za-z0-9@._-]{1,24}$")
+# An alert sent after a restart cut off its press (message-format.md, "Press cut off by
+# a restart") has "cut": 1, signed at the end. An alert without it is signed as before.
+CUT_FIELDS = ("cut",)
+# A REF from firmware/ref has pd, n and fw, signed at the end. A REF without pd is signed
+# as before. A SURVEY signs five more fields (message-format.md, "Signing"). The boards
+# build the same string in firmware/lib/msgsign.py.
+REF_FIELDS = ("pd", "n", "fw")
+SURVEY_FIELDS = ("pd", "n", "fix", "sats", "aps")
+
+HEX_RE = re.compile(r"^[0-9a-f]*$")
 
 # machine.reset_cause() values (MicroPython ESP32 port) in plain words for the Devices page.
 # 2 is a crash or a software restart. The Fob never restarts itself, so it is a crash.
@@ -58,17 +73,61 @@ RANGES = {
     "p": (30_000, 110_000),
     "t": (-4_000, 8_500),
     "bat": (0, 100),
+    "pd": (300_000, 1_100_000),     # tenths of a pascal
+    "n": (0, 1000),
+    "fix": (0, 1),
+    "sats": (0, 99),
 }
 
 
+def aps_text(aps):
+    """The "aps" list as it is signed: "bssid,rssi,ch,ssid" joined by ";"."""
+    return ";".join(",".join(str(x) for x in ap) for ap in aps)
+
+
 def signing_string(msg):
-    if msg.get("type") != BOOT_TYPE:
-        fields = SIGNED_FIELDS
+    kind = msg.get("type")
+    if kind == REF_TYPE:
+        fields = SIGNED_FIELDS + REF_FIELDS if msg.get("pd") is not None else SIGNED_FIELDS
+    elif kind == SURVEY_TYPE:
+        fields = SIGNED_FIELDS + SURVEY_FIELDS
+    elif kind != BOOT_TYPE:
+        fields = SIGNED_FIELDS if msg.get("cut") is None else SIGNED_FIELDS + CUT_FIELDS
     elif msg.get("rst") is None:
         fields = SIGNED_FIELDS + BOOT_FIELDS_OLD
     else:
         fields = SIGNED_FIELDS + BOOT_FIELDS
-    return "|".join("" if msg.get(k) is None else str(msg[k]) for k in fields)
+        if msg.get("sensor") is not None:
+            fields = fields + SENSOR_FIELDS
+    parts = []
+    for k in fields:
+        value = msg.get(k)
+        if value is None:
+            parts.append("")
+        elif k == "aps":
+            parts.append(aps_text(value))
+        else:
+            parts.append(str(value))
+    return "|".join(parts)
+
+
+def _ap_ok(ap):
+    """One access point: [bssid 12 lowercase hex, rssi -127..0, channel 0..255, ssid hex]."""
+    if not isinstance(ap, list) or len(ap) != 4:
+        return False
+    bssid, rssi, ch, ssid = ap
+    if not isinstance(bssid, str) or len(bssid) != 12 or not HEX_RE.match(bssid):
+        return False
+    if not _is_int(rssi) or not -127 <= rssi <= 0 or not _is_int(ch) or not 0 <= ch <= 255:
+        return False
+    return isinstance(ssid, str) and len(ssid) <= 64 and len(ssid) % 2 == 0 and bool(HEX_RE.match(ssid))
+
+
+def _pressure_pair_ok(msg):
+    """pd and p must say the same thing: p is pd rounded to whole pascals."""
+    if msg.get("pd") is None:
+        return True
+    return msg.get("p") is not None and abs(msg["p"] * 10 - msg["pd"]) <= 5
 
 
 def boot_failures(mask):
@@ -97,7 +156,7 @@ def _is_int(value):
 
 def parse(payload):
     """Returns (msg, reason). reason is None when the message is well formed."""
-    if len(payload) > config.MAX_PAYLOAD_BYTES:
+    if len(payload) > max(config.MAX_PAYLOAD_BYTES, config.SURVEY_MAX_BYTES):
         return None, "bad_json"
     try:
         msg = json.loads(payload)
@@ -105,10 +164,12 @@ def parse(payload):
         return None, "bad_json"
     if not isinstance(msg, dict):
         return None, "bad_format"
+    if len(payload) > config.MAX_PAYLOAD_BYTES and msg.get("type") != SURVEY_TYPE:
+        return None, "bad_json"                  # only a SURVEY may be bigger than 512 bytes
 
     if not isinstance(msg.get("id"), str) or not 0 < len(msg["id"]) <= 32:
         return None, "bad_format"
-    if msg.get("type") not in ALERT_TYPES and msg.get("type") not in (REF_TYPE, BOOT_TYPE):
+    if msg.get("type") not in ALERT_TYPES and msg.get("type") not in (REF_TYPE, BOOT_TYPE, SURVEY_TYPE):
         return None, "bad_format"
     sig = msg.get("sig")
     if not isinstance(sig, str) or len(sig) != 64:
@@ -125,6 +186,30 @@ def parse(payload):
         return None, "bad_format"
     if msg["type"] == REF_TYPE and msg.get("p") is None:
         return None, "bad_format"
+    if not _pressure_pair_ok(msg):
+        return None, "bad_format"
+    if msg["type"] == REF_TYPE and msg.get("pd") is not None:
+        fw = msg.get("fw")
+        if not _is_int(msg.get("n")) or msg["n"] < 1:
+            return None, "bad_format"
+        if fw is not None and (not isinstance(fw, str) or not FW_RE.match(fw)):
+            return None, "bad_format"
+    if msg["type"] == SURVEY_TYPE:
+        for key in ("n", "fix", "sats"):
+            if not _is_int(msg.get(key)):
+                return None, "bad_format"
+        aps = msg.get("aps")
+        if not isinstance(aps, list) or len(aps) > config.SURVEY_MAX_APS or not all(_ap_ok(ap) for ap in aps):
+            return None, "bad_format"
+        if (msg["fix"] == 1) != (msg.get("lat") is not None):
+            return None, "bad_format"            # a position only with a fix, and always with one
+        if (msg.get("pd") is None) != (msg["n"] == 0):
+            return None, "bad_format"
+    elif msg.get("aps") is not None:
+        return None, "bad_format"
+    if msg.get("cut") is not None:
+        if msg["type"] not in ALERT_TYPES or not _is_int(msg["cut"]) or msg["cut"] != 1:
+            return None, "bad_format"
     if msg["type"] == BOOT_TYPE:
         fail, wifi, fw = msg.get("fail"), msg.get("wifi"), msg.get("fw")
         if not _is_int(fail) or not 0 <= fail <= 255:
@@ -136,6 +221,11 @@ def parse(payload):
         rst = msg.get("rst")
         if rst is not None and (not _is_int(rst) or not 0 <= rst <= 99):
             return None, "bad_format"
+        sensor = msg.get("sensor")
+        if sensor is not None and (rst is None or not isinstance(sensor, str) or not SENSOR_RE.match(sensor)):
+            return None, "bad_format"
+    elif msg.get("sensor") is not None:
+        return None, "bad_format"
     return msg, None
 
 
@@ -154,9 +244,12 @@ def authenticate(payload, now=None):
     if device is None:
         return False, "unknown_device", msg, None
 
-    wants_ref = msg["type"] == REF_TYPE
-    if wants_ref != (device["role"] == "REF"):
+    # Fobs send alerts, BOOT and SURVEY. The Reference board sends REF and its own BOOT.
+    is_ref_device = device["role"] == "REF"
+    allowed = (REF_TYPE, BOOT_TYPE) if is_ref_device else tuple(ALERT_TYPES) + (BOOT_TYPE, SURVEY_TYPE)
+    if msg["type"] not in allowed:
         return False, "wrong_role", msg, device
+    wants_ref = is_ref_device
 
     expected = sign(device["secret_key"], msg)
     if not hmac.compare_digest(expected, msg["sig"].lower()):
@@ -168,7 +261,8 @@ def authenticate(payload, now=None):
         if not db.advance_counter(device["device_id"], msg["ctr"]):
             return False, "replay", msg, device
         return True, None, msg, device
-    reason = check_counter(device, msg, now)
+    # A survey point may have waited in the Fob's flash for a long time: no window.
+    reason = check_counter(device, msg, now, window=msg["type"] != SURVEY_TYPE)
     return reason is None, reason, msg, device
 
 
@@ -178,8 +272,9 @@ def _seen_reason(device_id, msg):
     return "duplicate" if seen is not None and seen == msg["sig"].lower() else "replay"
 
 
-def check_counter(device, msg, now):
+def check_counter(device, msg, now, window=True):
     """The Fob counter rule (message-format.md, "Counters, duplicates and replays").
+    window=False (SURVEY) skips rule 4: an unseen counter is accepted however far below.
     Returns None when the message is accepted (and claims its counter), or the reason.
 
       1. Counter already seen with the same signature: "duplicate" (any age).
@@ -197,7 +292,7 @@ def check_counter(device, msg, now):
 
     current = db.get_device(device_id)               # fresh, another message may have raised it
     highest = current["last_counter"] if current is not None else device["last_counter"]
-    if highest >= 0 and ctr < highest - config.COUNTER_WINDOW:
+    if window and highest >= 0 and ctr < highest - config.COUNTER_WINDOW:
         return "replay"
 
     if not db.claim_counter(device_id, ctr, msg["sig"], now):

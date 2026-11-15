@@ -247,6 +247,23 @@
 .device-table .col-link { width: 10%; }
 .device-table .col-open { width: 10%; }
 
+/* Reference board on the Devices page: its own small table under the Fobs. */
+.ref-block { margin-top: 24px; }
+.ref-block:first-child { margin-top: 0; }
+.ref-block-title {
+  margin: 0;
+  padding: 12px 8px 8px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-13);
+  font-weight: 500;
+}
+.ref-table .col-seen { width: 14%; }
+.ref-table .col-pressure { width: 13%; }
+.ref-table .col-temp { width: 11%; }
+.ref-table .col-samples { width: 10%; }
+.ref-table .col-boot { width: auto; }
+.ref-seen { display: inline-flex; align-items: center; gap: 6px; }
+
 /* "Sent late": a small gray tag next to the time. Both times are in its tooltip. */
 .late-tag { display: inline-flex; margin-left: 6px; vertical-align: middle; }
 .late-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }

@@ -7,7 +7,7 @@ select is a built-in that a file of the same name can replace, so each import lo
 on the file system first: a flash read every 10 ms, with WiFi busy. The crash dump held
 the text "/lib/select".
 
-  1. source check: every import in firmware/fob, firmware/lib and firmware/relay is at
+  1. source check: every import in firmware/fob, firmware/lib, firmware/relay and firmware/ref is at
      module level (a try/except at the top is fine), never inside a def or lambda
   2. the button interrupt handler (presslog.EdgeLog.irq) calls nothing that can reach
      flash or allocate: no open, print, import or new objects
@@ -26,7 +26,7 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIRMWARE = os.path.join(HERE, "..", "firmware")
-FOLDERS = ("fob", "lib", "relay")          # what runs on the boards. bringup/ and archive/ are bench scripts
+FOLDERS = ("fob", "lib", "relay", "ref")   # what runs on the boards. bringup/ and archive/ are bench scripts
 sys.path.insert(0, HERE)
 
 results = []

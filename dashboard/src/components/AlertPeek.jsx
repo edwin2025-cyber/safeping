@@ -13,8 +13,11 @@ import {
   formatDate,
   formatDateTime,
   formatNumber,
+  formatPa,
+  formatPaDiff,
   formatTime,
   googleMapsUrl,
+  heightText,
   placeText,
   studentName,
   temperatureText,
@@ -24,7 +27,7 @@ import CopyButton from "./CopyButton.jsx";
 import { Battery } from "./DevicesPage.jsx";
 import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
-import { LateTag, LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
+import { CUT_OFF_LABEL, CUT_OFF_TEXT, CutOffTag, LateTag, LinkTag, StatusDot, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 import { AttributionPrefix, BaseTiles, MAP_OPTIONS, MAX_ZOOM, MapControls, SingleAlertLayer, SizeWatcher, fitView } from "./mapParts.jsx";
 
@@ -69,7 +72,7 @@ function PeekMap({ alert, settings, update, theme, cartoKey }) {
         fadeAnimation={!reducedMotion}
         markerZoomAnimation={!reducedMotion}
       >
-        <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} />
+        <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} mapStyle={settings.mapStyle} />
         <AttributionPrefix />
         <SizeWatcher />
         <SingleAlertLayer alert={alert} sightRadius={settings.sightRadius} />
@@ -83,6 +86,8 @@ function PeekMap({ alert, settings, update, theme, cartoKey }) {
         onToggleLabels={() => update({ mapLabels: !settings.mapLabels })}
         hasKey={!!cartoKey}
         reducedMotion={reducedMotion}
+        mapStyle={settings.mapStyle}
+        onMapStyle={(v) => update({ mapStyle: v })}
       />
     </div>
   );
@@ -220,6 +225,33 @@ function Kv({ label, children }) {
   );
 }
 
+function hasValue(v) {
+  return v !== null && v !== undefined;
+}
+
+/** The Reference board's pressure at the press time. Only for alerts that sent pressure. */
+function RefPressure({ alert }) {
+  if (!hasValue(alert.ref_pressure)) return <span className="muted">No reading near the press time</span>;
+  return formatPa(alert.ref_pressure);
+}
+
+/** Alert minus Reference, with the Fob's sensor offset taken off when it is calibrated.
+    No floor is worked out from it yet. */
+function RefDiff({ alert }) {
+  const height = heightText(alert.ref_height_m);
+  const offset = hasValue(alert.ref_offset_pa)
+    ? "sensor offset " + formatPaDiff(alert.ref_offset_pa) + " taken off"
+    : "Fob not calibrated, no offset taken off";
+  return (
+    <Tooltip label={"Alert pressure minus the Reference board. " + offset[0].toUpperCase() + offset.slice(1) + "."}>
+      <span tabIndex={0}>
+        {formatPaDiff(alert.ref_diff_adj_pa)}
+        {height && <span className="muted">, {height}</span>}
+      </span>
+    </Tooltip>
+  );
+}
+
 function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServer, actions }) {
   const gps = hasGps(alert);
   const place = placeText(alert);
@@ -236,6 +268,7 @@ function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServ
             <TypeTag type={alert.alert_type} />
             <StatusDot state={state} />
             <span className="peek-id">{alert.device_id}</span>
+            <CutOffTag alert={alert} />
           </div>
         </div>
         {actions}
@@ -336,6 +369,16 @@ function SectionsBody({ alert, state, settings, update, theme, cartoKey, nowServ
               {alert.floor !== null && alert.floor !== undefined ? alert.floor : <span className="muted">{gps ? "Not needed, GPS fix" : "Not worked out"}</span>}
             </Kv>
             <Kv label="Pressure">{alert.pressure !== null && alert.pressure !== undefined ? formatNumber(alert.pressure) + " Pa" : <span className="muted">Not sent</span>}</Kv>
+            {hasValue(alert.pressure) && (
+              <Kv label="Reference">
+                <RefPressure alert={alert} />
+              </Kv>
+            )}
+            {hasValue(alert.pressure) && hasValue(alert.ref_pressure) && (
+              <Kv label="Difference">
+                <RefDiff alert={alert} />
+              </Kv>
+            )}
             <Kv label="Temperature">{temperatureText(alert.temperature) || <span className="muted">Not recorded</span>}</Kv>
             <Kv label="Message number">
               {alert.counter !== null && alert.counter !== undefined ? alert.counter : <span className="muted">Not recorded</span>}
@@ -371,6 +414,11 @@ function ListBody({ alert, state, settings, update, theme, cartoKey, nowServer, 
         {isSentLate(alert) && (
           <Prop icon={icons.late} label="Sent late">
             Pressed {formatDateTime(alert.pressed_at, settings.timeFormat)}, arrived {formatDateTime(alert.timestamp, settings.timeFormat)}
+          </Prop>
+        )}
+        {alert.cut_off && (
+          <Prop icon={icons.cutOff} label={CUT_OFF_LABEL}>
+            {CUT_OFF_TEXT}
           </Prop>
         )}
         {alert.help_sent_at && (
@@ -409,6 +457,16 @@ function ListBody({ alert, state, settings, update, theme, cartoKey, nowServer, 
         <Prop icon={icons.pressure} label="Pressure">
           {alert.pressure !== null ? formatNumber(alert.pressure) + " Pa" : <span className="muted">Not sent</span>}
         </Prop>
+        {hasValue(alert.pressure) && (
+          <Prop icon={icons.pressure} label="Reference">
+            <RefPressure alert={alert} />
+          </Prop>
+        )}
+        {hasValue(alert.pressure) && hasValue(alert.ref_pressure) && (
+          <Prop icon={icons.pressure} label="Difference">
+            <RefDiff alert={alert} />
+          </Prop>
+        )}
         {link && (
           <Prop icon={link.icon} label="Link">
             <LinkTag link={alert.link} />

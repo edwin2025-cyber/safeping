@@ -17,8 +17,14 @@ import argparse
 import json
 import time
 
+if __name__ == "__main__":
+    # safeping.env, before any setting is read. Not when a test imports this file.
+    import envfile
+    envfile.load()
+
 import db
 import processor
+import pushover
 
 try:
     import serial  # pyserial
@@ -91,6 +97,8 @@ def main():
         raise SystemExit("pyserial is not installed. Run: python -m pip install pyserial")
 
     db.init_db()
+    pushover.announce()
+    processor.textbelt.announce()
     print("[bridge] reading {} (Ctrl+C to stop)".format(args.port))
     buf = b""
     ser = None

@@ -39,7 +39,7 @@ Live keeps its own table filter (the search icon in the Live toolbar). It only f
 
 ### Top bar
 
-Relay, Reference and the server clock sit together on the right, as plain 13 px text with thin dividers. Relay and Reference have a status dot. Each value has a fixed width (the width of its widest possible text, with tabular numbers), so nothing moves when a value changes. The clock shows no seconds ("5:53 PM" or "17:53") and updates every 15 seconds. Hover or focus an item for what it means.
+Relay, Reference and the server clock sit together on the right, as plain 13 px text with thin dividers. Relay and Reference have a status dot. Reference is green with "updated 20 s ago" when a Reference board reading arrived in the last 2 minutes, orange otherwise (also orange with "no reading" before the first one). Its tooltip has the board's ID and pressure. Each value has a fixed width (the width of its widest possible text, with tabular numbers), so nothing moves when a value changes. The clock shows no seconds ("5:53 PM" or "17:53") and updates every 15 seconds. Hover or focus an item for what it means.
 
 ### Overview
 
@@ -129,7 +129,7 @@ Click a row (or press Enter on it) to open the alert in a large center panel. Es
 - The map, with the area line under it.
 - Timeline: Pressed, Text to duty phone, Acknowledged and Resolved, with their times ("Not yet" until they happen). A filled dot is a step that happened. After Acknowledged, "Help message sent to Fob" with the time, when the server sent the "help is coming" message (WiFi). It means the server sent it, not that the Fob got it.
 - Sent late: an alert that reached the server more than 60 s after the press (the Fob's retry queue) gets a small gray "Sent late" tag, next to the time on Live rows and in the device history, with both times in its tooltip. In the panel, the Pressed card shows the Fob's press time with "Arrived ..." under it, and the timeline has Pressed and "Arrived, sent late" as two steps. Needs the Fob's clock (`ts`), so an alert sent with no clock never shows the tag. More than 15 minutes: the tag is yellow and says "Sent late (over 15 min)", and Settings > Health counts it.
-- Fob: Battery (number and bar), Link (tag), Floor, Pressure, Temperature, Message number.
+- Fob: Battery (number and bar), Link (tag), Floor, Pressure, Temperature, Message number. An alert that sent pressure also shows Reference (the Reference board's pressure at the press time, one decimal, or "No reading near the press time") and Difference ("-52.3 Pa, about 4.5 m above the reference": alert minus reference, with the Fob's sensor offset taken off when it is calibrated, said in the tooltip). No floor is worked out from it yet.
 
 The old layout, one list of every property and then the map, is still in the code. In `dashboard/src/components/AlertPeek.jsx`, set `PEEK_LAYOUT` to `"list"` to bring it back.
 
@@ -148,7 +148,7 @@ The device panel is in sections, like the alert panel:
 - Starts and self-checks: Last start (time and how long ago), Why it started ("Power on", "Restarted after a crash" in orange, "Restarted by the watchdog", "Soft reset (Thonny or Ctrl+D)", or "Not reported" for older firmware; the starts table has the same in a Why column, and the Devices page adds ", after a crash" next to Last start), Self-check ("All checks passed" or the failed parts in plain words), WiFi ("WiFi joined" or "No WiFi at start (LoRa still works)", information only, never a failure) and Firmware. Under it, the last 10 starts, newest first.
 - Alert history: the table, with the type filter on the right. Pressed shows the date and time with how long ago in gray.
 
-The reference board has no battery or alerts, so it shows Last seen and a Role card ("Ground floor pressure") and no history.
+The Reference board is not in the Fob table. It has its own small table under it, "Reference board": Board, ID, Last reading (green dot when it is under 2 minutes old, orange otherwise), Pressure (one decimal), Temperature and Readings ("15 in 30 s") and Last start (from its BOOT report, with the pressure sensor, like "All checks passed. Sensor BME280 at 0x77"). Its device panel shows Last seen, a Last reading card (pressure large, temperature and readings under it) and Starts and self-checks (with a Pressure sensor row), and no alert history.
 
 The old device panel, one list of properties and then the history, is still in the code. In `dashboard/src/components/DevicePeek.jsx`, set `DEVICE_LAYOUT` to `"list"` to bring it back.
 
@@ -385,6 +385,10 @@ Whether the system itself is working. It reads `/api/stats` for the picked range
 | Fobs not seen in 24 h | Fobs with no message of any type, STATUS included, in the last 24 hours, with their names. Orange when any |
 | Low battery | Fobs whose newest battery reading is under 20%, with names and percents. Orange when any |
 | Reference sensor | "Last reading 2 min ago". Orange when there is no reading, or the reading is older than `REF_MAX_AGE_S` (then floors cannot be worked out) |
+| Pushover | "Last send 4 min ago", with "Last error 2 h ago: ..." under it when there was one. Red with a warning icon when the newest send failed. Orange "Off" when `SAFEPING_PUSHOVER_USER` or `SAFEPING_PUSHOVER_TOKEN` is not set. Not tied to the range. From `pushover` in `/api/stats` (`server/pushover.py` `health()`) |
+| Text messages | The mode ("Off", "Dry run (printed, not sent)" or "Live, 2 numbers"). Under it in live mode: last send, credits left (Textbelt's `quotaRemaining` from the last reply), and the last error. Orange with a warning icon under 25 credits, when the newest text failed, or when the key or the numbers are missing. From `sms` in `/api/stats` (`server/textbelt.py` `health()`) |
+
+A Pushover notification links to `#/alert/<id>` when `SAFEPING_PUBLIC_URL` is set. That address opens the alert's peek (breadcrumb "Notification") and then puts the page back in the address.
 
 ### Font (for testing)
 
@@ -414,13 +418,15 @@ The server version is `VERSION` in `server/app.py` (bump it by hand) plus the gi
 
 | Route | What it returns |
 |---|---|
-| `GET /api/alerts` | Alerts. `status=1` adds STATUS, `resolved=1` adds resolved. Each alert also has `place_name`, `place_distance_m` and `place_bearing` (null when there is no named place within 200 m), and `pressed_at` (the Fob's clock, or null), `late_s`, `sent_late` (more than 60 s from press to arrival) and `help_sent_at` (when the help message was sent, or null) |
+| `GET /api/alerts` | Alerts. `status=1` adds STATUS, `resolved=1` adds resolved. Each alert also has `place_name`, `place_distance_m` and `place_bearing` (null when there is no named place within 200 m), and `pressed_at` (the Fob's clock, or null), `late_s`, `sent_late` (more than 60 s from press to arrival) and `help_sent_at` (when the help message was sent, or null). And the Reference at the press time: `ref_pressure`, `ref_diff_pa` (alert minus reference), `ref_offset_pa` (the Fob's sensor offset, or null), `ref_diff_adj_pa` (offset taken off) and `ref_height_m` (positive is above the reference), all null when there was no reading within 60 s |
 | `GET /api/alerts/<id>` | One alert, in the same shape, as `{"alert": {...}}`. 404 for an unknown id. New in version 5, for opening older alerts from Overview and search |
 | `GET /api/search?q=alpha` | Find a student (below). New in version 5 |
 | `POST /api/ack`, `POST /api/resolve` | Body `{"id": 12}`. Acknowledge also sends the Fob the "help is coming" message over MQTT and answers `help_sent` (false with `NO_MQTT=1`) |
-| `GET /api/status` | Server time, Reference pressure and age, `last_lora_age_s` |
+| `GET /api/status` | Server time, Reference pressure (one decimal), age, temperature and board ID (`reference_id`), `last_lora_age_s` |
+| `GET /api/reference?start=&end=` | Reference readings in the range (Unix seconds, default the last 24 hours), oldest first: `device_id`, `received`, `time` (the middle of the board's 30 s window), `pressure` (Pa, one decimal), `temperature`, `samples`, `firmware`. For `tests/ref_calibrate.py` and `tests/survey_analyze.py` |
+| `GET /api/survey?start=&end=&device=` | Survey points (default the last 7 days), oldest first, with each SSID as text and the reference pressure at the point's time. Never shown on the dashboard |
 | `GET /api/config` | `carto_key` (or null), `pa_per_floor`, `ref_max_age_s`, `defaults`, `version`, `commit` |
-| `GET /api/devices` | One row per device. Never includes the secret key |
+| `GET /api/devices` | One row per device. Never includes the secret key. A Reference board has `reference`: `time`, `pressure`, `temperature`, `samples`, `firmware` of its newest reading (null for Fobs) |
 | `GET /api/devices/<id>/alerts` | That device's alerts, all types and states, newest first, up to 200. 404 for an unknown device |
 | `GET /api/devices/<id>/boots` | That device's boot reports, newest first, up to 10: `time`, `device_ts`, `counter`, `all_passed`, `failed` (plain words), `wifi`, `firmware`, `link`. `/api/devices` has the newest one as `last_boot` |
 | `GET /api/places` | The places from `places.json` |

@@ -4,6 +4,8 @@ Every color and pattern the Fob's LED shows, what it means, and where it is in t
 
 The LED is one NeoPixel on IO27 (`LED_TYPE = "neopixel"`). All calls go through the `Led` class in `main.py` (`show(color, on_ms, off_ms, duration_ms)`, `off()`). `on_ms` and `off_ms` = 0 means steady. `duration_ms` = 0 means until something else changes it.
 
+**External LED in the case (from firmware 2026.11.15a).** With `LED_PIN_EXTERNAL` set in `config.py` (an Adafruit NeoPixel Mini PCB, power from VBAT, data from that GPIO), the second pixel shows exactly the same colors and patterns as IO27, at `LED_BRIGHTNESS_EXTERNAL` percent (default 30) of the same brightness. Low battery dims both. SILENT keeps both dark. A pin the Fob already uses is refused with a WARNING line, and then only IO27 lights.
+
 ## The rule: one kind of meaning per color
 
 | Color | RGB | Means | Used for |

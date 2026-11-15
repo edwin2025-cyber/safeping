@@ -85,6 +85,8 @@ function emptyStats(params) {
     stale_fobs: [],
     low_battery_fobs: [],
     reference_age_s: null,
+    pushover: { enabled: true, link: false, last_send_age_s: null, last_send_alert: null, last_error_age_s: null, last_error_alert: null, last_error: null, failing: false },
+    sms: { mode: "dry", numbers: 0, key_set: false, max_per_hour: 20, tried_last_hour: 0, last_send_age_s: null, last_send_alert: null, last_error_age_s: null, last_error_alert: null, last_error: null, quota_remaining: null, quota_low: false, failing: false },
     open_by_type: { MEDICAL: 0, SUSPICIOUS: 0, SILENT: 0 },
     urgent_open: [],
     last_alert: null,

@@ -91,7 +91,7 @@ The GPS has a chip antenna and needs to see the sky. Test it at a window or outs
 
 ### 3.4 NeoPixel Mini PCB
 1. Solder three wires to one set of pads on the back. The page does not name the pads. Read the tiny labels on the board and use the **input** set: power (V or 5V), ground (G), and data in (IN or DI). Leave the output set empty.
-2. Wire it: power to 3V3, ground to GND, data in to GPIO 2.
+2. Wire it: power to the battery pin (VBAT), ground to GND, data in to a free GPIO. **Not GPIO 2**, the first plan: on the ESP32-C5 it is a strapping pin (MTMS), read at reset. Use GPIO 4 or 5 (see `docs/env-sms-cleanup-changes.md`, "Free pins"), then set `LED_PIN_EXTERNAL` in the Fob's `config.py`.
 3. Keep the brightness low in code. A NeoPixel is very bright up close.
 
 **Power voltage.** The page says the part is a 5 V part that "can run as low as 3.5 V but color will be dimmed". The board's 3V3 pin is below that, so the colors may be dim or wrong. Do not use 5 V, because then the 3.3 V data signal is too weak to be read. Try 3V3 first. If the colors are dim or flicker, move the power wire to the board's battery pin (3.5 to 4.2 V) and test again. Record what works.

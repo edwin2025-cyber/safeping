@@ -35,6 +35,12 @@ LED_TYPE = "neopixel"
 NEOPIXEL_PIN = 27
 MOTOR_PIN = 3
 
+# External NeoPixel in the case (Adafruit NeoPixel Mini PCB, power from VBAT). None = not
+# fitted. Set the data pin once it is wired (GPIO 4 or 5, not 2). It shows the same colors
+# and patterns as the board LED, at LED_BRIGHTNESS_EXTERNAL percent.
+LED_PIN_EXTERNAL = None
+LED_BRIGHTNESS_EXTERNAL = 30
+
 # Timing
 HOLD_MS = 2000      # hold this long for SILENT (the PDR said 5000)
 CANCEL_MS = 2000    # cancel window for SUSPICIOUS and MEDICAL
@@ -48,7 +54,18 @@ RETRY_MAX = 5              # alerts kept at most. Full: STATUS dropped first, ME
 # (sent when staff press Acknowledge). 0 turns it off.
 HELP_LISTEN_MS = 120000
 
+# Survey mode (floor survey). True: a single press makes a survey point (pressure, GPS,
+# WiFi scan) instead of a STATUS alert. Every other press is a normal alert.
+# A long blue blink at boot means it is on. Keep False for normal use.
+SURVEY_MODE = False
+# A survey point by itself this often, in ms (the 10 minute side-by-side calibration).
+# 0 = only on a press.
+SURVEY_AUTO_MS = 0
+
 # Other settings you can add here (defaults in main.py):
+# SURVEY_SAMPLES = 15, SURVEY_WINDOW_MS = 3000, SURVEY_TOP_APS = 15,
+# SURVEY_DIR = "survey_q" (points waiting for WiFi), SURVEY_MAX_STORED = 100,
+# SURVEY_RETRY_MS = 30000,
 # QUEUE_FILE = "queue.json" (the retry queue in flash), GPS_CHECK_MS = 5000 (boot self-check:
 # the GPS must send data this soon), SECRET_KEY_LEN = 32 (boot self-check: key length),
 # LORA_CS = 26, LORA_RST = 6, I2C_SDA = 23, I2C_SCL = 24, BME280_ADDR = 0x77,

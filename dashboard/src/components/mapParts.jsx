@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { icon as faIcon } from "@fortawesome/fontawesome-svg-core";
 import { TileLayer, useMap } from "react-leaflet";
 import L from "../lib/leafletSetup.js";
@@ -8,6 +8,7 @@ import { placeText, studentName } from "../lib/format.js";
 import { icons } from "../lib/icons.js";
 import { hideTooltip, showTooltip } from "../lib/tooltip.js";
 import Icon from "./Icon.jsx";
+import Popover from "./Popover.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 export const DEFAULT_CENTER = [34.7304, -86.5861]; // Huntsville, until an alert has GPS
@@ -34,8 +35,48 @@ export function fitView(map, bounds, options, reducedMotion) {
   else map.flyToBounds(bounds, { ...options, duration: 0.5 });
 }
 
-/** CARTO raster basemaps when a key is set, otherwise OpenStreetMap (dimmed in dark mode). */
-export function BaseTiles({ theme, labels, cartoKey }) {
+const ESRI_ATTRIBUTION =
+  'Imagery &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, Maxar, Earthstar Geographics';
+const ESRI_IMAGERY_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+
+/** The map styles in the layers menu and in Settings. Streets and Hybrid need a CARTO key. */
+export const MAP_STYLES = [
+  { value: "default", label: "Light/Dark", note: "Follows the theme", needsKey: false },
+  { value: "streets", label: "Streets", note: "Roads and places in color", needsKey: true },
+  { value: "satellite", label: "Satellite", note: "Aerial photos, no labels", needsKey: false },
+  { value: "hybrid", label: "Hybrid", note: "Aerial photos with street names", needsKey: true },
+];
+
+function cartoUrl(style, cartoKey) {
+  return "https://{s}.basemaps.cartocdn.com/rastertiles/" + style + "/{z}/{x}/{y}{r}.png?key=" + encodeURIComponent(cartoKey);
+}
+
+/** The base map for the chosen style. Streets and Hybrid fall back when there is no CARTO key:
+    Streets to the default map, Hybrid to plain Satellite. */
+export function BaseTiles({ theme, labels, cartoKey, mapStyle = "default" }) {
+  if (mapStyle === "satellite" || mapStyle === "hybrid") {
+    const withLabels = mapStyle === "hybrid" && cartoKey && labels;
+    return (
+      <>
+        <TileLayer key={ESRI_IMAGERY_URL} url={ESRI_IMAGERY_URL} maxNativeZoom={19} maxZoom={MAX_ZOOM} attribution={ESRI_ATTRIBUTION} />
+        {withLabels && (
+          <TileLayer
+            key="hybrid-labels"
+            url={cartoUrl("dark_only_labels", cartoKey)}
+            subdomains="abcd"
+            maxNativeZoom={18}
+            maxZoom={MAX_ZOOM}
+            zIndex={2}
+            attribution={CARTO_ATTRIBUTION}
+          />
+        )}
+      </>
+    );
+  }
+  if (mapStyle === "streets" && cartoKey) {
+    const url = cartoUrl(labels ? "voyager" : "voyager_nolabels", cartoKey);
+    return <TileLayer key={url} url={url} subdomains="abcd" maxNativeZoom={18} maxZoom={MAX_ZOOM} attribution={CARTO_ATTRIBUTION} />;
+  }
   if (cartoKey) {
     const style = theme === "dark" ? (labels ? "dark_all" : "dark_nolabels") : labels ? "light_all" : "light_nolabels";
     const url =
@@ -410,9 +451,80 @@ export function SingleAlertLayer({ alert, sightRadius }) {
   return null;
 }
 
-/** Floating control group, bottom right: zoom in, zoom out, fit, labels. */
-export function MapControls({ map, onFit, fitLabel = "Fit all alerts", fitIcon = icons.fitAll, labels, onToggleLabels, hasKey, reducedMotion }) {
-  const labelsTip = hasKey ? (labels ? "Hide map labels" : "Show map labels") : "Map labels need a CARTO key";
+/** Layers button: opens a menu to pick the map style. */
+function LayersMenu({ mapStyle, onMapStyle, hasKey }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const current = MAP_STYLES.find((s) => s.value === mapStyle) || MAP_STYLES[0];
+  const label = "Map style: " + current.label;
+  return (
+    <>
+      <Tooltip label={label}>
+        <button
+          ref={ref}
+          type="button"
+          className="map-ctl"
+          aria-label={label}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <Icon icon={icons.mapLayers} />
+        </button>
+      </Tooltip>
+      <Popover anchor={ref.current} open={open} onClose={() => setOpen(false)} label="Map style" placement="top-end">
+        <div className="popover-title">Map style</div>
+        {MAP_STYLES.map((s) => {
+          const off = s.needsKey && !hasKey;
+          return (
+            <button
+              key={s.value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={current.value === s.value}
+              aria-disabled={off ? true : undefined}
+              className="menu-item"
+              onClick={() => {
+                if (off) return;
+                onMapStyle(s.value);
+                setOpen(false);
+              }}
+            >
+              <span className="menu-two-line">
+                {s.label}
+                <span className="menu-note">{off ? "Needs a CARTO key" : s.note}</span>
+              </span>
+              {current.value === s.value && <Icon icon={icons.acknowledged} className="menu-check" />}
+            </button>
+          );
+        })}
+      </Popover>
+    </>
+  );
+}
+
+/** Floating control group, bottom right: zoom in, zoom out, fit, labels, map style. */
+export function MapControls({
+  map,
+  onFit,
+  fitLabel = "Fit all alerts",
+  fitIcon = icons.fitAll,
+  labels,
+  onToggleLabels,
+  hasKey,
+  reducedMotion,
+  mapStyle = "default",
+  onMapStyle,
+}) {
+  const plainSatellite = mapStyle === "satellite";
+  const labelsOk = hasKey && !plainSatellite;
+  const labelsTip = !hasKey
+    ? "Map labels need a CARTO key"
+    : plainSatellite
+      ? "Satellite has no labels. Pick Hybrid for street names."
+      : labels
+        ? "Hide map labels"
+        : "Show map labels";
   return (
     <div className="map-controls" role="group" aria-label="Map controls">
       <Tooltip label="Zoom in">
@@ -436,13 +548,14 @@ export function MapControls({ map, onFit, fitLabel = "Fit all alerts", fitIcon =
           type="button"
           className="map-ctl"
           aria-label={labelsTip}
-          aria-pressed={hasKey ? labels : undefined}
-          aria-disabled={hasKey ? undefined : true}
-          onClick={() => hasKey && onToggleLabels()}
+          aria-pressed={labelsOk ? labels : undefined}
+          aria-disabled={labelsOk ? undefined : true}
+          onClick={() => labelsOk && onToggleLabels()}
         >
           <Icon icon={icons.mapLabels} />
         </button>
       </Tooltip>
+      {onMapStyle && <LayersMenu mapStyle={mapStyle} onMapStyle={onMapStyle} hasKey={hasKey} />}
     </div>
   );
 }

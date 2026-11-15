@@ -3,8 +3,11 @@ Fob a signed ack once its alert is saved.
 
 Topics (see message-format.md):
   safeping/alert/<id>   the Fob publishes alerts here (QoS 1)
-  safeping/alerts       the old shared topic, still read (fake_fob.py uses it)
-  safeping/reference    Reference readings
+  safeping/alerts       the old shared topic, still read. Nothing sends here now
+  safeping/ref/<id>     Reference readings and the Reference board's BOOT report
+                        (firmware/ref, QoS 0). Never acked
+  safeping/reference    Reference readings (old topic, still read). Nothing sends here now
+  safeping/survey/<id>  survey points from a Fob in survey mode (QoS 1), acked like alerts
   safeping/ack/<id>     the server publishes "ACK <id> <ctr> <mac>" here (QoS 1),
                         only after the alert is saved, or for a duplicate of a saved one
   safeping/help/<id>    the server publishes "HELP <id> <ctr> <mac>" here (QoS 1) when
@@ -17,6 +20,11 @@ import os
 import queue
 import sys
 import threading
+
+if __name__ == "__main__":
+    # Run alone: safeping.env first. When app.py imports it, app.py has done this already.
+    import envfile
+    envfile.load()
 
 import config
 import db
@@ -65,6 +73,11 @@ def help_for(device_id, ctr):
     return config.TOPIC_HELP_PREFIX + device_id, ackcheck.help_text(key, device_id, ctr)
 
 
+def is_reference_topic(topic):
+    """Reference readings are never acked (the board publishes at QoS 0 and does not listen)."""
+    return topic == config.TOPIC_REFERENCE or topic.startswith(config.TOPIC_REF_PREFIX)
+
+
 _client = [None]        # the running client, so app.py can publish help messages
 
 
@@ -105,7 +118,7 @@ def start(block=False):
             try:
                 # "wifi" is right while the Relay uses the USB serial bridge. If the Relay
                 # later republishes LoRa alerts over MQTT, those will show as wifi too.
-                on_ack = None if topic == config.TOPIC_REFERENCE else send_ack
+                on_ack = None if is_reference_topic(topic) else send_ack
                 result = processor.process(payload, source="wifi", on_ack=on_ack)
                 print("[mqtt] {} -> {}".format(topic, result))
             except Exception as error:  # never let one bad message kill the listener
@@ -120,7 +133,8 @@ def start(block=False):
             config.MQTT_HOST, config.MQTT_PORT, " with TLS" if config.MQTT_CA else "",
             "session resumed (held alerts come next)" if resumed else "new session"))
         client.subscribe([(config.TOPIC_ALERT_PREFIX + "+", 1), (config.TOPIC_ALERTS, 1),
-                          (config.TOPIC_REFERENCE, 1)])
+                          (config.TOPIC_REFERENCE, 1), (config.TOPIC_REF_PREFIX + "+", 0),
+                          (config.TOPIC_SURVEY_PREFIX + "+", 1)])
 
     def on_disconnect(client, userdata, rc):
         if rc != 0:
@@ -146,4 +160,6 @@ def start(block=False):
 
 if __name__ == "__main__":
     db.init_db()
+    processor.pushover.announce()
+    processor.textbelt.announce()
     start(block=True)

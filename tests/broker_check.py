@@ -2,19 +2,24 @@
 # Checks the cloud MQTT broker: TLS, login, publish and receive.
 # Sends only a "hello" test message on a test topic. No alert data.
 #
-# Settings come from environment variables, so nothing secret is in this file:
-#   $env:SAFEPING_MQTT_HOST = "your-deployment-address"
-#   $env:SAFEPING_MQTT_USER = "safeping-server"
-#   $env:SAFEPING_MQTT_PASS = "the password"
-#   $env:SAFEPING_MQTT_CA   = "C:\path\to\the\ca-file.crt"
-# Optional: $env:SAFEPING_MQTT_PORT (default 8883)
+# Settings come from safeping.env (Documents\safeping-private, see docs/how-to-run.md)
+# or environment variables, so nothing secret is in this file:
+#   SAFEPING_MQTT_HOST, SAFEPING_MQTT_USER (safeping-server), SAFEPING_MQTT_PASS,
+#   SAFEPING_MQTT_CA, and optional SAFEPING_MQTT_PORT (default 8883)
+# The server user may publish and subscribe safeping/test/#, which this uses.
 
 import os
 import sys
 import threading
 import time
 
-import paho.mqtt.client as mqtt
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "server"))
+import envfile  # noqa: E402
+
+if __name__ == "__main__":
+    envfile.load()
+
+import paho.mqtt.client as mqtt  # noqa: E402
 
 HOST = os.environ.get("SAFEPING_MQTT_HOST", "")
 PORT = int(os.environ.get("SAFEPING_MQTT_PORT", "8883"))

@@ -1,0 +1,11 @@
+ctr,type,fob_time,fob_result,relay_time,received,delay_s,lat,lon,acc_m,lat_deg,lon_deg,rssi_dbm,snr_db,same_message,lora_retry,p_pa,t_c,bat_pct,confirmed,ack_try,path,result,ms,reason,retry_tries,retry_result,help_ms
+315,SUSPICIOUS,2026-11-13 12:18:22.669,not confirmed,,no,,,,,,,,,,,99012,20.78,100,no,,lora,not_confirmed,4456,wifi_join_failed,3,gave up (timeout),
+316,SUSPICIOUS,2026-11-13 12:22:02.470,not confirmed,2026-11-13 12:22:37.509,yes,35.04,,,,,,-38,9.5,yes,,99006,21.06,100,no,,lora,not_confirmed,4453,wifi_join_failed,1,got through,
+317,SILENT,2026-11-13 12:23:37.211,not confirmed,2026-11-13 12:24:46.812,yes,69.60,,,,,,-39,10.25,yes,,99004,21.07,100,no,,lora,not_confirmed,4451,wifi_join_failed,2,got through,
+318,SUSPICIOUS,2026-11-13 12:26:16.811,not confirmed,,no,,,,,,,,,,,99005,21.00,100,no,,lora,not_confirmed,4462,wifi_join_failed,4,gave up (timeout),
+319,STATUS,2026-11-13 12:26:53.551,not confirmed,,no,,,,,,,,,,,99004,21.09,100,no,,lora,not_confirmed,4443,wifi_join_failed,4,gave up (timeout),
+321,STATUS,2026-11-13 12:30:42.230,not confirmed,2026-11-13 12:32:06.422,yes,84.19,,,,,,-36,9.75,yes,,99004,21.03,99,no,,lora,not_confirmed,4362,clock_not_set,2,got through,
+322,STATUS,2026-11-13 12:30:52.639,not confirmed,2026-11-13 12:32:07.070,yes,74.43,,,,,,-36,9.75,yes,,99001,21.09,99,no,,lora,not_confirmed,4207,clock_not_set,1,got through,
+323,SUSPICIOUS,2026-11-13 12:31:05.000,not confirmed,2026-11-13 12:32:05.437,yes,60.44,,,,,,-37,9.75,yes,,98998,21.15,99,no,,lora,not_confirmed,4213,clock_not_set,1,got through,
+324,MEDICAL,2026-11-13 12:31:18.489,not confirmed,2026-11-13 12:32:35.161,yes,76.67,,,,,,-35,9.75,yes,,98998,21.21,99,no,,lora,not_confirmed,4352,clock_not_set,2,got through,
+326,SILENT,2026-11-13 12:31:48.506,not confirmed,2026-11-13 12:32:23.351,yes,34.85,,,,,,-36,9.5,yes,,98991,21.28,99,no,,lora,not_confirmed,4346,clock_not_set,1,got through,

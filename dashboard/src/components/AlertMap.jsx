@@ -187,7 +187,7 @@ export default function AlertMap({
         fadeAnimation={!reducedMotion}
         markerZoomAnimation={!reducedMotion}
       >
-        {configLoaded && <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} />}
+        {configLoaded && <BaseTiles theme={theme} labels={settings.mapLabels} cartoKey={cartoKey} mapStyle={settings.mapStyle} />}
         <AttributionPrefix />
         <SizeWatcher />
         <MapController alerts={alerts} flyTarget={flyTarget} reducedMotion={reducedMotion} />
@@ -224,6 +224,8 @@ export default function AlertMap({
         onToggleLabels={() => update({ mapLabels: !settings.mapLabels })}
         hasKey={!!cartoKey}
         reducedMotion={reducedMotion}
+        mapStyle={settings.mapStyle}
+        onMapStyle={(v) => update({ mapStyle: v })}
       />
     </div>
   );

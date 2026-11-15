@@ -7,6 +7,7 @@ import {
   MOCK_CONFIG,
   MOCK_DEVICES,
   MOCK_DUPLICATES,
+  MOCK_OFFSETS,
   MOCK_PLACES,
   MOCK_PLACES_MAX_DISTANCE_M,
   MOCK_REJECTIONS,
@@ -24,6 +25,27 @@ const REF_PRESSURE = MOCK_STATUS.reference_pressure;
 const now = () => Date.now() / 1000;
 const counters = {};
 let nextId = 1;
+const LOADED_S = now();
+const MOCK_FOBS = MOCK_DEVICES.filter((d) => d.role !== "REF"); // only Fobs make alerts
+
+/** Seconds since the newest Reference reading: counts up and starts again every 30 s,
+    like the real board, so the top bar shows "updated 5 s ago" to "updated 34 s ago". */
+function refAge() {
+  return 5 + Math.floor((now() - LOADED_S + MOCK_STATUS.reference_age_s) % 30);
+}
+
+/** The reference fields of /api/alerts, same as refmatch.describe() in server/refmatch.py.
+    About 11.5 Pa per meter. The oldest alert has no reading near its press time. */
+function refFields(device, pressure, time) {
+  if (pressure === null || now() - time > 3 * 3600) {
+    return { ref_pressure: null, ref_diff_pa: null, ref_offset_pa: null, ref_diff_adj_pa: null, ref_height_m: null };
+  }
+  const ref = REF_PRESSURE;
+  const diff = Math.round((pressure - ref) * 10) / 10;
+  const offset = MOCK_OFFSETS[device] ?? null;
+  const adj = Math.round((diff - (offset || 0)) * 10) / 10;
+  return { ref_pressure: ref, ref_diff_pa: diff, ref_offset_pa: offset, ref_diff_adj_pa: adj, ref_height_m: Math.round((-adj / 11.5) * 10) / 10 };
+}
 
 // ---------- places, same math as server/places.py ----------
 
@@ -64,14 +86,16 @@ function describe(alert) {
 
 // ---------- the in-memory alert list ----------
 
-function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackAfter = 60, resolveAfter = 540, lateS = 0 }) {
+function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackAfter = 60, resolveAfter = 540, lateS = 0, cutOff = false }) {
   const dev = MOCK_DEVICES.find((d) => d.device_id === device);
   counters[device] = (counters[device] || 0) + 1;
   const hasGps = lat !== undefined;
   const indoors = !hasGps && floor !== undefined;
   const acked = state === "acknowledged" || state === "resolved";
   const pressed = Math.round(time - lateS); // lateS: the Fob's retry queue sent it this much later
+  const pressure = indoors ? Math.round(REF_PRESSURE - (floor - 1) * MOCK_CONFIG.pa_per_floor) : Math.round(REF_PRESSURE + 12);
   return describe({
+    ...refFields(device, pressure, time),
     id: nextId++,
     device_id: device,
     student_name: dev.student_name,
@@ -83,13 +107,14 @@ function makeAlert({ device, type, state, time, link, lat, lon, acc, floor, ackA
     late_s: Math.round(time - pressed),
     sent_late: time - pressed > 60,
     late_over_max: time - pressed > 900,
+    cut_off: cutOff, // "Press cut off by a restart" ("cut": 1)
     // Mock mode acts as if MQTT is on: acknowledging sends the help message
     help_sent_at: acked && type !== "STATUS" ? time + ackAfter : null,
     latitude: hasGps ? lat : null,
     longitude: hasGps ? lon : null,
     accuracy: hasGps ? acc : null,
     floor: indoors ? floor : null,
-    pressure: indoors ? REF_PRESSURE - (floor - 1) * MOCK_CONFIG.pa_per_floor : REF_PRESSURE + 12,
+    pressure,
     battery: dev.battery,
     temperature: 2150,
     counter: counters[device],
@@ -143,7 +168,7 @@ function history(startS) {
         where.floor = 1 + Math.floor(rand() * 4);
       }
       const alert = {
-        device: MOCK_DEVICES[Math.floor(rand() * MOCK_DEVICES.length)].device_id,
+        device: MOCK_FOBS[Math.floor(rand() * MOCK_FOBS.length)].device_id,
         type,
         state: "resolved",
         time,
@@ -183,7 +208,7 @@ function addRandomAlert() {
   }
   alerts.push(
     makeAlert({
-      device: pick(MOCK_DEVICES).device_id,
+      device: pick(MOCK_FOBS).device_id,
       type: pick(TYPES),
       state: "open",
       time: now(),
@@ -221,8 +246,10 @@ function getStatus() {
   const lora = alerts.filter((a) => a.link === "lora").map((a) => a.timestamp);
   return {
     server_time: t,
-    reference_age_s: MOCK_STATUS.reference_age_s,
+    reference_age_s: refAge(),
     reference_pressure: MOCK_STATUS.reference_pressure,
+    reference_temperature: MOCK_STATUS.reference_temperature,
+    reference_id: MOCK_STATUS.reference_id,
     unacknowledged: alerts.filter((a) => !a.acknowledged && a.alert_type !== "STATUS").length,
     rejected_total: MOCK_STATUS.rejected_total,
     last_lora_age_s: lora.length ? Math.round(t - Math.max(...lora)) : null,
@@ -231,8 +258,25 @@ function getStatus() {
 
 function getDevices() {
   const devices = MOCK_DEVICES.map((d) => {
+    if (d.role === "REF") {
+      const at = now() - refAge();
+      return {
+        device_id: d.device_id,
+        role: d.role,
+        student_name: null,
+        last_counter: 4100 + Math.floor((now() - LOADED_S) / 30),
+        last_seen: at,
+        battery: null,
+        link: "wifi",
+        open_alerts: 0,
+        last_boot: bootsFor(d.device_id)[0] || null,
+        // Same shape as /api/devices in server/app.py
+        reference: { time: at, pressure: MOCK_STATUS.reference_pressure, temperature: MOCK_STATUS.reference_temperature, samples: 15, firmware: "ref-mock" },
+      };
+    }
     const own = newestFirst(alerts.filter((a) => a.device_id === d.device_id));
     return {
+      reference: null,
       device_id: d.device_id,
       role: d.role,
       student_name: d.student_name,
@@ -266,11 +310,12 @@ function bootsFor(deviceId) {
     all_passed: b.failed.length === 0,
     failed: b.failed.slice(),
     wifi: b.wifi,
-    firmware: "2026.11.11b",
+    firmware: b.firmware || "2026.11.11b",
     link: b.wifi ? "wifi" : "lora",
     reset_cause: b.reset || 1,
     reset_words: RESET_WORDS[b.reset || 1],
     crashed: b.reset === 2,
+    sensor: b.sensor || null, // Reference board only
   }));
 }
 
@@ -452,7 +497,34 @@ function getStats(params) {
     rejected: { total: Object.values(byReason).reduce((s, n) => s + n, 0), by_reason: byReason },
     stale_fobs: fobs.filter((d) => !seen.includes(d)).map(name).sort(),
     low_battery_fobs: low.map((d) => ({ name: name(d), pct: d.battery })),
-    reference_age_s: MOCK_STATUS.reference_age_s,
+    reference_age_s: refAge(),
+    // Same shape as pushover.health() in server/pushover.py. Not tied to the range.
+    pushover: {
+      enabled: true,
+      link: true,
+      last_send_age_s: 240,
+      last_send_alert: null,
+      last_error_age_s: 7200,
+      last_error_alert: null,
+      last_error: "no connection: timed out",
+      failing: false,
+    },
+    // Same shape as textbelt.health() in server/textbelt.py. 18 credits: shows the orange "low" case.
+    sms: {
+      mode: "live",
+      numbers: 2,
+      key_set: true,
+      max_per_hour: 20,
+      tried_last_hour: 2,
+      last_send_age_s: 240,
+      last_send_alert: null,
+      last_error_age_s: null,
+      last_error_alert: null,
+      last_error: null,
+      quota_remaining: 18,
+      quota_low: true,
+      failing: false,
+    },
     ...overviewV5(startS, endS, perDay),
   };
 }

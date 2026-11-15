@@ -72,6 +72,23 @@ export function formatNumber(n) {
   return Number(n).toLocaleString();
 }
 
+/** Pressure with one decimal: "98,812.4 Pa". */
+export function formatPa(n) {
+  return Number(n).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " Pa";
+}
+
+/** A signed pressure difference: "-52.3 Pa", "+4.0 Pa". */
+export function formatPaDiff(n) {
+  return (n > 0 ? "+" : n < 0 ? "-" : "") + formatPa(Math.abs(n));
+}
+
+/** Meters above or below the Reference board: "about 4.5 m above the reference". */
+export function heightText(m) {
+  if (m === null || m === undefined) return null;
+  if (Math.abs(m) < 0.05) return "about level with the reference";
+  return "about " + Math.abs(m).toFixed(1) + " m " + (m > 0 ? "above" : "below") + " the reference";
+}
+
 /** A median time: "45 s", "1.8 min", "12 min", "1.5 h". */
 export function formatDuration(seconds) {
   if (seconds < 60) return Math.round(seconds) + " s";

@@ -5,14 +5,15 @@ import Icon from "./Icon.jsx";
 import Tooltip from "./Tooltip.jsx";
 import { Tag } from "./Tags.jsx";
 import { MOCK } from "../lib/api.js";
-import { agoShort, formatNumber, formatTime } from "../lib/format.js";
+import { agoShort, formatPa, formatTime } from "../lib/format.js";
 
 const RELAY_RECENT_S = 15 * 60;
+const REF_FRESH_S = 120; // green when a Reference reading arrived in the last 2 minutes
 
 // Hidden "widest" text under each value, so a value never changes the width of the bar.
 // Numbers are tabular, so 0 is as wide as any other digit.
 const RELAY_WIDEST = ["00 min ago", "no data"];
-const REF_WIDEST = ["000,000 Pa", "no reading"];
+const REF_WIDEST = ["updated 00 min ago", "no reading"];
 const CLOCK_WIDEST = { 12: ["00:00 PM", "00:00 AM"], 24: ["00:00"] };
 
 function relayItem(status) {
@@ -22,16 +23,18 @@ function relayItem(status) {
   return { color: age <= RELAY_RECENT_S ? "green" : "gray", value: agoShort(age), tip };
 }
 
-function referenceItem(status, maxAge) {
+/** Green with "updated 20 s ago" when a reading arrived in the last 2 minutes, orange otherwise. */
+function referenceItem(status) {
   const age = status ? status.reference_age_s : null;
   if (age === null || age === undefined) {
-    return { color: "gray", value: "no reading", tip: "No pressure reading from the ground floor board yet." };
+    return { color: "orange", value: "no reading", tip: "No reading from the Reference board yet. It sends one every 30 s from academic floor 1." };
   }
-  const value = formatNumber(status.reference_pressure) + " Pa";
-  const when = "Ground floor pressure, read " + agoShort(age) + ".";
-  if (age <= 60) return { color: "green", value, tip: when + " Indoor floors can be worked out." };
-  if (age <= maxAge) return { color: "orange", value, tip: when + " The reading is getting old." };
-  return { color: "red", value, tip: when + " Older than " + maxAge + " s, so indoor floors cannot be worked out." };
+  const p = status.reference_pressure;
+  const board = "Reference board" + (status.reference_id ? " " + status.reference_id : "");
+  const tip = board + (p !== null && p !== undefined ? ": " + formatPa(p) : "") + ", updated " + agoShort(age) + ".";
+  const value = "updated " + agoShort(age);
+  if (age <= REF_FRESH_S) return { color: "green", value, tip: tip + " It sends a reading every 30 s." };
+  return { color: "orange", value, tip: tip + " Nothing in the last 2 minutes. Check the board's power and WiFi." };
 }
 
 /** The value on top of its hidden widest texts. */
@@ -89,9 +92,9 @@ export function PreviewBanner({ onExit }) {
   );
 }
 
-export default function TopBar({ crumb, status, unreachable, skew, timeFormat, refMaxAge }) {
+export default function TopBar({ crumb, status, unreachable, skew, timeFormat }) {
   const relay = relayItem(status);
-  const ref = referenceItem(status, refMaxAge);
+  const ref = referenceItem(status);
   const items = [];
   if (unreachable) {
     items.push(

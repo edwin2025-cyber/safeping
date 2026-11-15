@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { TYPE_ORDER, typeMeta } from "../lib/alertMeta.js";
-import { ago, formatDate, formatDateTime, formatTime, placeText } from "../lib/format.js";
+import { ago, formatDate, formatDateTime, formatPa, formatTime, placeText, temperatureText } from "../lib/format.js";
 import { batteryIcon, icons } from "../lib/icons.js";
 import { Select } from "./Controls.jsx";
 import { Battery, BatteryTag, batteryLevel, deviceName } from "./DevicesPage.jsx";
 import Icon from "./Icon.jsx";
 import Modal from "./Modal.jsx";
-import { LateTag, LinkTag, StatusDot, Tag, TypeTag } from "./Tags.jsx";
+import { CutOffTag, LateTag, LinkTag, StatusDot, Tag, TypeTag } from "./Tags.jsx";
 import Tooltip from "./Tooltip.jsx";
 
 // How the device panel lays out its facts.
@@ -81,6 +81,7 @@ function History({ history, historyFailed, nowServer, timeFormat }) {
                     <span>{formatDateTime(a.timestamp, timeFormat, false)}</span>
                     <span className="muted">{ago(nowServer - a.timestamp)}</span>
                     <LateTag alert={a} timeFormat={timeFormat} />
+                    <CutOffTag alert={a} />
                   </span>
                 </td>
                 <td>{placeText(a) || <span className="muted">Unknown</span>}</td>
@@ -117,6 +118,13 @@ function bootWifi(boot) {
 
 /** The Fob's last start and its self-check, then the last 10 starts. From the BOOT
     report the Fob sends at power on (see docs/message-format.md, Boot report). */
+/** "BME280@0x77" as "BME280 at address 0x77". "none" means no sensor was found. */
+export function sensorText(sensor) {
+  if (!sensor || sensor === "none") return "None found";
+  const [model, addr] = sensor.split("@");
+  return addr ? model + " at address " + addr : model;
+}
+
 function Starts({ device, boots, bootsFailed, nowServer, timeFormat }) {
   const last = device.last_boot;
   return (
@@ -158,6 +166,12 @@ function Starts({ device, boots, bootsFailed, nowServer, timeFormat }) {
             <dt>Firmware</dt>
             <dd className="num">{last.firmware || <span className="muted">Not reported</span>}</dd>
           </div>
+          {last.sensor && (
+            <div className="kv-row">
+              <dt>Pressure sensor</dt>
+              <dd className="num">{sensorText(last.sensor)}</dd>
+            </div>
+          )}
         </dl>
       )}
       {boots === null || boots === undefined ? (
@@ -249,13 +263,23 @@ function SectionsBody({ device, nowServer, timeFormat, history, historyFailed, b
         </section>
 
         {isRef ? (
-          <section className="fact" aria-label="Role">
+          <section className="fact" aria-label="Last reading">
             <div className="fact-label">
               <Icon icon={icons.pressure} size={12} fixed />
-              Role
+              Last reading
             </div>
-            <div className="fact-main">Ground floor pressure</div>
-            <div className="fact-sub">Indoor floors are worked out against this board.</div>
+            {device.reference ? (
+              <>
+                <div className="fact-main num">{formatPa(device.reference.pressure)}</div>
+                <div className="fact-sub num">
+                  <span>{temperatureText(device.reference.temperature) || "No temperature"}</span>
+                  {device.reference.samples ? <span className="muted">{device.reference.samples} readings in 30 s</span> : null}
+                </div>
+              </>
+            ) : (
+              <div className="fact-main muted">No reading yet</div>
+            )}
+            <div className="fact-foot">Academic building, floor 1. Fob pressure is compared with this board.</div>
           </section>
         ) : (
           <section className="fact" aria-label="Battery">
@@ -300,7 +324,7 @@ function SectionsBody({ device, nowServer, timeFormat, history, historyFailed, b
         )}
       </div>
 
-      {!isRef && <Starts device={device} boots={boots} bootsFailed={bootsFailed} nowServer={nowServer} timeFormat={timeFormat} />}
+      {<Starts device={device} boots={boots} bootsFailed={bootsFailed} nowServer={nowServer} timeFormat={timeFormat} />}
       {!isRef && <History history={history} historyFailed={historyFailed} nowServer={nowServer} timeFormat={timeFormat} />}
     </article>
   );
@@ -319,8 +343,20 @@ function ListBody({ device, nowServer, timeFormat, history, historyFailed, boots
       <dl className="props">
         <Prop icon={icons.devices} label={isRef ? "Board" : "Fob ID"}>
           {device.device_id}
-          {isRef && <span className="muted"> (ground floor pressure)</span>}
+          {isRef && <span className="muted"> (floor 1 pressure)</span>}
         </Prop>
+        {isRef && (
+          <Prop icon={icons.pressure} label="Last reading">
+            {device.reference ? (
+              <>
+                {formatPa(device.reference.pressure)}
+                {temperatureText(device.reference.temperature) ? ", " + temperatureText(device.reference.temperature) : ""}
+              </>
+            ) : (
+              <span className="muted">No reading yet</span>
+            )}
+          </Prop>
+        )}
         <Prop icon={icons.time} label="Last seen">
           {device.last_seen ? (
             <>
@@ -349,7 +385,7 @@ function ListBody({ device, nowServer, timeFormat, history, historyFailed, boots
           </Prop>
         )}
       </dl>
-      {!isRef && <Starts device={device} boots={boots} bootsFailed={bootsFailed} nowServer={nowServer} timeFormat={timeFormat} />}
+      {<Starts device={device} boots={boots} bootsFailed={bootsFailed} nowServer={nowServer} timeFormat={timeFormat} />}
       {!isRef && <History history={history} historyFailed={historyFailed} nowServer={nowServer} timeFormat={timeFormat} />}
     </article>
   );

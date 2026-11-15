@@ -402,3 +402,204 @@ Each color now means one kind of thing. The full table is in `docs/led-patterns.
 | `server/test_serial_bridge.py` | 17 of 17 |
 | `server/test_attacks.py` | 19 of 19 |
 | `server/test_duplicates.py` | 58 of 58 |
+
+## 11. Crash when a press stopped a retry (2026-11-13, 12:31:31)
+
+Log: `logs/2026-11-13/121605_retry/` (raw file, lines 527 to 700). Relay unplugged, fake WiFi, no clock. Four alerts queued (ctr 321 to 324). RETRY_TRY ctr=322, LoRa try 1, a press, `RETRY_STOPPED ctr=322 try=1 reason=button` at 12:31:30.829, then the crash. The press never got a counter and was not sent after the reboot.
+
+### Two crashes, not one printed twice
+
+The raw log has two different dumps with a full reboot between them (`ESP-ROM`, `rst:0xc (SW_CPU)`, `entry 0x4084bba0`):
+
+| | First (12:31:31.268) | Second (12:31:34.857) |
+|---|---|---|
+| SP | 0x4082af60 | 0x4082b1e0 |
+| S5, S6, S7 | 0x4, 0x20, 0x2003e0 | 0x1000, 0x80, 0x2004c0 |
+| Stack text | none readable | `binascii.mpy` at 0x4082b5c0 |
+
+The second one happened 3.5 s after the first reboot, before the `SafePing Fob` line. `import binascii` is the first line of code in `main.py`, so the Fob was looking up `binascii.mpy` on the file system. At that moment WiFi was not started, the LoRa radio was not set up, the button interrupt did not exist yet and nothing was being written. Only a file system read. The third boot worked (`reset=crash`).
+
+### The same crash three times
+
+The 2026-11-11 crash (section 8) and both of today's have the same fingerprint:
+
+- Program counter in the chip's ROM (0x40000344 or 0x4002a37e, return address 0x4002a382 or 0x4002a390).
+- The same registers A3 = 0x08088000, A4 = 0x600c8000, S3 = 0x421b1170, S8 = 0x421b10dc.
+- The same firmware return addresses on the stack: 0x4204906a, 0x4204d018, 0x42188d64, 0x4206997c.
+
+So it is one bug in one code path, the file system's flash access, reached from three callers: an import during HELP_LISTEN, the queue save after RETRY_STOPPED, and an import at boot. Our code can only lower how often it touches flash. It cannot remove the bug.
+
+### Every flash access from RETRY_STOPPED to the new press's send
+
+| When | What | Flash |
+|---|---|---|
+| Right after RETRY_STOPPED | `save_queue()`: write `queue.json.tmp` (about 1.3 KB for 4 entries), close, rename to `queue.json` | 2 writes (data, then file system metadata). The crash was almost certainly here |
+| Then | Press handled: 600 ms tap window, then STATUS | none (RAM and pins only) |
+| At the send | `next_counter()`: read `counter.txt`, write `counter.txt` | 1 read, 1 write |
+| After an unconfirmed send | `queue_retry()`: the same save as above | 2 writes |
+| Anywhere | All MicroPython code runs from flash through the cache | reads, all the time |
+
+At the save, the ESP32's own radio was off. `deliver()` had already switched WiFi off (`wifi_quiet(for_lora=True)`) before LoRa, 4.5 s earlier. The SX1276 is a separate chip on SPI, and its G0 pin is not wired, so it cannot interrupt the ESP32. The button interrupt is a soft interrupt (section 8). So no radio work and no interrupt of ours was running at the same time as the save. The second crash had none of them at all. The 12:26:51 press during a retry ran the same code with no crash, so this happens by chance, not every time.
+
+### Likely cause: the flash driver in ROM
+
+MicroPython 1.28's board files for the SparkFun Thing Plus ESP32-C5 include `sdkconfig.free_ram`, which sets `CONFIG_SPI_FLASH_ROM_IMPL=y`. That runs the flash driver from the chip's ROM. MicroPython 1.29 added a warning to that file: it "may cause panics (Cache error / MMU entry fault error)" (PR 19469, found on an ESP32-S3). 1.29 no longer uses `free_ram` for any ESP32-C5 board. The program counter in ROM in all three dumps fits this. It is not proven: the ROM address is not a named function, and I do not have the `.elf` of the 1.27 build on the board. With that `.elf`, `riscv32-esp-elf-addr2line -e firmware.elf 0x4204906a 0x4204d018 0x42188d64 0x4206997c` would name the four functions (laptop only, no board).
+
+### Fix: a press kept in RTC memory (`pressrec.py`)
+
+The press is written to `machine.RTC().memory()` the moment the Fob sees it, before any flash access. RTC memory is RAM that keeps its content through a crash reset and a soft reset. In MicroPython 1.27 it uses `RTC_NOINIT_ATTR`, so the bootloader does not clear it. It is lost on power off. Writing it never touches flash.
+
+| Stage | Written when | After a crash, at boot |
+|---|---|---|
+| `press` (taps so far) | first sign of a press while idle, every RETRY_STOPPED and BOOT_STOPPED, each release | sends the kind the taps give: 3 or more MEDICAL, 2 SUSPICIOUS, else STATUS |
+| `kind` | the pattern is decided (STATUS and SILENT at once, SUSPICIOUS and MEDICAL at the start of the cancel window) | sends that kind with a new counter |
+| `signed` | right after signing, before the send | the same signed message (same ctr and sig) goes into the retry queue, due at once |
+
+It is cleared when the alert is confirmed, saved in `queue.json`, or cancelled, and when a bounce never becomes a press. New log lines: `PRESS_FOUND stage=... boots=N`, `PRESS_RESUMED ...`, `PRESS_DROPPED ... reason=crashed_too_often` (a record found on 3 boots in a row is dropped on the 4th, so it cannot make the Fob restart forever). The boot prints `Press record: RTC memory, kept through a crash`, or a WARNING if this firmware has no RTC memory, and then the Fob works as before.
+
+Choice to check: a press cut off before its pattern ended (today's case, 440 ms into a tap) is sent as STATUS. If you want something else for an unknown pattern, say so.
+
+`FW_VERSION` is now `2026.11.13a`.
+
+### MicroPython 1.29: steps and risks
+
+Not flashed. Steps when you decide to:
+
+1. Run `tests/flash_stress.py` on 1.27 first (below), to get a "before" number.
+2. In Thonny, download every file on the Fob to a laptop folder, including `config.py`, `counter.txt`, `queue.json` and `/certs`. Write down the number in `counter.txt`.
+3. Download the SPARKFUN_THINGPLUS_ESP32C5 v1.29.0 `.bin` and its `.elf` from micropython.org. Keep the 1.27 `.bin` you flashed before, so you can go back.
+4. Flash with Thonny's esptool installer, with "erase flash" on (the build settings changed, so start clean).
+5. Copy every file back, `counter.txt` included. The counter must never go back, or the server rejects every message as a replay.
+6. Run the self-check, then the board tests below, then `flash_stress.py` again.
+
+Risks:
+
+- `counter.txt` lost or older after the erase: the server rejects everything. Step 5 prevents it.
+- 1.29 reworks the I2C driver (new driver on ESP-IDF 5.5.2). The BME280 and the battery gauge must be checked again (SELF_CHECK `battery=ok pressure=ok`).
+- ESP-IDF moves from 5.5.1 to 5.5.2: WiFi, TLS and MQTT must be checked again (one confirmed alert over WiFi, one HELP_RECEIVED).
+- The board's flash moves to QIO 80 MHz (`sdkconfig.flash_qio_80m`). If the board does not boot, flash 1.27 back.
+- `machine.reset_cause()` numbers and the pin interrupt (soft or hard) may change. SELF_CHECK must still say `reset=power_on` after the RST button. The `Button:` line will show which interrupt mode it got.
+- RTC memory must survive a crash on 1.29 too (test 2 below).
+- It may not fix the crash. The cause above is likely, not proven. The stress test numbers decide.
+
+### Board tests
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Normal boot | `Press record: RTC memory, kept through a crash`. No `PRESS_FOUND` |
+| 2 | In the Thonny Shell, after stopping main.py: `import pressrec, machine; pressrec.PressRecord(pressrec.RtcStore(machine)).kind("STATUS"); machine.reset()` | After the reboot: `PRESS_FOUND stage=kind boots=1`, `PRESS_RESUMED kind=STATUS stage=kind`, one STATUS sent, then the BOOT report |
+| 3 | Same as 2, but end with `machine.mem32[0] = 1` instead of `machine.reset()`. That makes a real Guru Meditation crash | Same as 2, and `reset=crash` |
+| 4 | Same as 2, then unplug the battery and USB for 10 s before it boots | No `PRESS_FOUND` (RTC memory does not survive a power cut) |
+| 5 | Relay unplugged, press during a retry (like today) | `RETRY_STOPPED`, then the press is sent. Nothing new in the log if it does not crash |
+| 6 | `tests/flash_stress.py` (Run current script, main.py stopped) | `STRESS_DONE cycles=3000`. A crash: keep the whole Shell text and the last `cycle` line |
+
+### Not fixed, for the list
+
+- Counter write is not crash-safe. `next_counter()` writes `counter.txt` in place. A crash in that write can leave it empty. With no clock, the Fob then restarts the counter from 0, and the server rejects every message as a replay. The queue already uses the safe way (write a .tmp file, then rename). This is the most important item here.
+- BOOT reports that fail are not retried. They are not queued, by design (section 3). A stopped one is resent once.
+- With no clock, a late alert cannot be marked "Sent late". It has no `ts`. The Fob knows the age (`age_s`), but sending it needs a new field in `docs/message-format.md` first.
+- The SMS shows the arrival time, not the press time (`server/notify.py` `format_alert()` uses `received_at`). Using `ts` is small when there is a clock. With no clock there is no press time, so it is tied to the item above.
+
+### Files to copy to the Fob
+
+| Laptop file | Board path |
+|---|---|
+| `firmware/fob/main.py` | `/main.py` |
+| `firmware/lib/pressrec.py` | `/pressrec.py` (new) |
+| `tests/flash_stress.py` | do not copy. Open it in Thonny and use Run current script |
+
+Nothing for the Relay or the server.
+
+### Test results (laptop)
+
+| Test | Result |
+|---|---|
+| `tests/test_press_record.py` (new) | 34 of 34 |
+| `tests/test_imports.py` | 27 of 27 (now also checks `pressrec.py`) |
+| `tests/test_retry_queue.py` | 71 of 71 |
+| `tests/test_help.py` | 51 of 51 |
+| `tests/test_selfcheck.py` | 57 of 57 |
+| `tests/test_sendpath.py` | 37 of 37 |
+| `tests/test_wifi_errors.py` | 58 of 58 |
+| `tests/test_led.py` | 30 of 30 |
+
+## 12. "Press cut off by a restart", crash-safe counter (2026-11-14)
+
+Edwin's two decisions on section 11. `docs/message-format.md` was changed first.
+
+### A press cut off by a restart
+
+After a restart, an unfinished pattern is sent as the type its recorded presses give: 3 or more = MEDICAL, 2 = SUSPICIOUS, a hold that started = SILENT, 1 = STATUS. These rules are checked in that order.
+
+- **Press still down:** a press that is still down counts as one more press. If it has been down for `CUT_HOLD_MS` (1 s, new setting), it is a hold that started instead. Today's 12:31:30 press (down about 0.4 s) is therefore STATUS.
+- **Already decided:** a press whose type was already decided (STATUS, SILENT, or SUSPICIOUS and MEDICAL in the cancel window) is sent as that type.
+- **The flag:** both of these are sent with a new counter and the new field `"cut": 1`.
+- **Signed:** a press that was already signed goes out as the same message from the queue, with no `cut`, because its signature cannot change.
+
+What the record holds now (`pressrec.py`): the press stage, the taps so far, whether the button is down, and whether a hold started. `main.py` writes it when the button goes down, comes up, and passes `CUT_HOLD_MS`.
+
+| Where | Change |
+|---|---|
+| `docs/message-format.md` | New field `cut` (alerts only, value `1`). Signed at the end (`... \| bat \| cut`) only when present, so every other message signs as before. New section "Press cut off by a restart". Size note: about 251 bytes for the largest alert with `cut`, 255 at the absolute worst case (a 10-digit counter) |
+| `server/validate.py` | Signing string with `cut`. `cut` must be `1` and only on an alert type, otherwise `bad_format` |
+| `server/db.py` | New column `alerts.cut_off` (added on start, old rows get 0) |
+| `server/processor.py`, `server/app.py` | Stores it. The API gives `cut_off` true or false on every alert |
+| Dashboard | Gray tag "Press cut off by a restart" (power icon) next to the time on Live and in the device panel's history, and in the alert panel header. The list layout of the panel has a row that explains it. Mock mode shows it on one SUSPICIOUS alert |
+
+Not added yet: a column in the CSV and Excel exports.
+
+### Crash-safe counter
+
+- **Write (`counterfile.py`, new):** `counter.txt.tmp` is written in full, then renamed over `counter.txt`, so the file is always the old or the new value. Reading takes the higher of the two files that read as a whole number.
+- **RTC copy:** every new counter goes into RTC memory before the flash write (`pressrec.py`, field `ctr`).
+- **Boot jump:** on every boot, after the queue is read and before the first send, the counter jumps `COUNTER_BOOT_JUMP` (8, new setting) ahead of the highest of: the file, the RTC copy, a signed press in RTC memory, and every counter in the queue. Log line: `COUNTER_JUMP from=... to=... rtc=... queue=...`.
+- **Damaged file:** with no clock, a damaged counter file now continues from the RTC copy instead of 0.
+- **Self-check:** reads through the same code, so a valid `.tmp` next to a damaged `counter.txt` is not a failure.
+
+A cost to know: the server's counter window is 32. Each boot uses 9 numbers (the jump of 8, then 1 for the BOOT report). If the Fob restarts 4 times while an alert waits in the queue (10 minutes), that alert falls below the window and the server rejects it as `replay`. It is written in `message-format.md`. If that is a problem, the choices are a smaller jump or a bigger `COUNTER_WINDOW` on the server.
+
+`FW_VERSION` is now `2026.11.14a`.
+
+### Board tests
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Normal boot | `COUNTER_JUMP from=N to=N+8`, then the BOOT report with counter N+9 |
+| 2 | Section 11 test 2 (`.kind("STATUS")`, then `machine.reset()`) | `PRESS_RESUMED kind=STATUS stage=kind ... cut=1`. On the dashboard, the STATUS shows "Press cut off by a restart" (turn on "show STATUS" on Live) |
+| 3 | In the Thonny Shell, after stopping main.py: `import pressrec, machine; r = pressrec.PressRecord(pressrec.RtcStore(machine)); r.load(); r.pressing(1); r.hold(); machine.mem32[0] = 1` | A real crash. After it: `PRESS_RESUMED kind=SILENT stage=press taps=1 down=1 hold=1 ... cut=1`, `reset=crash` |
+| 4 | Same as 3 with `r.tap(2)` instead of `r.pressing(1); r.hold()` | `PRESS_RESUMED kind=SUSPICIOUS ... cut=1`, and a text to the duty phone. The text does not mention the restart (not asked for) |
+| 5 | Reboot 3 times in a row with the RST button | Each boot jumps by 8. The server accepts each BOOT report |
+
+### Files to copy
+
+**Fob (Thonny):**
+
+| Laptop file | Board path |
+|---|---|
+| `firmware/fob/main.py` | `/main.py` |
+| `firmware/lib/pressrec.py` | `/pressrec.py` |
+| `firmware/lib/counterfile.py` | `/counterfile.py` (new) |
+
+Leave `counter.txt` on the board as it is. The first boot jumps it by 8.
+
+**Server:** `server/validate.py`, `server/db.py`, `server/processor.py`, `server/app.py` changed in place. Restart `app.py`, the MQTT listener and `serial_bridge.py`. The new column is added on start. The dashboard was rebuilt (`npm.cmd run build`), and Flask serves the new `dashboard/dist`.
+
+Nothing for the Relay.
+
+### Test results (laptop)
+
+| Test | Result |
+|---|---|
+| `tests/test_press_record.py` | 55 of 55 (cut rule, 6 cut-off patterns through the real button code, the server side) |
+| `tests/test_counter.py` (new) | 22 of 22 (a crash at 4 points of the counter write, the boot jump) |
+| `tests/test_imports.py` | 28 of 28 (now also checks `counterfile.py`) |
+| `tests/test_retry_queue.py` | 71 of 71 |
+| `tests/test_help.py` | 51 of 51 |
+| `tests/test_selfcheck.py` | 57 of 57 |
+| `tests/test_sendpath.py` | 37 of 37 |
+| `tests/test_wifi_errors.py` | 58 of 58 |
+| `tests/test_led.py` | 30 of 30 |
+| `server/test_attacks.py` | 19 of 19 |
+| `server/test_duplicates.py` | 58 of 58 |
+| `server/test_serial_bridge.py` | 17 of 17 |
+| `npm.cmd run build`, `npm.cmd run contrast` | builds, all pairs pass |

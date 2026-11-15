@@ -371,6 +371,23 @@ export default function App() {
   const openLivePeek = useCallback((id) => openAlert(id), [openAlert]);
   const closePeek = useCallback(() => setPeek(null), []);
 
+  // ---------- #/alert/<id>: the link in a Pushover notification ----------
+  // Opens that alert's peek, then puts the page back in the address so the same link
+  // works again from the next notification.
+  const pageRef = useRef(page);
+  pageRef.current = page;
+  useEffect(() => {
+    const openFromHash = () => {
+      const match = /^alert\/(\d+)$/.exec(readHash());
+      if (!match) return;
+      openAlert(Number(match[1]), "Notification");
+      window.history.replaceState(null, "", "#/" + pageRef.current);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [openAlert]);
+
   const liveAlert = alerts && peek ? alerts.find((a) => a.id === peek.id) : null;
   const selectedAlert = liveAlert || (remoteAlert && peek && remoteAlert.id === peek.id ? remoteAlert : null);
 
